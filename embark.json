@@ -1,0 +1,23 @@
+{
+  "contracts": ["contracts/**", "!contracts/**/flycheck_*.sol"],
+  "app": {},
+  "buildDir": "build/",
+  "config": {
+    "contracts": "contracts.js",
+    "blockchain": false,
+    "storage": false,
+    "communication": false,
+    "webserver": false
+  },
+  "versions": {
+    "solc": "0.4.24"
+  },
+  "plugins": {
+  },
+  "options": {
+    "solc": {
+      "optimize": true,
+      "optimize-runs": 200
+    }
+  }
+}
