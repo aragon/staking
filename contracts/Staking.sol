@@ -13,6 +13,7 @@ import "@aragon/os/contracts/common/TimeHelpers.sol";
    - order functions?
 */
 
+
 contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
     using SafeMath for uint256;
     using Checkpointing for Checkpointing.History;
@@ -92,7 +93,6 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         emit Unstaked(msg.sender, _amount, totalStakedFor(msg.sender), _data);
     }
 
-
     function totalStakedFor(address _account) public view returns (uint256) {
         return totalStakedForAt(_account, getBlockNumber64());
     }
@@ -104,7 +104,6 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
     function token() external view returns (address) {
         return address(stakingToken);
     }
-
 
     // History
     function supportsHistory() external pure returns (bool) {
@@ -171,7 +170,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         _lock.unlockedAt = getTimestamp64();
 
         // remove from active locks, replacing it by the last one in the array
-        for(uint256 i = 0; i < account.activeLockIds.length; i++) {
+        for (uint256 i = 0; i < account.activeLockIds.length; i++) {
             if (account.activeLockIds[i] == _lockId) {
                 account.activeLockIds[i] = account.activeLockIds[account.activeLockIds.length - 1];
                 delete(account.activeLockIds[account.activeLockIds.length - 1]);
@@ -286,7 +285,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
     function canUnlock(address _account, uint256 _lockId) public view returns (bool) {
         Lock storage _lock = accounts[_account].locks[_lockId];
 
-        if(msg.sender == address(_lock.manager) ||
+        if (msg.sender == address(_lock.manager) ||
            (msg.sender == _account && _lock.manager.canUnlock(_account, _lockId, _lock.data))) {
             return true;
         }

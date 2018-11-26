@@ -19,7 +19,7 @@ contract EchidnaStaking is Staking {
         Account storage account = accounts[_account];
 
         uint256 totalLocks;
-        for(uint256 i = 0; i < account.activeLockIds.length; i++) {
+        for (uint256 i = 0; i < account.activeLockIds.length; i++) {
             totalLocks = totalLocks.add(account.locks[account.activeLockIds[i]].amount);
         }
 
@@ -36,7 +36,7 @@ contract EchidnaStaking is Staking {
         Account storage account = accounts[_account];
 
         uint256 totalLocks;
-        for(uint256 i = 0; i < account.activeLockIds.length; i++) {
+        for (uint256 i = 0; i < account.activeLockIds.length; i++) {
             totalLocks = totalLocks.add(account.locks[account.activeLockIds[i]].amount);
         }
 
@@ -51,7 +51,7 @@ contract EchidnaStaking is Staking {
     function echidna_active_locks() external view returns (bool) {
         address _account = msg.sender;
         Account storage account = accounts[_account];
-        for(uint256 i = 0; i < account.activeLockIds.length; i++) {
+        for (uint256 i = 0; i < account.activeLockIds.length; i++) {
             if (account.locks[account.activeLockIds[i]].unlockedAt < getTimestamp64()) {
                 return false;
             }
@@ -64,7 +64,7 @@ contract EchidnaStaking is Staking {
     function echidna_active_locks_fake() external view returns (bool) {
         address _account = msg.sender;
         Account storage account = accounts[_account];
-        for(uint256 i = 0; i < account.activeLockIds.length; i++) {
+        for (uint256 i = 0; i < account.activeLockIds.length; i++) {
             if (account.locks[account.activeLockIds[i]].unlockedAt >= getTimestamp64()) {
                 return false;
             }
@@ -81,7 +81,7 @@ contract EchidnaStaking is Staking {
 
         bool isUnlocked = account.locks[_lockId].unlockedAt < getTimestamp64();
         bool isInActiveLocksArray;
-        for(uint256 i = 0; i < account.activeLockIds.length; i++) {
+        for (uint256 i = 0; i < account.activeLockIds.length; i++) {
             if (account.activeLockIds[i] == _lockId) {
                 isInActiveLocksArray = true;
                 break;
