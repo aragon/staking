@@ -5,9 +5,7 @@ const CheckpointingMock = embark.require('Embark/contracts/CheckpointingMock')
 
 let accounts
 
-config({}, (err, accts) => {
-  accounts = accts
-})
+config({}, (err, accts) => {accounts = accts})
 
 contract('Checkpointing', () => {
   let checkpointing

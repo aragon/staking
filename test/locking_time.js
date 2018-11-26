@@ -7,12 +7,10 @@ const TimeLockManagerMock = embark.require('Embark/contracts/TimeLockManagerMock
 
 let accounts
 
-config({}, (err, accts) => {
-  accounts = accts
-})
+config({}, (err, accts) => {accounts = accts})
 
-contract('Staking app - Time locking', () => {
-  let token, staking, manager, owner, other
+contract('Staking app, Time locking', () => {
+  let token, staking, manager, stakingAddress, tokenAddress, managerAddress, owner
 
   const TIME_UNIT_BLOCKS = 0
   const TIME_UNIT_SECONDS = 1
@@ -22,8 +20,8 @@ contract('Staking app - Time locking', () => {
   const defaultBlocks = 10
 
   const approveAndStake = async(amount = defaultAmount) => {
-    await token.methods.approve(staking.options.address, amount).send()
-    await staking.methods.stake(amount, web3.utils.asciiToHex('')).send()
+    await token.approve(stakingAddress, amount).send()
+    await staking.stake(amount, web3.utils.asciiToHex('')).send()
   }
 
   const timeSpanToData = (unit, start, end) => {
@@ -41,7 +39,7 @@ contract('Staking app - Time locking', () => {
 
   const approveStakeAndLock = async(data, lockAmount = defaultAmount / 2, stakeAmount = defaultAmount) => {
     await approveAndStake(stakeAmount)
-    const r = await staking.methods.lock(lockAmount, manager.options.address, data).send()
+    const r = await staking.lock(lockAmount, managerAddress, data).send()
     const lockId = getEvent(r, 'Locked', 'lockId')
 
     return lockId
@@ -49,100 +47,105 @@ contract('Staking app - Time locking', () => {
 
   before(async () => {
     owner = accounts[0]
-    other = accounts[1]
   })
 
   beforeEach(async () => {
-    const initialAmount = web3.utils.toWei('1000', 'ether')
-    token = await StandardTokenMock.deploy({arguments: [owner, initialAmount]}).send()
-    staking = await Staking.deploy({arguments: [token.options.address]}).send()
-    manager = await TimeLockManagerMock.deploy().send()
+    const initialAmount = 1000 * defaultAmount
+    const tokenContract = await StandardTokenMock.deploy({arguments: [owner, initialAmount]}).send()
+    token = tokenContract.methods
+    tokenAddress = tokenContract.options.address
+    const stakingContract = await Staking.deploy({arguments: [tokenAddress]}).send()
+    staking = stakingContract.methods
+    stakingAddress = stakingContract.options.address
+    const managerContract = await TimeLockManagerMock.deploy().send()
+    manager = managerContract.methods
+    managerAddress = managerContract.options.address
   })
 
   it('locks using seconds', async () => {
-    const startTime = await manager.methods.getTimestampExt().call()
+    const startTime = await manager.getTimestampExt().call()
     const endTime = parseInt(startTime, 10) + defaultTime
     const data = timeToData(startTime, endTime)
     const lockId = await approveStakeAndLock(data)
 
     // check lock values
-    const lock = await staking.methods.getLock(owner, lockId).call()
+    const lock = await staking.getLock(owner, lockId).call()
     assert.equal(lock[0], defaultAmount / 2, "locked amount should match")
-    assert.equal(lock[1].toString(), (await manager.methods.MAX_UINT64().call()).toString(), "unlock time should match")
-    assert.equal(lock[2], manager.options.address, "unlocker should match")
+    assert.equal(lock[1].toString(), (await manager.MAX_UINT64().call()).toString(), "unlock time should match")
+    assert.equal(lock[2], managerAddress, "unlocker should match")
     assert.equal(lock[3], data, "lock data should match")
 
     // can not unlock
-    assert.equal(await staking.methods.canUnlock(owner, lockId).call(), false, "Shouldn't be able to unlock")
-    assert.equal((await staking.methods.unlockedBalanceOf(owner).call()).valueOf(), defaultAmount / 2, "Unlocked balance should match")
-    assert.equal((await staking.methods.locksCount(owner).call()).valueOf(), parseInt(lockId, 10), "last lock id should match")
+    assert.equal(await staking.canUnlock(owner, lockId).call(), false, "Shouldn't be able to unlock")
+    assert.equal((await staking.unlockedBalanceOf(owner).call()).valueOf(), defaultAmount / 2, "Unlocked balance should match")
+    assert.equal((await staking.locksCount(owner).call()).valueOf(), parseInt(lockId, 10), "last lock id should match")
 
-    await manager.methods.setTimestamp(endTime + 1).send()
+    await manager.setTimestamp(endTime + 1).send()
     // can unlock
-    assert.equal(await staking.methods.canUnlock(owner, lockId).call(), true, "Should be able to unlock")
-    assert.equal((await staking.methods.unlockedBalanceOf(owner).call()).valueOf(), defaultAmount / 2, "Unlocked balance should match")
+    assert.equal(await staking.canUnlock(owner, lockId).call(), true, "Should be able to unlock")
+    assert.equal((await staking.unlockedBalanceOf(owner).call()).valueOf(), defaultAmount / 2, "Unlocked balance should match")
   })
 
   it('locks using blocks', async () => {
-    const startBlock = (await manager.methods.getBlockNumberExt().call())
+    const startBlock = (await manager.getBlockNumberExt().call())
     const endBlock = parseInt(startBlock, 10) + defaultBlocks
     const data = blocksToData(startBlock, endBlock)
     const lockId = await approveStakeAndLock(data)
 
     // check lock values
-    const lock = await staking.methods.getLock(owner, lockId).call()
+    const lock = await staking.getLock(owner, lockId).call()
     assert.equal(lock[0], defaultAmount / 2, "locked amount should match")
-    assert.equal(lock[1].toString(), (await manager.methods.MAX_UINT64().call()).toString(), "unlock time should match")
-    assert.equal(lock[2], manager.options.address, "unlocker should match")
+    assert.equal(lock[1].toString(), (await manager.MAX_UINT64().call()).toString(), "unlock time should match")
+    assert.equal(lock[2], managerAddress, "unlocker should match")
     assert.equal(lock[3], data, "lock data should match")
 
     // can not unlock
-    assert.equal(await staking.methods.canUnlock(owner, lockId).call(), false, "Shouldn't be able to unlock")
-    assert.equal((await staking.methods.unlockedBalanceOf(owner).call()).valueOf(), defaultAmount / 2, "Unlocked balance should match")
-    assert.equal((await staking.methods.locksCount(owner).call()).valueOf(), parseInt(lockId, 10), "last lock id should match")
+    assert.equal(await staking.canUnlock(owner, lockId).call(), false, "Shouldn't be able to unlock")
+    assert.equal((await staking.unlockedBalanceOf(owner).call()).valueOf(), defaultAmount / 2, "Unlocked balance should match")
+    assert.equal((await staking.locksCount(owner).call()).valueOf(), parseInt(lockId, 10), "last lock id should match")
 
-    await manager.methods.setBlockNumber(endBlock + 1).send()
+    await manager.setBlockNumber(endBlock + 1).send()
     // can unlock
-    assert.equal(await staking.methods.canUnlock(owner, lockId).call(), true, "Should be able to unlock")
+    assert.equal(await staking.canUnlock(owner, lockId).call(), true, "Should be able to unlock")
   })
 
   it('fails to unlock if can not unlock', async () => {
-    const startTime = await manager.methods.getTimestampExt().call()
+    const startTime = await manager.getTimestampExt().call()
     const endTime = parseInt(startTime, 10) + defaultTime
     const data = timeToData(startTime, endTime)
     const lockId = await approveStakeAndLock(data)
 
     // tries to unlock
     return assertRevert(async () => {
-      await staking.methods.unlock(owner, lockId).send()
+      await staking.unlock(owner, lockId).send()
     })
   })
 
   it('changes lock data', async () => {
-    const startTime = await manager.methods.getTimestampExt().call()
+    const startTime = await manager.getTimestampExt().call()
     const endTime = parseInt(startTime, 10) + defaultTime
     const data = timeToData(startTime, endTime)
     const lockId = await approveStakeAndLock(data)
 
     // check lock values
-    const lock = await staking.methods.getLock(owner, lockId).call()
+    const lock = await staking.getLock(owner, lockId).call()
     assert.equal(lock[3], data, "lock data should match")
 
     // can not unlock
-    assert.equal(await staking.methods.canUnlock(owner, lockId).call(), false, "Shouldn't be able to unlock")
+    assert.equal(await staking.canUnlock(owner, lockId).call(), false, "Shouldn't be able to unlock")
 
     // change data
-    const startTime2 = parseInt(await manager.methods.getTimestampExt().call(), 10) - 2
+    const startTime2 = parseInt(await manager.getTimestampExt().call(), 10) - 2
     const endTime2 = startTime2 + 1
     const data2 = timeToData(startTime2, endTime2)
-    await manager.methods.setLockData(staking.options.address, owner, lockId, data2).send()
+    await manager.setLockData(stakingAddress, owner, lockId, data2).send()
 
 
     // check lock values
-    const lock2 = await staking.methods.getLock(owner, lockId).call()
+    const lock2 = await staking.getLock(owner, lockId).call()
     assert.equal(lock2[3], data2, "lock data should match")
 
     // can unlock
-    assert.equal(await staking.methods.canUnlock(owner, lockId).call(), true, "Should be able to unlock")
+    assert.equal(await staking.canUnlock(owner, lockId).call(), true, "Should be able to unlock")
   })
 })

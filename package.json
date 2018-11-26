@@ -3,13 +3,27 @@
   "version": "0.0.1",
   "description": "",
   "scripts": {
-    "test": "embark test"
+    "test": "embark test",
+    "test:truffle": "truffle test --network rpc test_truffle/*.js",
+    "coverage:truffle": "SOLIDITY_COVERAGE=true ./node_modules/@aragon/test-helpers/ganache-cli.sh",
+    "lint": "solium --dir ./contracts"
   },
   "author": "Aragon Institution MTU <contact@aragon.one>",
   "license": "(GPL-3.0-or-later OR MIT)",
   "repository": "https://github.com/aragon/staking",
   "devDependencies": {
     "@aragon/test-helpers": "^1.0.1",
-    "@aragon/os": "^4.0.1"
+    "@aragon/os": "^4.0.1",
+    "@aragon/apps-shared-migrations": "1.0.0",
+    "eth-gas-reporter": "^0.1.5",
+    "ganache-cli": "^6.1.0",
+    "solc": "0.4.24",
+    "solidity-coverage": "0.5.11",
+    "solidity-sha3": "^0.4.1",
+    "solium": "^1.0.4",
+    "truffle": "4.1.14",
+    "truffle-bytecode-manager": "^1.1.1",
+    "truffle-extract": "^1.2.1",
+    "truffle-hdwallet-provider": "0.0.3"
   }
 }
