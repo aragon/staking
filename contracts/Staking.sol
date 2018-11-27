@@ -64,11 +64,9 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         _;
     }
 
-    /**/
     constructor(ERC20 _stakingToken) public {
         stakingToken = _stakingToken;
     }
-    /**/
 
     function stake(uint256 _amount, bytes _data) external {
         _stakeFor(msg.sender, _amount, _data);

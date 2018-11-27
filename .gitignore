@@ -9,3 +9,4 @@ package-lock.json
 node_modules
 build
 test_truffle
+flattened_contracts
