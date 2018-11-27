@@ -15,7 +15,12 @@ contract TimeLockManager is ILockManager, TimeHelpers {
         uint256 unit = _lockData.uint256At(0);
         uint256 start = _lockData.uint256At(0x20);
         uint256 end = _lockData.uint256At(0x40);
-        uint256 comparingValue = unit == uint256(TimeUnit.Blocks) ? getBlockNumber() : getTimestamp();
+        uint256 comparingValue;
+        if (unit == uint256(TimeUnit.Blocks)) {
+            comparingValue = getBlockNumber();
+        } else {
+            comparingValue = getTimestamp();
+        }
 
         return comparingValue < start || comparingValue > end;
     }

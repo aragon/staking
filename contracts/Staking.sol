@@ -244,7 +244,11 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         }
         require(activeLock, ERROR_INACTIVE_LOCK);
         */
-        _lock.amount = _increase ? _lock.amount.add(_amount) : _lock.amount.sub(_amount);
+        if (_increase) {
+            _lock.amount = _lock.amount.add(_amount);
+        } else {
+            _lock.amount = _lock.amount.sub(_amount);
+        }
     }
 
     function setLockAmount(address _account, uint256 _lockId, uint256 _newAmount) external isLockManager(_account, _lockId) {
@@ -343,7 +347,12 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
     function _modifyStakeBalance(address _account, uint256 _by, bool _increase) internal {
         uint256 currentStake = totalStakedFor(_account);
 
-        uint256 newStake = _increase ? currentStake.add(_by) : currentStake.sub(_by);
+        uint256 newStake;
+        if (_increase) {
+            newStake = currentStake.add(_by);
+        } else {
+            newStake = currentStake.sub(_by);
+        }
 
         _setStakedFor(_account, newStake);
     }
