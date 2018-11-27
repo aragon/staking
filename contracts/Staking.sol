@@ -207,8 +207,10 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         external
         isLockManager(_account, _lockId)
     {
-        // origin must be a valid lockId
-        require(_lockId > 0, ERROR_INVALID_LOCK_ID);
+        // TODO: remove
+        // origin must be a valid lockId - not needed as isLockManager would fail
+        // require(_lockId > 0, ERROR_INVALID_LOCK_ID);
+
         // amount zero makes no sense
         require(_amount > 0, ERROR_AMOUNT_ZERO);
         // have enough locked funds

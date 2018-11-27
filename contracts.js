@@ -54,6 +54,9 @@ module.exports = {
       },
       "NoApproveTokenMock": {
         args: [ '0x2C8d7E8bAF0E78597836B2d3Ba12a23914967Df3', 10**18 ]
+      },
+      "BadTokenMock": {
+        args: [ '0x2C8d7E8bAF0E78597836B2d3Ba12a23914967Df3', 10**18 ]
       }
     }
 

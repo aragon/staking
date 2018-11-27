@@ -1,6 +1,6 @@
 #!/bin/bash
 
-EMBARK_TEST_FOLDER=test
+EMBARK_TEST_FOLDER=test_embark
 TRUFFLE_TEST_FOLDER=test_truffle
 
 echo "Converts Embark tests in folder ${EMBARK_TEST_FOLDER} into Truffle tests in folder ${TRUFFLE_TEST_FOLDER}"
@@ -22,10 +22,12 @@ for test_file in $(ls ${TRUFFLE_TEST_FOLDER}/*.js); do
     sed -i "s/\.options//g" ${test_file};
     sed -i "s/)\.send({ from: \([A-Za-z0-9_]*\) })/, { from: \1 })/g" ${test_file};
     sed -i "s/\.send()//g" ${test_file};
+    sed -i "s/)\.call({ from: \([A-Za-z0-9_]*\) })/, { from: \1 })/g" ${test_file};
     sed -i "s/\.call()//g" ${test_file};
     sed -i "s/web3\.utils\.toWei/web3\.toWei/g" ${test_file};
     sed -i "s/web3\.utils\.fromDecimal/web3\.fromDecimal/g" ${test_file};
     sed -i "s/web3\.utils\.asciiToHex('')/''/g" ${test_file};
     sed -i "s/web3\.utils\.BN/web3\.BigNumber/g" ${test_file};
+    sed -i 's/const zeroBytes = "0x00"/const zeroBytes = "0x"/g' ${test_file};
     #sed -i "s///g" ${test_file};
 done;

@@ -1,6 +1,6 @@
 module.exports = {
-    norpc: true,
     copyPackages: ['@aragon/os'],
+    testCommand: 'truffle test test_truffle/*.js --network coverage',
     skipFiles: [
         'test/',
     ]

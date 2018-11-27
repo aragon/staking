@@ -10,7 +10,8 @@ let accounts
 config({}, (err, accts) => {accounts = accts})
 
 contract('Staking app, Locking', () => {
-  let staking, token, stakingAddress, tokenAddress, owner, user1, user2
+  let staking, token, lockManager, stakingAddress, tokenAddress, lockManagerAddress
+  let owner, user1, user2
 
   const zeroBytes = "0x00"
   const MAX_UINT64 = (new web3.utils.BN(2)).pow(new web3.utils.BN(64)).sub(new web3.utils.BN(1))
@@ -48,9 +49,12 @@ contract('Staking app, Locking', () => {
     const stakingContract = await Staking.deploy({arguments: [tokenAddress]}).send()
     staking = stakingContract.methods
     stakingAddress = stakingContract.options.address
+    const lockManagerContract = await LockManagerMock.deploy().send()
+    lockManager = lockManagerContract.methods
+    lockManagerAddress = lockManagerContract.options.address
   })
 
-  /*
+  /**/
   it('locks', async () => {
     const lockId = await approveStakeAndLock(user1)
 
@@ -102,7 +106,6 @@ contract('Staking app, Locking', () => {
   })
 
   it('unlocks, contract manager, called by owner', async () => {
-    const lockManager = await LockManagerMock.deploy().send()
     await lockManager.setResult(true).send()
     const lockId = await approveStakeAndLock(lockManagerAddress)
 
@@ -114,7 +117,6 @@ contract('Staking app, Locking', () => {
   })
 
   it('unlocks, contract manager, called by manager', async () => {
-    const lockManager = await LockManagerMock.deploy().send()
     await lockManager.setResult(true).send()
     const lockId = await approveStakeAndLock(lockManagerAddress)
 
@@ -126,7 +128,6 @@ contract('Staking app, Locking', () => {
   })
 
   it('unlocks, contract manager, called by manager, even if condition is not satisfied', async () => {
-    const lockManager = await LockManagerMock.deploy().send()
     // not needed, is false by default
     //await lockManager.setResult(false).send()
     const lockId = await approveStakeAndLock(lockManagerAddress)
@@ -148,7 +149,6 @@ contract('Staking app, Locking', () => {
   })
 
   it('fails to unlock if can not unlock, contract manager, called by owner', async () => {
-    const lockManager = await LockManagerMock.deploy().send()
     // not needed, is false by default
     //await lockManager.setResult(false).send()
     const lockId = await approveStakeAndLock(lockManagerAddress)
@@ -160,7 +160,6 @@ contract('Staking app, Locking', () => {
   })
 
   it('fails to unlock if, contract manager, called by 3rd party (even if condition is true)', async () => {
-    const lockManager = await LockManagerMock.deploy().send()
     await lockManager.setResult(true).send()
     const lockId = await approveStakeAndLock(lockManagerAddress)
 
@@ -211,7 +210,6 @@ contract('Staking app, Locking', () => {
   })
 
   it('change lock amount', async () => {
-    const lockManager = await LockManagerMock.deploy().send()
     const lockId = await approveStakeAndLock(lockManagerAddress)
     const lock = await staking.getLock(owner, lockId).call()
     assert.equal(lock[0], defaultAmount / 2, "Amount should match")
@@ -226,20 +224,16 @@ contract('Staking app, Locking', () => {
   })
 
   it('fails to change lock amount to zero', async () => {
-    const lockManager = await LockManagerMock.deploy().send()
     const lockId = await approveStakeAndLock(lockManagerAddress)
-    const lock = await staking.getLock(owner, lockId).call()
 
     // try to change amount
     return assertRevert(async () => {
-      await lockManager.setLockAmount(stakingAddress, owner, lockId, defaultAmount).send()
+      await lockManager.setLockAmount(stakingAddress, owner, lockId, 0).send()
     })
   })
 
   it('fails to change lock amount to greater than before', async () => {
-    const lockManager = await LockManagerMock.deploy().send()
     const lockId = await approveStakeAndLock(lockManagerAddress)
-    const lock = await staking.getLock(owner, lockId).call()
 
     // try to change amount
     return assertRevert(async () => {
@@ -248,7 +242,6 @@ contract('Staking app, Locking', () => {
   })
 
   it('change lock manager', async () => {
-    const lockManager = await LockManagerMock.deploy().send()
     const lockId = await approveStakeAndLock(user1)
     const lock = await staking.getLock(owner, lockId).call()
     assert.equal(lock[2], user1, "Manager should match")
@@ -263,7 +256,7 @@ contract('Staking app, Locking', () => {
     assert.equal(await staking.canUnlock(owner, lockId).call({ from: user1 }), false, "User 1 can not unlock")
     assert.equal(await staking.canUnlock(owner, lockId).call({ from: user2 }), true, "User 2 can unlock")
   })
-  */
+  /**/
 
   context('Transfers', async () => {
     context('From stake', async () => {
@@ -307,14 +300,8 @@ contract('Staking app, Locking', () => {
         })
       })
     })
-    context('From Lock', async () => {
-      let lockManager
-      before(async () => {
-        const lockManagerContract = await LockManagerMock.deploy().send()
-        lockManager = lockManagerContract
-        lockManagerAddress = lockManagerContract.options.address
-      })
 
+    context('From Lock', async () => {
       it('transfers', async () => {
         const lockId = await approveStakeAndLock(lockManagerAddress)
         const TODO = await lockManager.transferFromLock(stakingAddress, owner, lockId, defaultAmount / 2, user1, 0).send()
@@ -340,6 +327,14 @@ contract('Staking app, Locking', () => {
         assert.equal((await staking.totalStaked().call()).toString(), defaultAmount * 2, "Total stake should match")
       })
 
+      it('fails if lockId is zero', async () => {
+        await approveStakeAndLock(lockManagerAddress)
+        return assertRevert(async () => {
+          // it will fail at isLockManager modifier
+          await lockManager.transferFromLock(stakingAddress, owner, 0, defaultAmount / 2, user1, 0).send()
+        })
+      })
+
       it('fails transfering zero tokens', async () => {
         const lockId = await approveStakeAndLock(lockManagerAddress)
         return assertRevert(async () => {
@@ -358,6 +353,26 @@ contract('Staking app, Locking', () => {
         const lockId = await approveStakeAndLock(lockManagerAddress)
         return assertRevert(async () => {
           await staking.transferFromLock(owner, lockId, defaultAmount / 2, user1, 0).send({ from: user1 })
+        })
+      })
+
+      it('fails transfering from unlocked lock', async () => {
+        const lockId = await approveStakeAndLock(user1)
+        // unlock
+        await staking.unlock(owner, lockId).send({ from: user1 })
+        return assertRevert(async () => {
+          await lockManager.transferFromLock(stakingAddress, owner, lockId, defaultAmount / 2, user1, 0).send()
+        })
+      })
+
+      it('fails transfering to unlocked lock', async () => {
+        const lockId = await approveStakeAndLock(lockManagerAddress)
+        await token.mint(user1, defaultAmount).send()
+        const toLockId = await approveStakeAndLock(user2, defaultAmount / 2, defaultAmount, user1)
+        // unlock
+        await staking.unlock(user1, toLockId).send({ from: user2 })
+        return assertRevert(async () => {
+          await lockManager.transferFromLock(stakingAddress, owner, lockId, defaultAmount / 2, user1, toLockId).send()
         })
       })
     })

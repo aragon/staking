@@ -3,6 +3,7 @@ const { getEvent } = require('./helpers/getEvent')
 
 const StakingMock = embark.require('Embark/contracts/StakingMock')
 const StandardTokenMock = embark.require('Embark/contracts/StandardTokenMock')
+const BadTokenMock = embark.require('Embark/contracts/BadTokenMock')
 
 let accounts
 
@@ -155,6 +156,32 @@ contract('Staking app', () => {
       await approveAndStake(defaultAmount, owner)
       await approveAndStake(defaultAmount, other)
       assert.equal(await staking.totalStakedAt(lastStaked).call(), defaultAmount * 2, "Last staked for should match")
+    })
+  })
+
+  context('Bad Token', async () => {
+    let badStaking, badStakingAddress, badToken, badTokenAddress
+    beforeEach(async () => {
+      const initialAmount = 1000 * defaultAmount
+      const tokenContract = await BadTokenMock.deploy({arguments: [owner, initialAmount]}).send()
+      badToken = tokenContract.methods
+      badTokenAddress = tokenContract.options.address
+      await badToken.mint(other, defaultAmount).send()
+      const stakingContract = await StakingMock.deploy({arguments: [badTokenAddress]}).send()
+      badStaking = stakingContract.methods
+      badStakingAddress = stakingContract.options.address
+    })
+
+    it('fails unstaking because of bad token', async () => {
+      // allow Staking app to move owner tokens
+      await badToken.approve(badStakingAddress, defaultAmount).send({ from: owner })
+      // stake tokens
+      await badStaking.stake(defaultAmount, web3.utils.asciiToHex('')).send({ from: owner })
+
+      return assertRevert(async () => {
+        // unstake half of them, fails on token transfer
+        await badStaking.unstake(defaultAmount / 2, web3.utils.asciiToHex('')).send()
+      })
     })
   })
 })
