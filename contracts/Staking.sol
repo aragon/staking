@@ -269,8 +269,8 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         return unlockedTokens;
     }
 
-    function locksCount(address acct) external view returns (uint256) {
-        return accounts[acct].activeLockIds.length;
+    function locksCount(address _account) external view returns (uint256) {
+        return accounts[_account].activeLockIds.length;
     }
 
     function canUnlock(address _account, uint256 _lockId) public view returns (bool) {
