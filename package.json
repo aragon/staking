@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "",
   "scripts": {
-    "test": "embark test test_embark/*.js",
+    "test": "embark test test_embark",
     "test:truffle": "truffle test --network rpc test_truffle/*.js",
     "coverage:truffle": "find ./ -iname \"*.ipc\" -exec rm -f {} \\; ; ./node_modules/.bin/solidity-coverage",
     "lint": "solium --dir ./contracts"
