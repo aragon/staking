@@ -7,14 +7,6 @@ import "../../Staking.sol";
 contract LockManagerMock is ILockManager {
     bool result;
 
-    function setResult(bool _result) public {
-        result = _result;
-    }
-
-    function unlock(Staking _staking, address _account, uint256 _lockId) public {
-        _staking.unlock(_account, _lockId);
-    }
-
     function transferFromLock(
         Staking _staking,
         address _account,
@@ -38,5 +30,13 @@ contract LockManagerMock is ILockManager {
 
     function canUnlock(address, uint256, bytes) external view returns (bool) {
         return result;
+    }
+
+    function setResult(bool _result) public {
+        result = _result;
+    }
+
+    function unlock(Staking _staking, address _account, uint256 _lockId) public {
+        _staking.unlock(_account, _lockId);
     }
 }

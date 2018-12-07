@@ -8,10 +8,6 @@ import "@aragon/os/contracts/lib/token/ERC20.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/common/TimeHelpers.sol";
 
-/* TODO:
-   - order functions?
-*/
-
 
 contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
     using SafeMath for uint256;
@@ -67,6 +63,8 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         stakingToken = _stakingToken;
     }
 
+    /* External functions */
+
     /**
      * @notice Stakes `_amount` tokens, transferring them from caller
      * @param _amount Number of tokens staked
@@ -107,15 +105,6 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
     }
 
     /**
-     * @notice Get the amount of tokens staked by `_account`
-     * @param _account The owner of the tokens
-     * @return The amount of tokens staked by the given account
-     */
-    function totalStakedFor(address _account) public view returns (uint256) {
-        return totalStakedForAt(_account, getBlockNumber64());
-    }
-
-    /**
      * @notice Get the total amount of tokens staked by all users
      * @return The total amount of tokens staked by all users
      */
@@ -131,7 +120,6 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         return address(stakingToken);
     }
 
-    // History
     /**
      * @notice Check whether it supports history of stakes
      * @return Always true
@@ -149,26 +137,6 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         return stakeHistory[_account].lastUpdated();
     }
 
-    /**
-     * @notice Get the total amount of tokens staked by `_account` at block number `_blockNumber`
-     * @param _account Account requesting for
-     * @param _blockNumber Block number at which we are requesting
-     * @return The amount of tokens staked by the account at the given block number
-     */
-    function totalStakedForAt(address _account, uint256 _blockNumber) public view returns (uint256) {
-        return stakeHistory[_account].get(_blockNumber);
-    }
-
-    /**
-     * @notice Get the total amount of tokens staked by all users at block number `_blockNumber`
-     * @param _blockNumber Block number at which we are requesting
-     * @return The amount of tokens staked at the given block number
-     */
-    function totalStakedAt(uint256 _blockNumber) public view returns (uint256) {
-        return totalStakedHistory.get(_blockNumber);
-    }
-
-    // Lock
     /**
      * @notice Lock `_amount` staked tokens and assign `_manager` as manager with `_data` as data, so they can not be unstaked
      * @param _amount The amount of tokens to be locked
@@ -219,33 +187,6 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         for (uint256 i = account.activeLockIds.length; i > 0; i--) {
             unlock(_account, account.activeLockIds[i - 1]);
         }
-    }
-
-    /**
-     * @notice Unlock `_account`'s lock #`_lockId` so locked tokens can be unstaked again
-     * @param _account Owner of locked tokens
-     * @param _lockId Id of the lock for the given account
-     */
-    function unlock(address _account, uint256 _lockId) public {
-        Account storage account = accounts[_account];
-        Lock storage _lock = account.locks[_lockId];
-
-        // only manager and owner (if manager allows) can unlock
-        require(canUnlock(_account, _lockId), ERROR_CAN_NOT_UNLOCK);
-
-        _lock.unlockedAt = getTimestamp64();
-
-        // remove from active locks, replacing it by the last one in the array
-        for (uint256 i = 0; i < account.activeLockIds.length; i++) {
-            if (account.activeLockIds[i] == _lockId) {
-                account.activeLockIds[i] = account.activeLockIds[account.activeLockIds.length - 1];
-                delete(account.activeLockIds[account.activeLockIds.length - 1]);
-                account.activeLockIds.length--;
-                break;
-            }
-        }
-
-        emit Unlocked(_account, _lockId, _lock.amount, _lock.manager, _lock.data);
     }
 
     /**
@@ -305,19 +246,6 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
 
     }
 
-    function _updateActiveLockAmount(address _account, uint256 _lockId, uint256 _amount, bool _increase) internal {
-        Lock storage _lock = accounts[_account].locks[_lockId];
-        // check that lock hasn't been unlocked
-        require(_lock.unlockedAt > getTimestamp64(), ERROR_UNLOCKED_LOCK);
-        // checking that lock is in active array shouldn't be needed if data is consitent
-
-        if (_increase) {
-            _lock.amount = _lock.amount.add(_amount);
-        } else {
-            _lock.amount = _lock.amount.sub(_amount);
-        }
-    }
-
     /**
      * @notice Decrease the amount of tokens locked in `_account`'s lock #`_lockId` to `_newAmount`
      * @param _account Owner of locked tokens
@@ -359,45 +287,12 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
     }
 
     /**
-     * @notice Get the staked but not locked amount of tokens by `_account`
-     * @param _account Owner of the staked but unlocked balance
-     * @return Amount of tokens staked but not locked by given account
-     */
-    function unlockedBalanceOf(address _account) public view returns (uint256) {
-        uint256 unlockedTokens = totalStakedFor(_account);
-
-        Account storage account = accounts[_account];
-        for (uint256 i = 0; i < account.activeLockIds.length; i++) {
-            unlockedTokens = unlockedTokens.sub(account.locks[account.activeLockIds[i]].amount);
-        }
-
-        return unlockedTokens;
-    }
-
-    /**
      * @notice Get the number of locks belonging to `_account`
      * @param _account Owner of locks
      * @return The number of locks belonging to the given account
      */
     function locksCount(address _account) external view returns (uint256) {
         return accounts[_account].activeLockIds.length;
-    }
-
-    /**
-     * @notice Check if `_account`'s lock #`_lockId` can be unlocked
-     * @param _account Owner of lock
-     * @param _lockId Id of the lock for the given account
-     * @return Whether given lock of given account can be unlocked
-     */
-    function canUnlock(address _account, uint256 _lockId) public view returns (bool) {
-        Lock storage _lock = accounts[_account].locks[_lockId];
-
-        if (msg.sender == address(_lock.manager) ||
-           (msg.sender == _account && _lock.manager.canUnlock(_account, _lockId, _lock.data))) {
-            return true;
-        }
-
-        return false;
     }
 
     /**
@@ -426,6 +321,96 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         _data = _lock.data;
     }
 
+    /* Public functions */
+
+    /**
+     * @notice Get the amount of tokens staked by `_account`
+     * @param _account The owner of the tokens
+     * @return The amount of tokens staked by the given account
+     */
+    function totalStakedFor(address _account) public view returns (uint256) {
+        return totalStakedForAt(_account, getBlockNumber64());
+    }
+
+    /**
+     * @notice Get the total amount of tokens staked by `_account` at block number `_blockNumber`
+     * @param _account Account requesting for
+     * @param _blockNumber Block number at which we are requesting
+     * @return The amount of tokens staked by the account at the given block number
+     */
+    function totalStakedForAt(address _account, uint256 _blockNumber) public view returns (uint256) {
+        return stakeHistory[_account].get(_blockNumber);
+    }
+
+    /**
+     * @notice Get the total amount of tokens staked by all users at block number `_blockNumber`
+     * @param _blockNumber Block number at which we are requesting
+     * @return The amount of tokens staked at the given block number
+     */
+    function totalStakedAt(uint256 _blockNumber) public view returns (uint256) {
+        return totalStakedHistory.get(_blockNumber);
+    }
+
+    /**
+     * @notice Unlock `_account`'s lock #`_lockId` so locked tokens can be unstaked again
+     * @param _account Owner of locked tokens
+     * @param _lockId Id of the lock for the given account
+     */
+    function unlock(address _account, uint256 _lockId) public {
+        Account storage account = accounts[_account];
+        Lock storage _lock = account.locks[_lockId];
+
+        // only manager and owner (if manager allows) can unlock
+        require(canUnlock(_account, _lockId), ERROR_CAN_NOT_UNLOCK);
+
+        _lock.unlockedAt = getTimestamp64();
+
+        // remove from active locks, replacing it by the last one in the array
+        for (uint256 i = 0; i < account.activeLockIds.length; i++) {
+            if (account.activeLockIds[i] == _lockId) {
+                account.activeLockIds[i] = account.activeLockIds[account.activeLockIds.length - 1];
+                delete(account.activeLockIds[account.activeLockIds.length - 1]);
+                account.activeLockIds.length--;
+                break;
+            }
+        }
+
+        emit Unlocked(_account, _lockId, _lock.amount, _lock.manager, _lock.data);
+    }
+
+    /**
+     * @notice Get the staked but not locked amount of tokens by `_account`
+     * @param _account Owner of the staked but unlocked balance
+     * @return Amount of tokens staked but not locked by given account
+     */
+    function unlockedBalanceOf(address _account) public view returns (uint256) {
+        uint256 unlockedTokens = totalStakedFor(_account);
+
+        Account storage account = accounts[_account];
+        for (uint256 i = 0; i < account.activeLockIds.length; i++) {
+            unlockedTokens = unlockedTokens.sub(account.locks[account.activeLockIds[i]].amount);
+        }
+
+        return unlockedTokens;
+    }
+
+    /**
+     * @notice Check if `_account`'s lock #`_lockId` can be unlocked
+     * @param _account Owner of lock
+     * @param _lockId Id of the lock for the given account
+     * @return Whether given lock of given account can be unlocked
+     */
+    function canUnlock(address _account, uint256 _lockId) public view returns (bool) {
+        Lock storage _lock = accounts[_account].locks[_lockId];
+
+        if (msg.sender == address(_lock.manager) ||
+            (msg.sender == _account && _lock.manager.canUnlock(_account, _lockId, _lock.data))) {
+            return true;
+        }
+
+        return false;
+    }
+
     /*
     function multicall(bytes[] _calls) public {
         for(uint i = 0; i < _calls.length; i++) {
@@ -433,6 +418,21 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         }
     }
     */
+
+    /* Internal functions */
+
+    function _updateActiveLockAmount(address _account, uint256 _lockId, uint256 _amount, bool _increase) internal {
+        Lock storage _lock = accounts[_account].locks[_lockId];
+        // check that lock hasn't been unlocked
+        require(_lock.unlockedAt > getTimestamp64(), ERROR_UNLOCKED_LOCK);
+        // checking that lock is in active array shouldn't be needed if data is consitent
+
+        if (_increase) {
+            _lock.amount = _lock.amount.add(_amount);
+        } else {
+            _lock.amount = _lock.amount.sub(_amount);
+        }
+    }
 
     function _stakeFor(address _account, uint256 _amount, bytes _data) internal {
         // stake 0 tokens makes no sense
