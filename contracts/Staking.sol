@@ -9,7 +9,6 @@ import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/common/TimeHelpers.sol";
 
 /* TODO:
-   - function headers
    - order functions?
 */
 
@@ -68,14 +67,30 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         stakingToken = _stakingToken;
     }
 
+    /**
+     * @notice Stakes `_amount` tokens, transferring them from caller
+     * @param _amount Number of tokens staked
+     * @param _data Used in Staked event, to add signalling information in more complex staking applications
+     */
     function stake(uint256 _amount, bytes _data) external {
         _stakeFor(msg.sender, _amount, _data);
     }
 
+    /**
+     * @notice Stakes `_amount` tokens, transferring them from caller, and assigns them to `_account`
+     * @param _account The final staker of the tokens
+     * @param _amount Number of tokens staked
+     * @param _data Used in Staked event, to add signalling information in more complex staking applications
+     */
     function stakeFor(address _account, uint256 _amount, bytes _data) external {
         _stakeFor(_account, _amount, _data);
     }
 
+    /**
+     * @notice Unstakes `_amount` tokens, returning them to the user
+     * @param _amount Number of tokens staked
+     * @param _data Used in Unstaked event, to add signalling information in more complex staking applications
+     */
     function unstake(uint256 _amount, bytes _data) external {
         // unstake 0 tokens makes no sense
         require(_amount > 0, ERROR_AMOUNT_ZERO);
@@ -91,36 +106,76 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         emit Unstaked(msg.sender, _amount, totalStakedFor(msg.sender), _data);
     }
 
+    /**
+     * @notice Get the amount of tokens staked by `_account`
+     * @param _account The owner of the tokens
+     * @return The amount of tokens staked by the given account
+     */
     function totalStakedFor(address _account) public view returns (uint256) {
         return totalStakedForAt(_account, getBlockNumber64());
     }
 
+    /**
+     * @notice Get the total amount of tokens staked by all users
+     * @return The total amount of tokens staked by all users
+     */
     function totalStaked() external view returns (uint256) {
         return totalStakedAt(getBlockNumber64());
     }
 
+    /**
+     * @notice Get the token used by the contract for staking and locking
+     * @return The token used by the contract for staking and locking
+     */
     function token() external view returns (address) {
         return address(stakingToken);
     }
 
     // History
+    /**
+     * @notice Check whether it supports history of stakes
+     * @return Always true
+     */
     function supportsHistory() external pure returns (bool) {
         return true;
     }
 
+    /**
+     * @notice Get last time `_account` modified its staked balance
+     * @param _account Account requesting for
+     * @return Last block number when account's balance was modified
+     */
     function lastStakedFor(address _account) external view returns (uint256) {
         return stakeHistory[_account].lastUpdated();
     }
 
+    /**
+     * @notice Get the total amount of tokens staked by `_account` at block number `_blockNumber`
+     * @param _account Account requesting for
+     * @param _blockNumber Block number at which we are requesting
+     * @return The amount of tokens staked by the account at the given block number
+     */
     function totalStakedForAt(address _account, uint256 _blockNumber) public view returns (uint256) {
         return stakeHistory[_account].get(_blockNumber);
     }
 
+    /**
+     * @notice Get the total amount of tokens staked by all users at block number `_blockNumber`
+     * @param _blockNumber Block number at which we are requesting
+     * @return The amount of tokens staked at the given block number
+     */
     function totalStakedAt(uint256 _blockNumber) public view returns (uint256) {
         return totalStakedHistory.get(_blockNumber);
     }
 
     // Lock
+    /**
+     * @notice Lock `_amount` staked tokens and assign `_manager` as manager with `_data` as data, so they can not be unstaked
+     * @param _amount The amount of tokens to be locked
+     * @param _manager The manager entity for this particular lock. This entity will have full control over the lock, in particular will be able to unlock it
+     * @param _data Data to parametrize logic for the lock to be enforced by the manager
+     * @return The id of the newly created lock
+     */
     function lock(uint256 _amount, address _manager, bytes _data) external returns (uint256 _lockId) {
         // lock 0 tokens makes no sense
         require(_amount > 0, ERROR_AMOUNT_ZERO);
@@ -140,6 +195,10 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         emit Locked(msg.sender, _lockId, _amount, _manager, _data);
     }
 
+    /**
+     * @notice Try to unlock as much locks belonging to `_account` as possible
+     * @param _account Owner whose locks are to be unlocked
+     */
     function unlockAll(address _account) external {
         Account storage account = accounts[_account];
 
@@ -150,6 +209,10 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         }
     }
 
+    /**
+     * @notice Try to unlock all locks belonging to `_account` and revert if any of them fail
+     * @param _account Owner whose locks are to be unlocked
+     */
     function unlockAllOrNone(address _account) external {
         Account storage account = accounts[_account];
 
@@ -158,6 +221,11 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         }
     }
 
+    /**
+     * @notice Unlock `_account`'s lock #`_lockId` so locked tokens can be unstaked again
+     * @param _account Owner of locked tokens
+     * @param _lockId Id of the lock for the given account
+     */
     function unlock(address _account, uint256 _lockId) public {
         Account storage account = accounts[_account];
         Lock storage _lock = account.locks[_lockId];
@@ -180,6 +248,12 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         emit Unlocked(_account, _lockId, _lock.amount, _lock.manager, _lock.data);
     }
 
+    /**
+     * @notice Transfer `_amount` tokens to `_to``_toLockId > 0 ? '\'s lock #' + _toLockId : ''`
+     * @param _amount Number of tokens to be transferred
+     * @param _to Recipient of the tokens
+     * @param _toLockId Lock id of the recipient to add the tokens to, if any
+     */
     function transfer(uint256 _amount, address _to, uint256 _toLockId) external {
         // amount zero makes no sense
         require(_amount > 0, ERROR_AMOUNT_ZERO);
@@ -195,6 +269,14 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         _modifyStakeBalance(_to, _amount, true);
     }
 
+    /**
+     * @notice Transfer `_amount` tokens from `_account`'s lock #`_lockId` to `_to``_toLockId > 0 ? '\'s lock #' + _toLockId : ''`
+     * @param _account Owner of locked tokens
+     * @param _lockId Id of the lock for the given account
+     * @param _amount Number of tokens to be transferred
+     * @param _to Recipient of the tokens
+     * @param _toLockId Lock id of the recipient to add the tokens to, if any
+     */
     function transferFromLock(
         address _account,
         uint256 _lockId,
@@ -236,6 +318,12 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         }
     }
 
+    /**
+     * @notice Decrease the amount of tokens locked in `_account`'s lock #`_lockId` to `_newAmount`
+     * @param _account Owner of locked tokens
+     * @param _lockId Id of the lock for the given account
+     * @param _newAmount New amount of locked tokens
+     */
     function setLockAmount(address _account, uint256 _lockId, uint256 _newAmount) external isLockManager(_account, _lockId) {
         // lock 0 tokens makes no sense
         require(_newAmount > 0, ERROR_AMOUNT_ZERO);
@@ -248,16 +336,33 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         emit LockAmountChanged(_account, _lockId, _newAmount);
     }
 
+    /**
+     * @notice Change the manager of `_account`'s lock #`_lockId` to `_newManager`
+     * @param _account Owner of lock
+     * @param _lockId Id of the lock for the given account
+     * @param _newManager New lock's manager
+     */
     function setLockManager(address _account, uint256 _lockId, ILockManager _newManager) external isLockManager(_account, _lockId) {
         accounts[_account].locks[_lockId].manager = _newManager;
         emit LockManagerChanged(_account, _lockId, _newManager);
     }
 
+    /**
+     * @notice Change data of `_account`'s lock #`_lockId` to `_newData`
+     * @param _account Owner of lock
+     * @param _lockId Id of the lock for the given account
+     * @param _newData New data containing logic to enforce the lock
+     */
     function setLockData(address _account, uint256 _lockId, bytes _newData) external isLockManager(_account, _lockId) {
         accounts[_account].locks[_lockId].data = _newData;
         emit LockDataChanged(_account, _lockId, _newData);
     }
 
+    /**
+     * @notice Get the staked but not locked amount of tokens by `_account`
+     * @param _account Owner of the staked but unlocked balance
+     * @return Amount of tokens staked but not locked by given account
+     */
     function unlockedBalanceOf(address _account) public view returns (uint256) {
         uint256 unlockedTokens = totalStakedFor(_account);
 
@@ -269,10 +374,21 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         return unlockedTokens;
     }
 
+    /**
+     * @notice Get the number of locks belonging to `_account`
+     * @param _account Owner of locks
+     * @return The number of locks belonging to the given account
+     */
     function locksCount(address _account) external view returns (uint256) {
         return accounts[_account].activeLockIds.length;
     }
 
+    /**
+     * @notice Check if `_account`'s lock #`_lockId` can be unlocked
+     * @param _account Owner of lock
+     * @param _lockId Id of the lock for the given account
+     * @return Whether given lock of given account can be unlocked
+     */
     function canUnlock(address _account, uint256 _lockId) public view returns (bool) {
         Lock storage _lock = accounts[_account].locks[_lockId];
 
@@ -284,6 +400,15 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         return false;
     }
 
+    /**
+     * @notice Get details of `_account`'s lock #`_lockId`
+     * @param _account Owner of lock
+     * @param _lockId Id of the lock for the given account
+     * @return Amount of locked tokens
+     * @return Block number when the lock was released
+     * @return Lock's manager
+     * @return Lock's data
+     */
     function getLock(address _account, uint256 _lockId)
         external
         view
