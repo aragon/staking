@@ -205,10 +205,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         external
         isLockManager(_account, _lockId)
     {
-        // TODO: remove
-        // origin must be a valid lockId - not needed as isLockManager would fail
-        // require(_lockId > 0, ERROR_INVALID_LOCK_ID);
-
+        // No need to check that lockId > 0, as isLockManager would fail
         // amount zero makes no sense
         require(_amount > 0, ERROR_AMOUNT_ZERO);
         // have enough locked funds
@@ -230,18 +227,8 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
         Lock storage _lock = accounts[_account].locks[_lockId];
         // check that lock hasn't been unlocked
         require(_lock.unlockedAt > getTimestamp64(), ERROR_UNLOCKED_LOCK);
-        /* TODO: this shouldn't be needed
-        // check that lock is in active array
-        bool activeLock;
-        Account storage account = accounts[_account];
-        for(uint256 i = 0; i < account.activeLockIds; i++) {
-            if (account.activeLockIds[i] == _lockId) {
-                activeLock = true;
-                break;
-            }
-        }
-        require(activeLock, ERROR_INACTIVE_LOCK);
-        */
+        // checking that lock is in active array shouldn't be needed if data is consitent
+
         if (_increase) {
             _lock.amount = _lock.amount.add(_amount);
         } else {
