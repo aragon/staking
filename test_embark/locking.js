@@ -304,7 +304,7 @@ contract('Staking app, Locking', () => {
     context('From Lock', async () => {
       it('transfers', async () => {
         const lockId = await approveStakeAndLock(lockManagerAddress)
-        const TODO = await lockManager.transferFromLock(stakingAddress, owner, lockId, defaultAmount / 2, user1, 0).send()
+        await lockManager.transferFromLock(stakingAddress, owner, lockId, defaultAmount / 2, user1, 0).send()
 
         assert.equal((await staking.unlockedBalanceOf(owner).call()).toString(), defaultAmount / 2, "Owner balance should match")
         assert.equal((await staking.unlockedBalanceOf(user1).call()).toString(), defaultAmount / 2, "User 1 balance should match")
