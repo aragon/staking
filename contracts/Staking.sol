@@ -103,7 +103,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
         // process Stake
         _modifyStakeBalance(msg.sender, _amount, false);
 
-        // Update history
+        // Update global history
         _updateTotalStaked();
 
         emit Unstaked(msg.sender, _amount, totalStakedFor(msg.sender), _data);
@@ -451,7 +451,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
         // process Stake
         _modifyStakeBalance(_account, _amount, true);
 
-        // Update history
+        // Update global history
         _updateTotalStaked();
 
         emit Staked(_account, _amount, totalStakedFor(_account), _data);
