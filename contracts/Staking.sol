@@ -170,6 +170,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
 
     /**
      * @notice Try to unlock as much locks belonging to `_account` as possible
+     * @dev It won't work (it will revert) if one of the managers is an EOA
      * @param _account Owner whose locks are to be unlocked
      */
     function unlockAll(address _account) external {

@@ -139,6 +139,16 @@ contract('Staking app, Locking', () => {
     assert.equal((await staking.locksCount(owner).call()).valueOf(), 0, "there shouldn't be locks")
   })
 
+
+  it('fails calling canUnlock, EOA manager', async () => {
+    const lockId = await approveStakeAndLock(user1)
+
+    // call canUnlock
+    return assertRevert(async () => {
+      await staking.canUnlock(owner, lockId).send()
+    })
+  })
+
   it('fails to unlock if can not unlock, EOA manager', async () => {
     const lockId = await approveStakeAndLock(user1)
 
