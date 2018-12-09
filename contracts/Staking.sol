@@ -23,7 +23,6 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
     string private constant ERROR_NOT_ENOUGH_BALANCE = "STAKING_NOT_ENOUGH_BALANCE";
     string private constant ERROR_CAN_NOT_UNLOCK = "STAKING_CAN_NOT_UNLOCKERROR_";
     string private constant ERROR_INVALID_LOCK_ID = "STAKING_INVALID_LOCK_ID";
-    string private constant ERROR_NOT_ENOUGH_LOCK = "STAKING_NOT_ENOUGH_LOCKED_FUNDS";
     string private constant ERROR_UNLOCKED_LOCK = "STAKING_UNLOCKED_LOCK";
     string private constant ERROR_INCREASING_LOCK_AMOUNT = "STAKING_INCREASING_LOCK_AMOUNT";
 
@@ -239,8 +238,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
         // No need to check that lockId > 0, as isLockManager would fail
         // amount zero makes no sense
         require(_amount > 0, ERROR_AMOUNT_ZERO);
-        // have enough locked funds
-        require(_amount <= accounts[_account].locks[_lockId].amount, ERROR_NOT_ENOUGH_LOCK);
+        // no need to check that have enough locked funds, as _updateActiveLockAmount will fail
 
         _updateActiveLockAmount(_account, _lockId, _amount, false);
         if (_toLockId > 0) {
