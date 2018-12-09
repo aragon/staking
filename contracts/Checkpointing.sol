@@ -49,9 +49,7 @@ library Checkpointing {
         while (high > low) {
             uint256 mid = (high + low + 1) / 2; // average, ceil round
 
-            if (time == self.history[mid].time) {
-                return self.history[mid].value;
-            } else if (time > self.history[mid].time) {
+            if (time >= self.history[mid].time) {
                 low = mid;
             } else { // time < self.history[mid].time
                 high = mid - 1;
