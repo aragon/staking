@@ -96,10 +96,11 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
         // unstake 0 tokens makes no sense
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
-        _modifyStakeBalance(msg.sender, _amount, false);
-
         // transfer tokens
         require(stakingToken.transfer(msg.sender, _amount), ERROR_TOKEN_TRANSFER);
+
+        // process Stake
+        _modifyStakeBalance(msg.sender, _amount, false);
 
         // Update history
         _updateTotalStaked();
@@ -243,7 +244,6 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
         }
 
         // update stakes
-
         _modifyStakeBalance(_account, _amount, false);
         _modifyStakeBalance(_to, _amount, true);
 
@@ -441,11 +441,11 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
         // stake 0 tokens makes no sense
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
-        // process Stake
-        _modifyStakeBalance(_account, _amount, true);
-
         // transfer tokens
         require(stakingToken.transferFrom(msg.sender, this, _amount), ERROR_TOKEN_TRANSFER);
+
+        // process Stake
+        _modifyStakeBalance(_account, _amount, true);
 
         // Update history
         _updateTotalStaked();
