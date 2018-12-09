@@ -15,7 +15,7 @@ contract('Staking app, Locking', () => {
 
   const zeroBytes = "0x00"
   const MAX_UINT64 = (new web3.utils.BN(2)).pow(new web3.utils.BN(64)).sub(new web3.utils.BN(1))
-  const defaultAmount = 100
+  const defaultAmount = 120
 
   const approveAndStake = async(amount = defaultAmount, from = owner) => {
     await token.approve(stakingAddress, amount).send({ from: from })
@@ -314,12 +314,30 @@ contract('Staking app, Locking', () => {
     context('From Lock', async () => {
       it('transfers', async () => {
         const lockId = await approveStakeAndLock(lockManagerAddress)
+        await lockManager.transferFromLock(stakingAddress, owner, lockId, defaultAmount / 4, user1, 0).send()
+
+        assert.equal((await staking.unlockedBalanceOf(owner).call()).toString(), defaultAmount / 2, "Owner balance should match")
+        assert.equal((await staking.unlockedBalanceOf(user1).call()).toString(), defaultAmount / 4, "User 1 balance should match")
+        // total stake remains the same
+        assert.equal((await staking.totalStaked().call()).toString(), defaultAmount, "Total stake should match")
+        // check lock values
+        const lock = await staking.getLock(owner, lockId).call()
+        assert.equal(lock[0], defaultAmount / 4, "locked amount should match")
+        assert.equal(lock[1].toString(), MAX_UINT64.toString(), "unlock time should match")
+      })
+
+      it('transfers the whole lock amount', async () => {
+        const lockId = await approveStakeAndLock(lockManagerAddress)
         await lockManager.transferFromLock(stakingAddress, owner, lockId, defaultAmount / 2, user1, 0).send()
 
         assert.equal((await staking.unlockedBalanceOf(owner).call()).toString(), defaultAmount / 2, "Owner balance should match")
         assert.equal((await staking.unlockedBalanceOf(user1).call()).toString(), defaultAmount / 2, "User 1 balance should match")
         // total stake remains the same
         assert.equal((await staking.totalStaked().call()).toString(), defaultAmount, "Total stake should match")
+        // check lock values
+        const lock = await staking.getLock(owner, lockId).call()
+        assert.equal(lock[0], 0, "locked amount should match")
+        assert.notEqual(lock[1].toString(), MAX_UINT64.toString(), "unlock time should  be a 'real' number")
       })
 
       it('transfers to lock', async () => {

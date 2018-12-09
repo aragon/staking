@@ -363,25 +363,10 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
      * @param _lockId Id of the lock for the given account
      */
     function unlock(address _account, uint256 _lockId) public {
-        Account storage account = accounts[_account];
-        Lock storage _lock = account.locks[_lockId];
-
         // only manager and owner (if manager allows) can unlock
         require(canUnlock(_account, _lockId), ERROR_CAN_NOT_UNLOCK);
 
-        _lock.unlockedAt = getTimestamp64();
-
-        // remove from active locks, replacing it by the last one in the array
-        for (uint256 i = 0; i < account.activeLockIds.length; i++) {
-            if (account.activeLockIds[i] == _lockId) {
-                account.activeLockIds[i] = account.activeLockIds[account.activeLockIds.length - 1];
-                delete(account.activeLockIds[account.activeLockIds.length - 1]);
-                account.activeLockIds.length--;
-                break;
-            }
-        }
-
-        emit Unlocked(_account, _lockId, _lock.amount, _lock.manager, _lock.data);
+        _unlock(_account, _lockId);
     }
 
     /**
@@ -427,19 +412,6 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
 
     /* Internal functions */
 
-    function _updateActiveLockAmount(address _account, uint256 _lockId, uint256 _amount, bool _increase) internal {
-        Lock storage _lock = accounts[_account].locks[_lockId];
-        // check that lock hasn't been unlocked
-        require(_lock.unlockedAt > getTimestamp64(), ERROR_UNLOCKED_LOCK);
-        // checking that lock is in active array shouldn't be needed if data is consitent
-
-        if (_increase) {
-            _lock.amount = _lock.amount.add(_amount);
-        } else {
-            _lock.amount = _lock.amount.sub(_amount);
-        }
-    }
-
     function _stakeFor(address _account, uint256 _amount, bytes _data) internal {
         // stake 0 tokens makes no sense
         require(_amount > 0, ERROR_AMOUNT_ZERO);
@@ -475,5 +447,41 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
 
     function _setStakedFor(address _account, uint256 _amount) internal {
         stakeHistory[_account].add(getBlockNumber64(), _amount);
+    }
+
+    function _unlock(address _account, uint256 _lockId) internal {
+        Account storage account = accounts[_account];
+        Lock storage _lock = account.locks[_lockId];
+
+        _lock.unlockedAt = getTimestamp64();
+
+        // remove from active locks, replacing it by the last one in the array
+        for (uint256 i = 0; i < account.activeLockIds.length; i++) {
+            if (account.activeLockIds[i] == _lockId) {
+                account.activeLockIds[i] = account.activeLockIds[account.activeLockIds.length - 1];
+                delete(account.activeLockIds[account.activeLockIds.length - 1]);
+                account.activeLockIds.length--;
+                break;
+            }
+        }
+
+        emit Unlocked(_account, _lockId, _lock.amount, _lock.manager, _lock.data);
+    }
+
+    function _updateActiveLockAmount(address _account, uint256 _lockId, uint256 _amount, bool _increase) internal {
+        Lock storage _lock = accounts[_account].locks[_lockId];
+        // check that lock hasn't been unlocked
+        require(_lock.unlockedAt > getTimestamp64(), ERROR_UNLOCKED_LOCK);
+        // checking that lock is in active array shouldn't be needed if data is consitent
+
+        if (_increase) {
+            _lock.amount = _lock.amount.add(_amount);
+        } else {
+            _lock.amount = _lock.amount.sub(_amount);
+            // if lock gets down to zero, it doesn't make sense anymore
+            if (_lock.amount == 0) {
+                _unlock(_account, _lockId);
+            }
+        }
     }
 }
