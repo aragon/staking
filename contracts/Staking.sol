@@ -2,14 +2,16 @@ pragma solidity 0.4.24;
 
 import "./ERCStaking.sol";
 import "./ILockManager.sol";
+
 import "./Checkpointing.sol";
 
-import "@aragon/os/contracts/lib/token/ERC20.sol";
-import "@aragon/os/contracts/lib/math/SafeMath.sol";
+import "@aragon/os/contracts/common/IsContract.sol";
 import "@aragon/os/contracts/common/TimeHelpers.sol";
+import "@aragon/os/contracts/lib/math/SafeMath.sol";
+import "@aragon/os/contracts/lib/token/ERC20.sol";
 
 
-contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
+contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
     using SafeMath for uint256;
     using Checkpointing for Checkpointing.History;
 
@@ -60,6 +62,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
     }
 
     constructor(ERC20 _stakingToken) public {
+        require(isContract(_stakingToken));
         stakingToken = _stakingToken;
     }
 

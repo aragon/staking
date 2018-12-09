@@ -47,6 +47,12 @@ contract('Staking app', () => {
     assert.equal(await staking.supportsHistory().call(), true, "history support should match")
   })
 
+  it('fails deploying if token is not a contract', async() => {
+    return assertRevert(async () => {
+      await StakingMock.deploy({arguments: [owner]}).send()
+    })
+  })
+
   it('stakes', async () => {
     const initialOwnerBalance = parseInt((await token.balanceOf(owner).call()).valueOf(), 10)
     const initialStakingBalance = parseInt((await token.balanceOf(staking.address).call()).valueOf(), 10)
