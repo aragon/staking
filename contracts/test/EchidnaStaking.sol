@@ -108,4 +108,25 @@ contract EchidnaStaking is Staking {
         return true;
     }
 
+    // check that Checkointing history arrays are ordered
+    function echidna_global_history_is_ordered() external view returns (bool) {
+        for (uint256 i = 1; i < totalStakedHistory.history.length; i++) {
+            if (totalStakedHistory.history[i].time <= totalStakedHistory.history[i - 1].time) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function echidna_user_history_is_ordered() external view returns (bool) {
+        address account = msg.sender;
+        for (uint256 i = 1; i < stakeHistory[account].history.length; i++) {
+            if (stakeHistory[account].history[i].time <= stakeHistory[account].history[i - 1].time) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
