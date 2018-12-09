@@ -52,6 +52,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
     event LockAmountChanged(address indexed account, uint256 indexed lockId, uint256 amount);
     event LockManagerChanged(address indexed account, uint256 indexed lockId, address manager);
     event LockDataChanged(address indexed account, uint256 indexed lockId, bytes data);
+    event Transferred(address indexed from, uint256 indexed fromLockId, uint256 amount, address to, uint256 toLockId);
 
     modifier isLockManager(address _account, uint256 _lockId) {
         require(
@@ -212,6 +213,8 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
         // update stakes
         _modifyStakeBalance(msg.sender, _amount, false);
         _modifyStakeBalance(_to, _amount, true);
+
+        emit Transferred(msg.sender, 0, _amount, _to, _toLockId);
     }
 
     /**
@@ -247,6 +250,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
         _modifyStakeBalance(_account, _amount, false);
         _modifyStakeBalance(_to, _amount, true);
 
+        emit Transferred(_account, _lockId, _amount, _to, _toLockId);
     }
 
     /**
