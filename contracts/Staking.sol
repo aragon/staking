@@ -453,10 +453,6 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
         emit Staked(_account, _amount, totalStakedFor(_account), _data);
     }
 
-    function _updateTotalStaked() internal {
-        totalStakedHistory.add(getBlockNumber64(), stakingToken.balanceOf(this));
-    }
-
     function _modifyStakeBalance(address _account, uint256 _by, bool _increase) internal {
         uint256 currentStake = totalStakedFor(_account);
 
@@ -468,6 +464,10 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
         }
 
         _setStakedFor(_account, newStake);
+    }
+
+    function _updateTotalStaked() internal {
+        totalStakedHistory.add(getBlockNumber64(), stakingToken.balanceOf(this));
     }
 
     function _setStakedFor(address _account, uint256 _amount) internal {
