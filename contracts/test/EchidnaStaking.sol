@@ -51,6 +51,7 @@ contract EchidnaStaking is Staking {
     function echidna_active_locks() external view returns (bool) {
         address _account = msg.sender;
         Account storage account = accounts[_account];
+
         for (uint256 i = 0; i < account.activeLockIds.length; i++) {
             if (account.locks[account.activeLockIds[i]].unlockedAt < getTimestamp64()) {
                 return false;
@@ -64,6 +65,7 @@ contract EchidnaStaking is Staking {
     function echidna_active_locks_fake() external view returns (bool) {
         address _account = msg.sender;
         Account storage account = accounts[_account];
+
         for (uint256 i = 0; i < account.activeLockIds.length; i++) {
             if (account.locks[account.activeLockIds[i]].unlockedAt >= getTimestamp64()) {
                 return false;
@@ -91,6 +93,20 @@ contract EchidnaStaking is Staking {
         return !isUnlocked || isInActiveLocksArray;
     }
 
+    // Check that all locks in activeLockIds array have positive amount
+    function echidna_active_locks_amount() external view returns (bool) {
+        address _account = msg.sender;
+        Account storage account = accounts[_account];
+
+        for (uint256 i = 0; i < account.activeLockIds.length; i++) {
+            if (account.locks[account.activeLockIds[i]].amount == 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     // check that lockId zero is always empty
     function echidna_lockid_zero_empty() external view returns (bool) {
         if (accounts[msg.sender].locks[0].amount > 0) {
@@ -108,7 +124,7 @@ contract EchidnaStaking is Staking {
         return true;
     }
 
-    // check that Checkointing history arrays are ordered
+    // check that Checkpointing history arrays are ordered
     function echidna_global_history_is_ordered() external view returns (bool) {
         for (uint256 i = 1; i < totalStakedHistory.history.length; i++) {
             if (totalStakedHistory.history[i].time <= totalStakedHistory.history[i - 1].time) {
@@ -129,4 +145,16 @@ contract EchidnaStaking is Staking {
 
         return true;
     }
+
+    // total staked matches staking token balance
+    function echidna_total_staked_is_balance() external view returns (bool) {
+        // totalStaked() is external
+        if (totalStakedAt(getBlockNumber64()) == stakingToken.balanceOf(this)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    // sum of all account stakes should be equal to total staked and to staking token balance of staking contract, but it's hard to compute as accounts is a mapping
 }
