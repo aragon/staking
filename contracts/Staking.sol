@@ -15,7 +15,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
 
     uint64 private constant MAX_UINT64 = uint64(-1);
 
-    string private constant ERROR_NO_LOCK_MANAGER = "STAKING_NO_LOCK_MANAGER";
+    string private constant ERROR_NOT_LOCK_MANAGER = "STAKING_NOT_LOCK_MANAGER";
     string private constant ERROR_AMOUNT_ZERO = "STAKING_AMOUNT_ZERO";
     string private constant ERROR_TOKEN_TRANSFER = "STAKING_TOKEN_TRANSFER";
     string private constant ERROR_NOT_ENOUGH_BALANCE = "STAKING_NOT_ENOUGH_BALANCE";
@@ -54,7 +54,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers {
     modifier isLockManager(address _account, uint256 _lockId) {
         require(
             msg.sender == address(accounts[_account].locks[_lockId].manager),
-            ERROR_NO_LOCK_MANAGER
+            ERROR_NOT_LOCK_MANAGER
         );
         _;
     }
