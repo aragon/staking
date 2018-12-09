@@ -69,15 +69,6 @@ library Checkpointing {
         return 0;
     }
 
-    /*
-      TODO: Modifiers in libraries werent fixed until solc 0.4.22
-      https://github.com/ethereum/solidity/issues/2104
-      modifier isUint128(uint256 v) {
-      require(v <= MAX_UINT128);
-      _;
-      }
-    */
-
     function add(History storage self, uint256 time, uint256 value) internal {
         require(time <= MAX_UINT64);
         require(value <= MAX_UINT192);
