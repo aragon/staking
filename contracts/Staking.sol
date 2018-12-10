@@ -1,4 +1,5 @@
 pragma solidity 0.4.24;
+pragma experimental ABIEncoderV2;
 
 import "./ERCStaking.sol";
 import "./ILockManager.sol";
@@ -25,6 +26,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
     string private constant ERROR_INVALID_LOCK_ID = "STAKING_INVALID_LOCK_ID";
     string private constant ERROR_UNLOCKED_LOCK = "STAKING_UNLOCKED_LOCK";
     string private constant ERROR_INCREASING_LOCK_AMOUNT = "STAKING_INCREASING_LOCK_AMOUNT";
+    string private constant ERROR_MULTICALL_DELEGATECALL = "STAKING_MULTICALL_DELEGATECALL";
 
     struct Lock {
         uint256 amount;
@@ -403,12 +405,19 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
     }
 
     /*
-    function multicall(bytes[] _calls) public {
+     * From here: https://etherscan.io/address/0xa86ba3b6d83139a49b649c05dbb69e0726db69cf#code
+     * TODO: UnimplementedFeatureError: Nested arrays not yet implemented.
+    function multicall(bytes[] memory_calls) public {
         for(uint i = 0; i < _calls.length; i++) {
             require(address(this).delegatecall(_calls[i]), ERROR_MULTICALL_DELEGATECALL);
         }
     }
     */
+
+    function multicall(bytes _call1, bytes _call2) public {
+        require(address(this).delegatecall(_call1), ERROR_MULTICALL_DELEGATECALL);
+        require(address(this).delegatecall(_call2), ERROR_MULTICALL_DELEGATECALL);
+    }
 
     /* Internal functions */
 
