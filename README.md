@@ -28,5 +28,12 @@ Run `./scripts/flatten_echidna.sh` and then:
 docker run -v `pwd`:/src trailofbits/echidna echidna-test /src/flattened_contracts/EchidnaStaking.sol EchidnaStaking --config="/src/echidna/config.yaml"
 ```
 
+### Manticore
+```
+docker run --rm -ti -v `pwd`:/src trailofbits/manticore bash
+ulimit -s unlimited
+manticore --detect-all --contract Staking /src/flattened_contracts/Staking.sol
+```
+
 ## Coverage
 Currently coverage doesn't work with Embark (see [this issue](https://github.com/embark-framework/embark/issues/1115)). So you have to use truffle scripts. After having run previous truffle test command (or `./scripts/truffleit.sh`), use `npm run coverage:truffle`.
