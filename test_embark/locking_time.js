@@ -15,7 +15,7 @@ contract('Staking app, Time locking', () => {
   const TIME_UNIT_BLOCKS = 0
   const TIME_UNIT_SECONDS = 1
 
-  const defaultAmount = 100
+  const defaultAmount = 120
   const defaultTime = 1000
   const defaultBlocks = 10
 

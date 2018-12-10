@@ -16,7 +16,7 @@ contract('Staking app', () => {
   const TIME_UNIT_BLOCKS = 0
   const TIME_UNIT_SECONDS = 1
 
-  const defaultAmount = 100
+  const defaultAmount = 120
 
   const approveAndStake = async (amount = defaultAmount, from = owner) => {
     // allow Staking app to move owner tokens
