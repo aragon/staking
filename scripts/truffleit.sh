@@ -10,6 +10,10 @@ cp ${EMBARK_TEST_FOLDER}/*.js ${TRUFFLE_TEST_FOLDER}/
 
 for test_file in $(ls ${TRUFFLE_TEST_FOLDER}/*.js); do
     echo ${test_file}
+    # Adding web3-eth-abi to ${test_file}
+    if [ $(grep "web3\.eth\.abi" ${test_file} | wc -l) -gt 0 ]; then
+        sed -i "1s/^/const abi = require('web3-eth-abi');\n/" ${test_file}
+    fi
     sed -i "s/embark.require('Embark\/contracts\//artifacts.require('/g" ${test_file};
     sed -i "s/require('.\/helpers\/assertThrow')/require('@aragon\/test-helpers\/assertThrow')/g" ${test_file};
     sed -zi 's/let accounts\n\n//g' ${test_file};
@@ -28,6 +32,8 @@ for test_file in $(ls ${TRUFFLE_TEST_FOLDER}/*.js); do
     sed -i "s/web3\.utils\.fromDecimal/web3\.fromDecimal/g" ${test_file};
     sed -i "s/web3\.utils\.asciiToHex('')/''/g" ${test_file};
     sed -i "s/web3\.utils\.BN/web3\.BigNumber/g" ${test_file};
+    sed -i "s/web3\.utils\.sha3/web3\.sha3/g" ${test_file};
+    sed -i "s/web3\.eth\.abi/abi/g" ${test_file};
     sed -i 's/const zeroBytes = "0x00"/const zeroBytes = "0x"/g' ${test_file};
     #sed -i "s///g" ${test_file};
 done;
