@@ -54,7 +54,6 @@ contract('Staking app, Locking', () => {
     lockManagerAddress = lockManagerContract.options.address
   })
 
-  /**/
   it('locks', async () => {
     const lockId = await approveStakeAndLock(user1)
 
@@ -266,7 +265,6 @@ contract('Staking app, Locking', () => {
     assert.equal(await staking.canUnlock(owner, lockId).call({ from: user1 }), false, "User 1 can not unlock")
     assert.equal(await staking.canUnlock(owner, lockId).call({ from: user2 }), true, "User 2 can unlock")
   })
-  /**/
 
   context('Transfers', async () => {
     context('From stake', async () => {
