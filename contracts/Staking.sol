@@ -41,7 +41,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
 
     ERC20 stakingToken;
     mapping(address => Account) accounts;
-    mapping (address => Checkpointing.History) stakeHistory;
+    mapping (address => Checkpointing.History) stakedHistory;
     Checkpointing.History totalStakedHistory;
 
     event Staked(address indexed account, uint256 amount, uint256 total, bytes data);
@@ -138,7 +138,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
      * @return Last block number when account's balance was modified
      */
     function lastStakedFor(address _account) external view returns (uint256) {
-        return stakeHistory[_account].lastUpdated();
+        return stakedHistory[_account].lastUpdated();
     }
 
     /**
@@ -345,7 +345,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
      * @return The amount of tokens staked by the account at the given block number
      */
     function totalStakedForAt(address _account, uint256 _blockNumber) public view returns (uint256) {
-        return stakeHistory[_account].get(_blockNumber);
+        return stakedHistory[_account].get(_blockNumber);
     }
 
     /**
@@ -446,7 +446,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
     }
 
     function _setStakedFor(address _account, uint256 _amount) internal {
-        stakeHistory[_account].add(getBlockNumber64(), _amount);
+        stakedHistory[_account].add(getBlockNumber64(), _amount);
     }
 
     function _unlock(address _account, uint256 _lockId) internal {
