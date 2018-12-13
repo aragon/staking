@@ -471,7 +471,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
     function _updateActiveLockAmount(address _account, uint256 _lockId, uint256 _amount, bool _increase) internal {
         Lock storage _lock = accounts[_account].locks[_lockId];
         // check that lock hasn't been unlocked
-        require(_lock.unlockedAt > getTimestamp64(), ERROR_UNLOCKED_LOCK);
+        require(_lock.unlockedAt > getTimestamp64(), ERROR_UNLOCKED_LOCK); // locks are created with a MAX_UINT64 unlockedAt
         // checking that lock is in active array shouldn't be needed if data is consitent
 
         if (_increase) {
