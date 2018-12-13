@@ -413,7 +413,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
     /* Internal functions */
 
     function _stakeFor(address _account, uint256 _amount, bytes _data) internal {
-        // stake 0 tokens makes no sense
+        // staking 0 tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
         // pull tokens into Staking contract
