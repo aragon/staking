@@ -99,7 +99,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
         // transfer tokens
         require(stakingToken.transfer(msg.sender, _amount), ERROR_TOKEN_TRANSFER);
 
-        // process Stake
+        // checkpoint updated staking balance
         _modifyStakeBalance(msg.sender, _amount, false);
 
         // checkpoint total supply
