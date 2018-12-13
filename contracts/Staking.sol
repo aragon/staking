@@ -422,7 +422,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
         // process Stake
         _modifyStakeBalance(_account, _amount, true);
 
-        // Update global history
+        // checkpoint total supply
         _updateTotalStaked();
 
         emit Staked(_account, _amount, totalStakedFor(_account), _data);
