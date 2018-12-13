@@ -149,7 +149,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
      * @return The id of the newly created lock
      */
     function lock(uint256 _amount, address _manager, bytes _data) external returns (uint256 _lockId) {
-        // lock 0 tokens makes no sense
+        // locking 0 tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
         // check enough unlocked tokens are available
