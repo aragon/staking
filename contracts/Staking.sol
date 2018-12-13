@@ -93,7 +93,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
      * @param _data Used in Unstaked event, to add signalling information in more complex staking applications
      */
     function unstake(uint256 _amount, bytes _data) external {
-        // unstake 0 tokens makes no sense
+        // unstaking 0 tokens is not allowed
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
         // transfer tokens
