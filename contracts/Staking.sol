@@ -370,7 +370,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
     }
 
     /**
-     * @notice Get the staked but not locked amount of tokens by `_account`
+     * @notice Get the staked but unlocked amount of tokens by `_account`
      * @param _account Owner of the staked but unlocked balance
      * @return Amount of tokens staked but not locked by given account
      */
