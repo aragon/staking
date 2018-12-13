@@ -236,7 +236,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
         isLockManager(_account, _lockId)
     {
         // No need to check that lockId > 0, as isLockManager would fail
-        // amount zero makes no sense
+        // transfererring 0 locked tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
         // no need to check that have enough locked funds, as _updateActiveLockAmount will fail
 
