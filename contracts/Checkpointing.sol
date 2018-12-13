@@ -11,7 +11,7 @@ library Checkpointing {
         Checkpoint[] history;
     }
 
-    uint256 constant MAX_UINT192 = uint256(uint192(-1));
+    uint256 private constant MAX_UINT192 = uint256(uint192(-1));
     uint256 constant MAX_UINT64 = uint256(uint64(-1));
 
     function add192(History storage self, uint64 time, uint192 value) internal {
