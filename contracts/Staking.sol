@@ -201,7 +201,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
      * @param _toLockId Lock id of the recipient to add the tokens to, if any
      */
     function transfer(uint256 _amount, address _to, uint256 _toLockId) external {
-        // amount zero makes no sense
+        // transfererring 0 staked tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
         // have enough unlocked funds
         require(_amount <= unlockedBalanceOf(msg.sender), ERROR_NOT_ENOUGH_BALANCE);
