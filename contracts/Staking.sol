@@ -478,7 +478,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
             _lock.amount = _lock.amount.add(_amount);
         } else {
             _lock.amount = _lock.amount.sub(_amount);
-            // if lock gets down to zero, it doesn't make sense anymore
+            // if lock gets down to zero, unlock
             if (_lock.amount == 0) {
                 _unlock(_account, _lockId);
             }
