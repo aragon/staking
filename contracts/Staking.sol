@@ -416,7 +416,7 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
         // stake 0 tokens makes no sense
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
-        // transfer tokens
+        // pull tokens into Staking contract
         require(stakingToken.transferFrom(msg.sender, this, _amount), ERROR_TOKEN_TRANSFER);
 
         // process Stake
