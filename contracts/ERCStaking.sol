@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-
+// Interface for ERC900: https://eips.ethereum.org/EIPS/eip-900
 interface ERCStaking {
     event Staked(address indexed user, uint256 amount, uint256 total, bytes data);
     event Unstaked(address indexed user, uint256 amount, uint256 total, bytes data);
