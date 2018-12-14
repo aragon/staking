@@ -458,6 +458,10 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         stakedHistory[_account].add(getBlockNumber64(), _amount);
     }
 
+    /**
+     * Note: So far this function is called from unlock and from transferFromLock,
+     * which both ensure that lock can be unlocked (the latter through isLockManager modifier)
+     */
     function _unlock(address _account, uint256 _lockId) internal {
         Account storage account = accounts[_account];
         Lock storage lock_ = account.locks[_lockId];
@@ -465,7 +469,12 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         lock_.unlockedAt = getTimestamp64();
 
         // remove from active locks, replacing it by the last one in the array
+        // we assume consistency here, i.e., that lock exists in active array
         uint256 locksLength = account.activeLockIds.length;
+        if (locksLength == 1) {
+            delete account.activeLockIds;
+            return;
+        }
         for (uint256 i = 0; i < locksLength; i++) {
             if (account.activeLockIds[i] == _lockId) {
                 account.activeLockIds[i] = account.activeLockIds[locksLength - 1];
