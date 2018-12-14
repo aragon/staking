@@ -99,17 +99,9 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         _modifyStakeBalance(msg.sender, _amount, false);
 
         // checkpoint total supply
-        _updateTotalStaked();
+        _modifyTotalStaked(_amount, false);
 
         emit Unstaked(msg.sender, _amount, totalStakedFor(msg.sender), _data);
-    }
-
-    /**
-     * @notice Get the total amount of tokens staked by all users
-     * @return The total amount of tokens staked by all users
-     */
-    function totalStaked() external view returns (uint256) {
-        return totalStakedAt(getBlockNumber64());
     }
 
     /**
@@ -345,6 +337,14 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
     }
 
     /**
+     * @notice Get the total amount of tokens staked by all users
+     * @return The total amount of tokens staked by all users
+     */
+    function totalStaked() public view returns (uint256) {
+        return totalStakedAt(getBlockNumber64());
+    }
+
+    /**
      * @notice Get the total amount of tokens staked by all users at block number `_blockNumber`
      * @param _blockNumber Block number at which we are requesting
      * @return The amount of tokens staked at the given block number
@@ -421,7 +421,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         _modifyStakeBalance(_account, _amount, true);
 
         // checkpoint total supply
-        _updateTotalStaked();
+        _modifyTotalStaked(_amount, true);
 
         emit Staked(_account, _amount, totalStakedFor(_account), _data);
     }
@@ -439,8 +439,15 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         _setStakedFor(_account, newStake);
     }
 
-    function _updateTotalStaked() internal {
-        totalStakedHistory.add(getBlockNumber64(), stakingToken.balanceOf(this));
+    function _modifyTotalStaked(uint256 _by, bool _increase) internal {
+        uint256 currentStake = totalStaked();
+        uint256 newStake;
+        if (_increase) {
+            newStake = currentStake.add(_by);
+        } else {
+            newStake = currentStake.sub(_by);
+        }
+        totalStakedHistory.add(getBlockNumber64(), newStake);
     }
 
     function _setStakedFor(address _account, uint256 _amount) internal {
