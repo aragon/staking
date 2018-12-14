@@ -22,7 +22,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
     string private constant ERROR_AMOUNT_ZERO = "STAKING_AMOUNT_ZERO";
     string private constant ERROR_TOKEN_TRANSFER = "STAKING_TOKEN_TRANSFER";
     string private constant ERROR_NOT_ENOUGH_BALANCE = "STAKING_NOT_ENOUGH_BALANCE";
-    string private constant ERROR_CAN_NOT_UNLOCK = "STAKING_CAN_NOT_UNLOCKERROR_";
+    string private constant ERROR_CAN_NOT_UNLOCK = "STAKING_CAN_NOT_UNLOCK";
     string private constant ERROR_INVALID_LOCK_ID = "STAKING_INVALID_LOCK_ID";
     string private constant ERROR_UNLOCKED_LOCK = "STAKING_UNLOCKED_LOCK";
     string private constant ERROR_INCREASING_LOCK_AMOUNT = "STAKING_INCREASING_LOCK_AMOUNT";
@@ -40,13 +40,11 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         mapping(uint256 => Lock) locks; // first valid lock starts at 1, so _toLockId = 0 means no lock
     }
 
-    ERC20 stakingToken;
+    ERC20 internal stakingToken;
     mapping(address => Account) accounts;
     mapping (address => Checkpointing.History) stakedHistory;
     Checkpointing.History totalStakedHistory;
 
-    event Staked(address indexed account, uint256 amount, uint256 total, bytes data);
-    event Unstaked(address indexed account, uint256 amount, uint256 total, bytes data);
     event Transferred(address indexed from, uint256 indexed fromLockId, uint256 amount, address to, uint256 toLockId);
 
     modifier isLockManager(address _account, uint256 _lockId) {
@@ -65,7 +63,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
     /* External functions */
 
     /**
-     * @notice Stakes `_amount` tokens, transferring them from caller
+     * @notice Stakes `_amount` tokens, transferring them from `msg.sender`
      * @param _amount Number of tokens staked
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
@@ -93,6 +91,8 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
         // transfer tokens
+        // it will fail for non ERC20 compliant tokens which don't return anything
+        // see: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
         require(stakingToken.transfer(msg.sender, _amount), ERROR_TOKEN_TRANSFER);
 
         // checkpoint updated staking balance
@@ -154,11 +154,11 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         accounts[msg.sender].lastLockId++;
         _lockId = accounts[msg.sender].lastLockId;
         accounts[msg.sender].activeLockIds.push(_lockId);
-        Lock storage _lock = accounts[msg.sender].locks[_lockId];
-        _lock.amount = _amount;
-        _lock.unlockedAt = MAX_UINT64;
-        _lock.manager = ILockManager(_manager);
-        _lock.data = _data;
+        Lock storage lock_ = accounts[msg.sender].locks[_lockId];
+        lock_.amount = _amount;
+        lock_.unlockedAt = MAX_UINT64;
+        lock_.manager = ILockManager(_manager);
+        lock_.data = _data;
 
         emit Locked(msg.sender, _lockId, _amount, _manager, _data);
     }
@@ -259,10 +259,10 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         require(_newAmount > 0, ERROR_AMOUNT_ZERO);
 
         // manager can only decrease locked amount
-        Lock storage _lock = accounts[_account].locks[_lockId];
-        require(_newAmount < _lock.amount, ERROR_INCREASING_LOCK_AMOUNT);
+        Lock storage lock_ = accounts[_account].locks[_lockId];
+        require(_newAmount < lock_.amount, ERROR_INCREASING_LOCK_AMOUNT);
 
-        _lock.amount = _newAmount;
+        lock_.amount = _newAmount;
         emit LockAmountChanged(_account, _lockId, _newAmount);
     }
 
@@ -316,11 +316,11 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
             bytes _data
         )
     {
-        Lock storage _lock = accounts[_account].locks[_lockId];
-        _amount = _lock.amount;
-        _unlockedAt = _lock.unlockedAt;
-        _manager = _lock.manager;
-        _data = _lock.data;
+        Lock storage lock_ = accounts[_account].locks[_lockId];
+        _amount = lock_.amount;
+        _unlockedAt = lock_.unlockedAt;
+        _manager = lock_.manager;
+        _data = lock_.data;
     }
 
     /* Public functions */
@@ -388,10 +388,10 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @return Whether given lock of given account can be unlocked
      */
     function canUnlock(address _account, uint256 _lockId) public view returns (bool) {
-        Lock storage _lock = accounts[_account].locks[_lockId];
+        Lock storage lock_ = accounts[_account].locks[_lockId];
 
-        if (msg.sender == address(_lock.manager) ||
-            (msg.sender == _account && _lock.manager.canUnlock(_account, _lockId, _lock.data))) {
+        if (msg.sender == address(lock_.manager) ||
+            (msg.sender == _account && lock_.manager.canUnlock(_account, _lockId, lock_.data))) {
             return true;
         }
 
@@ -413,6 +413,8 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
         // pull tokens into Staking contract
+        // it will fail for non ERC20 compliant tokens which don't return anything
+        // see: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
         require(stakingToken.transferFrom(msg.sender, this, _amount), ERROR_TOKEN_TRANSFER);
 
         // checkpoint updated staking balance
@@ -447,35 +449,36 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
 
     function _unlock(address _account, uint256 _lockId) internal {
         Account storage account = accounts[_account];
-        Lock storage _lock = account.locks[_lockId];
+        Lock storage lock_ = account.locks[_lockId];
 
-        _lock.unlockedAt = getTimestamp64();
+        lock_.unlockedAt = getTimestamp64();
 
         // remove from active locks, replacing it by the last one in the array
-        for (uint256 i = 0; i < account.activeLockIds.length; i++) {
+        uint256 locksLength = account.activeLockIds.length;
+        for (uint256 i = 0; i < locksLength; i++) {
             if (account.activeLockIds[i] == _lockId) {
-                account.activeLockIds[i] = account.activeLockIds[account.activeLockIds.length - 1];
-                delete(account.activeLockIds[account.activeLockIds.length - 1]);
+                account.activeLockIds[i] = account.activeLockIds[locksLength - 1];
+                delete account.activeLockIds[locksLength - 1];
                 account.activeLockIds.length--;
                 break;
             }
         }
 
-        emit Unlocked(_account, _lockId, _lock.amount, _lock.manager, _lock.data);
+        emit Unlocked(_account, _lockId, lock_.amount, lock_.manager, lock_.data);
     }
 
     function _updateActiveLockAmount(address _account, uint256 _lockId, uint256 _amount, bool _increase) internal {
-        Lock storage _lock = accounts[_account].locks[_lockId];
+        Lock storage lock_ = accounts[_account].locks[_lockId];
         // check that lock hasn't been unlocked
-        require(_lock.unlockedAt > getTimestamp64(), ERROR_UNLOCKED_LOCK); // locks are created with a MAX_UINT64 unlockedAt
+        require(lock_.unlockedAt > getTimestamp64(), ERROR_UNLOCKED_LOCK); // locks are created with a MAX_UINT64 unlockedAt
         // checking that lock is in active array shouldn't be needed if data is consitent
 
         if (_increase) {
-            _lock.amount = _lock.amount.add(_amount);
+            lock_.amount = lock_.amount.add(_amount);
         } else {
-            _lock.amount = _lock.amount.sub(_amount);
+            lock_.amount = lock_.amount.sub(_amount);
             // if lock gets down to zero, unlock
-            if (_lock.amount == 0) {
+            if (lock_.amount == 0) {
                 _unlock(_account, _lockId);
             }
         }
