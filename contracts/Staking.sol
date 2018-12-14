@@ -1,6 +1,7 @@
 pragma solidity 0.4.24;
 
 import "./ERCStaking.sol";
+import "./IStakingLocking.sol";
 import "./ILockManager.sol";
 
 import "./Checkpointing.sol";
@@ -11,7 +12,7 @@ import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/token/ERC20.sol";
 
 
-contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
+contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers, IsContract {
     using SafeMath for uint256;
     using Checkpointing for Checkpointing.History;
 
@@ -46,11 +47,6 @@ contract Staking is ERCStaking, ERCStakingHistory, TimeHelpers, IsContract {
 
     event Staked(address indexed account, uint256 amount, uint256 total, bytes data);
     event Unstaked(address indexed account, uint256 amount, uint256 total, bytes data);
-    event Locked(address indexed account, uint256 indexed lockId, uint256 amount, address manager, bytes data);
-    event Unlocked(address indexed account, uint256 indexed lockId, uint256 amount, address manager, bytes data);
-    event LockAmountChanged(address indexed account, uint256 indexed lockId, uint256 amount);
-    event LockManagerChanged(address indexed account, uint256 indexed lockId, address manager);
-    event LockDataChanged(address indexed account, uint256 indexed lockId, bytes data);
     event Transferred(address indexed from, uint256 indexed fromLockId, uint256 amount, address to, uint256 toLockId);
 
     modifier isLockManager(address _account, uint256 _lockId) {
