@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "../../TimeLockManager.sol";
+import "../../lock-managers/TimeLockManager.sol";
 import "../../Staking.sol";
 
 
