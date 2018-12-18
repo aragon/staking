@@ -148,18 +148,6 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
     }
 
     /**
-     * @notice Try to unlock all locks belonging to `_account` and revert if any of them fail
-     * @param _account Owner whose locks are to be unlocked
-     */
-    function unlockAllOrNone(address _account) external {
-        Account storage account = accounts[_account];
-
-        for (uint256 i = account.activeLockIds.length; i > 0; i--) {
-            unlock(_account, account.activeLockIds[i - 1]);
-        }
-    }
-
-    /**
      * @notice Transfer `_amount` tokens to `_to``_toLockId > 0 ? '\'s lock #' + _toLockId : ''`
      * @param _amount Number of tokens to be transferred
      * @param _to Recipient of the tokens

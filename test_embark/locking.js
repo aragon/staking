@@ -206,17 +206,6 @@ contract('Staking app, Locking', () => {
     assert.equal((await staking.locksCount(owner).call()).valueOf(), 1, "there shouldn't be locks")
   })
 
-  it('fails trying to unlockAllOrNone if a lock cannot be unlocked', async () => {
-    const lockId = await approveStakeAndLock(user1)
-    // lock again, different EOA manager
-    await staking.lock(defaultAmount / 4, user2, web3.utils.asciiToHex('')).send()
-
-    // unlock
-    return assertRevert(async () => {
-      await staking.unlockAllOrNone(owner).send({ from: user1 })
-    })
-  })
-
   it('change lock amount', async () => {
     const lockId = await approveStakeAndLock(lockManagerAddress)
     const lock = await staking.getLock(owner, lockId).call()
