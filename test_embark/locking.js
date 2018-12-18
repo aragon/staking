@@ -177,35 +177,6 @@ contract('Staking app, Locking', () => {
     })
   })
 
-  it('unlocks all', async () => {
-    const lockId = await approveStakeAndLock(user1, defaultAmount / 4)
-    // lock again
-    await staking.lock(defaultAmount / 4, user1, web3.utils.asciiToHex('')).send()
-
-    // unlock
-    await staking.unlockAll(owner).send({ from: user1 })
-
-    assert.equal((await staking.unlockedBalanceOf(owner).call()).valueOf(), defaultAmount, "Unlocked balance should match")
-    assert.equal((await staking.locksCount(owner).call()).valueOf(), 0, "there shouldn't be locks")
-  })
-
-  it('unlocks all with no previous locks', async () => {
-    await staking.unlockAll(owner).send({ from: user1 })
-    assert.equal((await staking.locksCount(owner).call()).valueOf(), 0, "there shouldn't be locks")
-  })
-
-  it('tries to unlockAll but it only unlocks one', async () => {
-    const lockId = await approveStakeAndLock(user2)
-    // lock again, different EOA manager
-    await staking.lock(defaultAmount / 4, user1, web3.utils.asciiToHex('')).send()
-
-    // unlock
-    await staking.unlockAll(owner).send({ from: user1 })
-
-    assert.equal((await staking.unlockedBalanceOf(owner).call()).valueOf(), defaultAmount / 2, "Unlocked balance should match")
-    assert.equal((await staking.locksCount(owner).call()).valueOf(), 1, "there shouldn't be locks")
-  })
-
   it('fails trying to unlockAllOrNone if a lock cannot be unlocked', async () => {
     const lockId = await approveStakeAndLock(user1)
     // lock again, different EOA manager

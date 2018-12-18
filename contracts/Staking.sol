@@ -133,21 +133,6 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
     }
 
     /**
-     * @notice Try to unlock as much locks belonging to `_account` as possible
-     * @dev It won't work (it will revert) if one of the managers is an EOA
-     * @param _account Owner whose locks are to be unlocked
-     */
-    function unlockAll(address _account) external {
-        Account storage account = accounts[_account];
-
-        for (uint256 i = account.activeLockIds.length; i > 0; i--) {
-            if (canUnlock(_account, account.activeLockIds[i - 1])) {
-                unlock(_account, account.activeLockIds[i - 1]);
-            }
-        }
-    }
-
-    /**
      * @notice Try to unlock all locks belonging to `_account` and revert if any of them fail
      * @param _account Owner whose locks are to be unlocked
      */
