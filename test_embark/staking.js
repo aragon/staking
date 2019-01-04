@@ -55,7 +55,7 @@ contract('Staking app', () => {
 
   it('stakes', async () => {
     const initialOwnerBalance = parseInt((await token.balanceOf(owner).call()).valueOf(), 10)
-    const initialStakingBalance = parseInt((await token.balanceOf(staking.address).call()).valueOf(), 10)
+    const initialStakingBalance = parseInt((await token.balanceOf(stakingAddress).call()).valueOf(), 10)
 
     await approveAndStake()
 
