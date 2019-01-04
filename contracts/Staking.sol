@@ -41,7 +41,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
     }
 
     ERC20 internal stakingToken;
-    mapping(address => Account) accounts;
+    mapping (address => Account) accounts;
     mapping (address => Checkpointing.History) stakedHistory;
     Checkpointing.History totalStakedHistory;
 
