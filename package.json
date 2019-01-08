@@ -12,8 +12,6 @@
   "license": "(GPL-3.0-or-later OR MIT)",
   "repository": "https://github.com/aragon/staking",
   "devDependencies": {
-    "@aragon/test-helpers": "^1.0.1",
-    "@aragon/os": "^4.0.1",
     "@aragon/apps-shared-migrations": "1.0.0",
     "embark": "^4.0.0-alpha.1",
     "eth-gas-reporter": "^0.1.5",
@@ -27,5 +25,9 @@
     "truffle-extract": "^1.2.1",
     "truffle-hdwallet-provider": "0.0.3",
     "web3-eth-abi": "1.0.0-beta.33"
+  },
+  "dependencies": {
+    "@aragon/test-helpers": "^1.0.1",
+    "@aragon/os": "^4.0.1"
   }
 }
