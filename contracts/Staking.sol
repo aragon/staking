@@ -45,7 +45,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
     mapping (address => Checkpointing.History) stakedHistory;
     Checkpointing.History totalStakedHistory;
 
-    event Transferred(address indexed from, uint256 indexed fromLockId, uint256 amount, address to, uint256 toLockId);
+    event StakeTransferred(address indexed from, uint256 indexed fromLockId, uint256 amount, address to, uint256 toLockId);
 
     modifier isLockManager(address _account, uint256 _lockId) {
         require(
@@ -180,7 +180,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         _modifyStakeBalance(msg.sender, _amount, false);
         _modifyStakeBalance(_to, _amount, true);
 
-        emit Transferred(msg.sender, 0, _amount, _to, _toLockId);
+        emit StakeTransferred(msg.sender, 0, _amount, _to, _toLockId);
     }
 
     /**
@@ -216,7 +216,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         _modifyStakeBalance(_account, _amount, false);
         _modifyStakeBalance(_to, _amount, true);
 
-        emit Transferred(_account, _lockId, _amount, _to, _toLockId);
+        emit StakeTransferred(_account, _lockId, _amount, _to, _toLockId);
     }
 
     /**
@@ -475,6 +475,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
             delete account.activeLockIds;
             return;
         }
+
         for (uint256 i = 0; i < locksLength; i++) {
             if (account.activeLockIds[i] == _lockId) {
                 account.activeLockIds[i] = account.activeLockIds[locksLength - 1];
