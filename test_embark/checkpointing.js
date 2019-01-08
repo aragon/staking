@@ -107,28 +107,28 @@ contract('Checkpointing', () => {
   const UINT192_OVERFLOW = (new web3.utils.BN(2)).pow(new web3.utils.BN(192))
 
   it('fails if set value is too high', async () => {
-    await checkpointing.methods.add(1, UINT192_OVERFLOW.sub(new web3.utils.BN(1))).send() // can set just below limit
+    await checkpointing.methods.add(1, UINT192_OVERFLOW.sub(new web3.utils.BN(1)).toString()).send() // can set just below limit
 
     return assertRevert(async () => {
-      await checkpointing.methods.add(2, UINT192_OVERFLOW).send()
+      await checkpointing.methods.add(2, UINT192_OVERFLOW.toString()).send()
     })
   })
 
   it('fails if set time is too high', async () => {
-    await checkpointing.methods.add(UINT64_OVERFLOW.sub(new web3.utils.BN(1)), 1).send() // can set just below limit
+    await checkpointing.methods.add(UINT64_OVERFLOW.sub(new web3.utils.BN(1)).toString(), 1).send() // can set just below limit
 
     return assertRevert(async () => {
-      await checkpointing.methods.add(UINT64_OVERFLOW, 1).send()
+      await checkpointing.methods.add(UINT64_OVERFLOW.toString(), 1).send()
     })
   })
 
   it('fails if requested time is too high', async () => {
     await checkpointing.methods.add(1, 1).send()
 
-    assert.equal(await checkpointing.methods.get(UINT64_OVERFLOW.sub(new web3.utils.BN(1))).call(), 1) // can request just below limit
+    assert.equal(await checkpointing.methods.get(UINT64_OVERFLOW.sub(new web3.utils.BN(1)).toString()).call(), 1) // can request just below limit
 
     return assertRevert(async () => {
-      await checkpointing.methods.get(UINT64_OVERFLOW).call()
+      await checkpointing.methods.get(UINT64_OVERFLOW.toString()).call()
     })
   })
 })
