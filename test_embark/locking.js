@@ -17,7 +17,7 @@ contract('Staking app, Locking', () => {
   const MAX_UINT64 = (new web3.utils.BN(2)).pow(new web3.utils.BN(64)).sub(new web3.utils.BN(1))
   const defaultAmount = 120
 
-  const approveAndStake = async(amount = defaultAmount, from = owner) => {
+  const approveAndStake = async (amount = defaultAmount, from = owner) => {
     await token.approve(stakingAddress, amount).send({ from: from })
     await staking.stake(amount, web3.utils.asciiToHex('')).send({ from: from })
   }
