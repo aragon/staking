@@ -37,7 +37,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
     struct Account {
         uint256[] activeLockIds;
         uint256 lastLockId;
-        mapping(uint256 => Lock) locks; // first valid lock starts at 1, so _toLockId = 0 means no lock
+        mapping (uint256 => Lock) locks; // first valid lock starts at 1, so _toLockId = 0 means no lock
     }
 
     ERC20 internal stakingToken;
