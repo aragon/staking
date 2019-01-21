@@ -7,6 +7,9 @@ const BadTokenMock = embark.require('Embark/contracts/BadTokenMock')
 
 let accounts
 
+const fromBn = n => parseInt(n.valueOf(), 10)
+const getTokenBalance = async (token, account) =>  fromBn(await token.balanceOf(account).call())
+
 config({}, (err, accts) => accounts = accts)
 
 contract('Staking app', () => {
@@ -16,13 +19,14 @@ contract('Staking app', () => {
   const TIME_UNIT_BLOCKS = 0
   const TIME_UNIT_SECONDS = 1
 
-  const defaultAmount = 120
+  const DEFAULT_AMOUNT = 120
+  const EMPTY_STRING = web3.utils.asciiToHex('')
 
-  const approveAndStake = async (amount = defaultAmount, from = owner) => {
+  const approveAndStake = async (amount = DEFAULT_AMOUNT, from = owner) => {
     // allow Staking app to move owner tokens
-    await token.approve(stakingAddress, amount).send({ from: from })
+    await token.approve(stakingAddress, amount).send({ from })
     // stake tokens
-    await staking.stake(amount, web3.utils.asciiToHex('')).send({ from: from })
+    await staking.stake(amount, EMPTY_STRING).send({ from })
   }
 
   before(async () => {
@@ -31,11 +35,11 @@ contract('Staking app', () => {
   })
 
   beforeEach(async () => {
-    const initialAmount = 1000 * defaultAmount
+    const initialAmount = 1000 * DEFAULT_AMOUNT
     const tokenContract = await StandardTokenMock.deploy({ arguments: [owner, initialAmount] }).send()
     token = tokenContract.methods
     tokenAddress = tokenContract.options.address
-    await token.mint(other, defaultAmount).send()
+    await token.mint(other, DEFAULT_AMOUNT).send()
     const stakingContract = await StakingMock.deploy({arguments: [tokenAddress]}).send()
     staking = stakingContract.methods
     stakingAddress = stakingContract.options.address
@@ -54,83 +58,83 @@ contract('Staking app', () => {
   })
 
   it('stakes', async () => {
-    const initialOwnerBalance = parseInt((await token.balanceOf(owner).call()).valueOf(), 10)
-    const initialStakingBalance = parseInt((await token.balanceOf(stakingAddress).call()).valueOf(), 10)
+    const initialOwnerBalance = await getTokenBalance(token, owner)
+    const initialStakingBalance = await getTokenBalance(token, stakingAddress)
 
     await approveAndStake()
 
-    const finalOwnerBalance = parseInt((await token.balanceOf(owner).call()).valueOf(), 10)
-    const finalStakingBalance = parseInt((await token.balanceOf(stakingAddress).call()).valueOf(), 10)
-    assert.equal(finalOwnerBalance, initialOwnerBalance - defaultAmount, "owner balance should match")
-    assert.equal(finalStakingBalance, initialStakingBalance + defaultAmount, "Staking app balance should match")
-    assert.equal((await staking.totalStakedFor(owner).call()).valueOf(), defaultAmount, "staked value should match")
+    const finalOwnerBalance = await getTokenBalance(token, owner)
+    const finalStakingBalance = await getTokenBalance(token, stakingAddress)
+    assert.equal(finalOwnerBalance, initialOwnerBalance - DEFAULT_AMOUNT, "owner balance should match")
+    assert.equal(finalStakingBalance, initialStakingBalance + DEFAULT_AMOUNT, "Staking app balance should match")
+    assert.equal((await staking.totalStakedFor(owner).call()).valueOf(), DEFAULT_AMOUNT, "staked value should match")
     // total stake
-    assert.equal((await staking.totalStaked().call()).toString(), defaultAmount, "Total stake should match")
+    assert.equal((await staking.totalStaked().call()).toString(), DEFAULT_AMOUNT, "Total stake should match")
   })
 
   it('fails staking 0 amount', async () => {
     await token.approve(stakingAddress, 1).send()
     return assertRevert(async () => {
-      await staking.stake(0, web3.utils.asciiToHex('')).send()
+      await staking.stake(0, EMPTY_STRING).send()
     })
   })
 
   it('fails staking more than balance', async () => {
-    const balance = parseInt((await token.balanceOf(owner).call()).valueOf(), 10)
+    const balance = await getTokenBalance(token, owner)
     const amount = balance + 1
     await token.approve(stakingAddress, amount).send()
     return assertRevert(async () => {
-      await staking.stake(amount, web3.utils.asciiToHex('')).send()
+      await staking.stake(amount, EMPTY_STRING).send()
     })
   })
 
   it('stakes for', async () => {
-    const initialOwnerBalance = parseInt((await token.balanceOf(owner).call()).valueOf(), 10)
-    const initialOtherBalance = parseInt((await token.balanceOf(other).call()).valueOf(), 10)
-    const initialStakingBalance = parseInt((await token.balanceOf(stakingAddress).call()).valueOf(), 10)
+    const initialOwnerBalance = await getTokenBalance(token, owner)
+    const initialOtherBalance = await getTokenBalance(token, other)
+    const initialStakingBalance = await getTokenBalance(token, stakingAddress)
 
     // allow Staking app to move owner tokens
-    await token.approve(stakingAddress, defaultAmount).send()
+    await token.approve(stakingAddress, DEFAULT_AMOUNT).send()
     // stake tokens
-    await staking.stakeFor(other, defaultAmount, web3.utils.asciiToHex('')).send()
+    await staking.stakeFor(other, DEFAULT_AMOUNT, EMPTY_STRING).send()
 
-    const finalOwnerBalance = parseInt((await token.balanceOf(owner).call()).valueOf(), 10)
-    const finalOtherBalance = parseInt((await token.balanceOf(other).call()).valueOf(), 10)
-    const finalStakingBalance = parseInt((await token.balanceOf(stakingAddress).call()).valueOf(), 10)
-    assert.equal(finalOwnerBalance, initialOwnerBalance - defaultAmount, "owner balance should match")
+    const finalOwnerBalance = await getTokenBalance(token, owner)
+    const finalOtherBalance = await getTokenBalance(token, other)
+    const finalStakingBalance = await getTokenBalance(token, stakingAddress)
+    assert.equal(finalOwnerBalance, initialOwnerBalance - DEFAULT_AMOUNT, "owner balance should match")
     assert.equal(finalOtherBalance, initialOtherBalance, "other balance should match")
-    assert.equal(finalStakingBalance, initialStakingBalance + defaultAmount, "Staking app balance should match")
-    assert.equal((await staking.totalStakedFor(owner).call()).valueOf(), 0, "staked value for owner should match")
-    assert.equal((await staking.totalStakedFor(other).call()).valueOf(), defaultAmount, "staked value for other should match")
+    assert.equal(finalStakingBalance, initialStakingBalance + DEFAULT_AMOUNT, "Staking app balance should match")
+    assert.equal(fromBn(await staking.totalStakedFor(owner).call()), 0, "staked value for owner should match")
+    assert.equal(fromBn(await staking.totalStakedFor(other).call()), DEFAULT_AMOUNT, "staked value for other should match")
   })
 
   it('unstakes', async () => {
-    const initialOwnerBalance = parseInt((await token.balanceOf(owner).call()).valueOf(), 10)
-    const initialStakingBalance = parseInt((await token.balanceOf(stakingAddress).call()).valueOf(), 10)
+    const initialOwnerBalance = await getTokenBalance(token, owner)
+    const initialStakingBalance = await getTokenBalance(token, stakingAddress)
 
     await approveAndStake()
 
     // unstake half of them
-    await staking.unstake(defaultAmount / 2, web3.utils.asciiToHex('')).send()
+    await staking.unstake(DEFAULT_AMOUNT / 2, EMPTY_STRING).send()
 
-    const finalOwnerBalance = parseInt((await token.balanceOf(owner).call()).valueOf(), 10)
-    const finalStakingBalance = parseInt((await token.balanceOf(stakingAddress).call()).valueOf(), 10)
-    assert.equal(finalOwnerBalance, initialOwnerBalance - defaultAmount / 2, "owner balance should match")
-    assert.equal(finalStakingBalance, initialStakingBalance + defaultAmount / 2, "Staking app balance should match")
-    assert.equal((await staking.totalStakedFor(owner).call()).valueOf(), defaultAmount / 2, "staked value should match")
+    const finalOwnerBalance = await getTokenBalance(token, owner)
+    const finalStakingBalance = await getTokenBalance(token, stakingAddress)
+    assert.equal(finalOwnerBalance, initialOwnerBalance - DEFAULT_AMOUNT / 2, "owner balance should match")
+    assert.equal(finalStakingBalance, initialStakingBalance + DEFAULT_AMOUNT / 2, "Staking app balance should match")
+    assert.equal((await staking.totalStakedFor(owner).call()).valueOf(), DEFAULT_AMOUNT / 2, "staked value should match")
   })
 
   it('fails unstaking 0 amount', async () => {
     await approveAndStake()
     return assertRevert(async () => {
-      await staking.unstake(0, web3.utils.asciiToHex('')).send()
+      await staking.unstake(0, EMPTY_STRING).send()
     })
   })
 
   it('fails unstaking more than staked', async () => {
     await approveAndStake()
     return assertRevert(async () => {
-      await staking.unstake(defaultAmount + 1, web3.utils.asciiToHex('')).send()
+      await staking.unstake(DEFAULT_AMOUNT + 1, EMPTY_STRING).send()
     })
   })
 
@@ -148,31 +152,33 @@ contract('Staking app', () => {
     })
 
     it('has correct "total staked for at"', async () => {
-      const blockNumber = await staking.getBlockNumber64Ext().call()
-      const lastStaked = blockNumber + 5
+      const beforeBlockNumber = await staking.getBlockNumber64Ext().call()
+      const lastStaked = beforeBlockNumber + 5
       await staking.setBlockNumber64(lastStaked).send()
       await approveAndStake()
-      assert.equal(await staking.totalStakedForAt(owner, lastStaked).call(), defaultAmount, "Last staked for should match")
+      assert.equal(await staking.totalStakedForAt(owner, beforeBlockNumber).call(), 0, "Staked for at before staking should match")
+      assert.equal(await staking.totalStakedForAt(owner, lastStaked).call(), DEFAULT_AMOUNT, "Staked for after staking should match")
     })
 
     it('has correct "total staked at"', async () => {
-      const blockNumber = await staking.getBlockNumber64Ext().call()
-      const lastStaked = blockNumber + 5
+      const beforeBlockNumber = await staking.getBlockNumber64Ext().call()
+      const lastStaked = beforeBlockNumber + 5
       await staking.setBlockNumber64(lastStaked).send()
-      await approveAndStake(defaultAmount, owner)
-      await approveAndStake(defaultAmount, other)
-      assert.equal(await staking.totalStakedAt(lastStaked).call(), defaultAmount * 2, "Last staked for should match")
+      await approveAndStake(DEFAULT_AMOUNT, owner)
+      await approveAndStake(DEFAULT_AMOUNT, other)
+      assert.equal(await staking.totalStakedAt(beforeBlockNumber).call(), 0, "Staked for at before should match")
+      assert.equal(await staking.totalStakedAt(lastStaked).call(), DEFAULT_AMOUNT * 2, "Staked for at after staking should match")
     })
   })
 
   context('Bad Token', async () => {
     let badStaking, badStakingAddress, badToken, badTokenAddress
     beforeEach(async () => {
-      const initialAmount = 1000 * defaultAmount
+      const initialAmount = 1000 * DEFAULT_AMOUNT
       const tokenContract = await BadTokenMock.deploy({arguments: [owner, initialAmount]}).send()
       badToken = tokenContract.methods
       badTokenAddress = tokenContract.options.address
-      await badToken.mint(other, defaultAmount).send()
+      await badToken.mint(other, DEFAULT_AMOUNT).send()
       const stakingContract = await StakingMock.deploy({arguments: [badTokenAddress]}).send()
       badStaking = stakingContract.methods
       badStakingAddress = stakingContract.options.address
@@ -180,13 +186,13 @@ contract('Staking app', () => {
 
     it('fails unstaking because of bad token', async () => {
       // allow Staking app to move owner tokens
-      await badToken.approve(badStakingAddress, defaultAmount).send({ from: owner })
+      await badToken.approve(badStakingAddress, DEFAULT_AMOUNT).send({ from: owner })
       // stake tokens
-      await badStaking.stake(defaultAmount, web3.utils.asciiToHex('')).send({ from: owner })
+      await badStaking.stake(DEFAULT_AMOUNT, EMPTY_STRING).send({ from: owner })
 
       return assertRevert(async () => {
         // unstake half of them, fails on token transfer
-        await badStaking.unstake(defaultAmount / 2, web3.utils.asciiToHex('')).send()
+        await badStaking.unstake(DEFAULT_AMOUNT / 2, EMPTY_STRING).send()
       })
     })
   })
