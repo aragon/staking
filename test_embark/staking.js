@@ -7,7 +7,7 @@ const BadTokenMock = embark.require('Embark/contracts/BadTokenMock')
 
 let accounts
 
-config({}, (err, accts) => {accounts = accts})
+config({}, (err, accts) => accounts = accts)
 
 contract('Staking app', () => {
   let staking, token, stakingAddress, tokenAddress, owner, other
@@ -32,7 +32,7 @@ contract('Staking app', () => {
 
   beforeEach(async () => {
     const initialAmount = 1000 * defaultAmount
-    const tokenContract = await StandardTokenMock.deploy({arguments: [owner, initialAmount]}).send()
+    const tokenContract = await StandardTokenMock.deploy({ arguments: [owner, initialAmount] }).send()
     token = tokenContract.methods
     tokenAddress = tokenContract.options.address
     await token.mint(other, defaultAmount).send()

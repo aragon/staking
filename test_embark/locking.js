@@ -7,7 +7,7 @@ const LockManagerMock = embark.require('Embark/contracts/LockManagerMock');
 
 let accounts
 
-config({}, (err, accts) => {accounts = accts})
+config({}, (err, accts) => accounts = accts)
 
 contract('Staking app, Locking', () => {
   let staking, token, lockManager, stakingAddress, tokenAddress, lockManagerAddress
@@ -22,7 +22,7 @@ contract('Staking app, Locking', () => {
     await staking.stake(amount, web3.utils.asciiToHex('')).send({ from: from })
   }
 
-  const approveStakeAndLock = async(
+  const approveStakeAndLock = async (
     manager,
     lockAmount = defaultAmount / 2,
     stakeAmount = defaultAmount,
@@ -147,7 +147,7 @@ contract('Staking app, Locking', () => {
     })
   })
 
-  it('fails to unlock if can not unlock, EOA manager', async () => {
+  it('fails to unlock if it cannot unlock, EOA manager', async () => {
     const lockId = await approveStakeAndLock(user1)
 
     // tries to unlock
