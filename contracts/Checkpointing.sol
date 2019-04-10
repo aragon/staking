@@ -17,9 +17,7 @@ library Checkpointing {
     function add192(History storage self, uint64 time, uint192 value) internal {
         uint256 length = self.history.length;
 
-        if (length == 0) {
-            self.history.push(Checkpoint(time, value));
-        } else if (self.history[length - 1].time < time) {
+        if (length == 0 || self.history[length - 1].time < time) {
             self.history.push(Checkpoint(time, value));
         } else {
             Checkpoint storage currentCheckpoint = self.history[length - 1];
