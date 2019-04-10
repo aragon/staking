@@ -1,6 +1,7 @@
 pragma solidity 0.5.3;
 
 import "./Staking.sol";
+import "./MemoryUtils.sol";
 import "./StakingProxy.sol";
 import "./os/contracts/lib/token/ERC20.sol";
 
@@ -79,28 +80,8 @@ contract StakingFactory {
             codePtr := add(code, 0x20)
         }
 
-        memcpy(codePtr, constructorCodePtr, constructorCodeLength);
-        memcpy(codePtr + constructorCodeLength, argsPtr, argsLength);
+        MemoryUtils.copy(codePtr, constructorCodePtr, constructorCodeLength);
+        MemoryUtils.copy(codePtr + constructorCodeLength, argsPtr, argsLength);
         return code;
-    }
-
-    // From: https://github.com/Arachnid/solidity-stringutils/blob/master/src/strings.sol
-    function memcpy(uint256 dest, uint256 src, uint256 len) private pure {
-        // Copy word-length chunks while possible
-        for (; len >= 32; len -= 32) {
-            assembly {
-                mstore(dest, mload(src))
-            }
-            dest += 32;
-            src += 32;
-        }
-
-        // Copy remaining bytes
-        uint mask = 256 ** (32 - len) - 1;
-        assembly {
-            let srcpart := and(mload(src), not(mask))
-            let destpart := and(mload(dest), mask)
-            mstore(dest, or(destpart, srcpart))
-        }
     }
 }
