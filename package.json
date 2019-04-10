@@ -1,0 +1,14 @@
+{
+  "name": "staking",
+  "version": "0.0.1",
+  "description": "",
+  "author": "Aragon Institution MTU <contact@aragon.one>",
+  "license": "(GPL-3.0-or-later OR MIT)",
+  "repository": "https://github.com/aragon/staking",
+  "scripts": {
+    "test": "./scripts/tests.sh"
+  },
+  "devDependencies": {
+    "truffle": "^5.0.12"
+  }
+}
