@@ -166,7 +166,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @param _toLockId Lock id of the recipient to add the tokens to, if any
      */
     function transfer(uint256 _amount, address _to, uint256 _toLockId) external {
-        // transfererring 0 staked tokens is invalid
+        // transferring 0 staked tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
         // have enough unlocked funds
         require(_amount <= unlockedBalanceOf(msg.sender), ERROR_NOT_ENOUGH_BALANCE);
@@ -202,7 +202,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         isLockManager(_account, _lockId)
     {
         // No need to check that lockId > 0, as isLockManager would fail
-        // transfererring 0 locked tokens is invalid
+        // transferring 0 locked tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
         // no need to check that have enough locked funds, as _updateActiveLockAmount will fail
 
@@ -492,7 +492,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         Lock storage lock_ = accounts[_account].locks[_lockId];
         // check that lock hasn't been unlocked
         require(lock_.unlockedAt > getTimestamp64(), ERROR_UNLOCKED_LOCK); // locks are created with a MAX_UINT64 unlockedAt
-        // checking that lock is in active array shouldn't be needed if data is consitent
+        // checking that lock is in active array shouldn't be needed if data is consistent
 
         if (_increase) {
             lock_.amount = lock_.amount.add(_amount);
