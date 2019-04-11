@@ -15,10 +15,12 @@ library Checkpointing {
     uint256 private constant MAX_UINT64 = uint256(uint64(-1));
 
     function add192(History storage self, uint64 time, uint192 value) internal {
-        if (self.history.length == 0 || self.history[self.history.length - 1].time < time) {
+        uint256 length = self.history.length;
+
+        if (length == 0 || self.history[length - 1].time < time) {
             self.history.push(Checkpoint(time, value));
         } else {
-            Checkpoint storage currentCheckpoint = self.history[self.history.length - 1];
+            Checkpoint storage currentCheckpoint = self.history[length - 1];
             require(time == currentCheckpoint.time); // ensure list ordering
 
             currentCheckpoint.value = value;
@@ -60,8 +62,10 @@ library Checkpointing {
     }
 
     function lastUpdated(History storage self) internal view returns (uint256) {
-        if (self.history.length > 0) {
-            return uint256(self.history[self.history.length - 1].time);
+        uint256 length = self.history.length;
+
+        if (length > 0) {
+            return uint256(self.history[length - 1].time);
         }
 
         return 0;
