@@ -1,12 +1,13 @@
-.embark
-chains.json
-config/production/password
-config/livenet/password
+# dependencies
+node_modules
+
+# coverage
 coverage
 coverage.json
-dist
+
+# lock files
 package-lock.json
-node_modules
+
+# build artifacts
 build
-test_truffle
 flattened_contracts
