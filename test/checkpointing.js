@@ -1,13 +1,9 @@
-const { assertRevert, assertInvalidOpcode } = require('./helpers/assertThrow')
+const { assertRevert, assertInvalidOpcode } = require('@aragon/test-helpers/assertThrow')
 //const getBalance = require('@aragon/test-helpers/balance')(web3)
 
-const CheckpointingMock = embark.require('Embark/contracts/CheckpointingMock')
+const CheckpointingMock = artifacts.require('CheckpointingMock')
 
-let accounts
-
-config({}, (err, accts) => {accounts = accts})
-
-contract('Checkpointing', () => {
+contract('Checkpointing', accounts => {
   let checkpointing
 
   const generateRandomTest = size => {
@@ -63,31 +59,31 @@ contract('Checkpointing', () => {
   ]
 
   beforeEach(async () => {
-    checkpointing = await CheckpointingMock.deploy().send()
+    checkpointing = await CheckpointingMock.new()
   })
 
   context('checkpointing supports:', () => {
     tests.forEach(({ description, values, expects, size }) => {
       it(description, async () => {
 
-        assert.equal(await checkpointing.methods.lastUpdated().call(), 0, 'last updated should be 0')
+        assert.equal(await checkpointing.lastUpdated(), 0, 'last updated should be 0')
 
         // add values sequentially
         await values.reduce(
-          (prev, { v, t }) => prev.then(() => checkpointing.methods.add(t, v).send())
+          (prev, { v, t }) => prev.then(() => checkpointing.add(t, v))
         , Promise.resolve())
 
         await expects.reduce(async (prev, { t, v }) =>
           prev.then(async () =>
             new Promise(async (resolve, reject) => {
-              assert.equal(await checkpointing.methods.get(t).call(), v, 'expected value should match checkpoint')
+              assert.equal(await checkpointing.get(t), v, 'expected value should match checkpoint')
               resolve()
             })
           )
         , Promise.resolve())
 
-        assert.equal(await checkpointing.methods.getHistorySize().call(), size, 'size should match')
-        assert.equal(await checkpointing.methods.lastUpdated().call(), values.slice(-1)[0].t, 'last updated should be correct')
+        assert.equal(await checkpointing.getHistorySize(), size, 'size should match')
+        assert.equal(await checkpointing.lastUpdated(), values.slice(-1)[0].t, 'last updated should be correct')
       })
     })
   })
@@ -96,39 +92,39 @@ contract('Checkpointing', () => {
     const time = 5
     const value = 2
 
-    await checkpointing.methods.add(time, value).send()
+    await checkpointing.add(time, value)
 
     return assertRevert(async () => {
-      await checkpointing.methods.add(time - 1, value).send()
+      await checkpointing.add(time - 1, value)
     })
   })
 
-  const UINT64_OVERFLOW = (new web3.utils.BN(2)).pow(new web3.utils.BN(64))
-  const UINT192_OVERFLOW = (new web3.utils.BN(2)).pow(new web3.utils.BN(192))
+  const UINT64_OVERFLOW = (new web3.BigNumber(2)).pow(new web3.BigNumber(64))
+  const UINT192_OVERFLOW = (new web3.BigNumber(2)).pow(new web3.BigNumber(192))
 
   it('fails if set value is too high', async () => {
-    await checkpointing.methods.add(1, UINT192_OVERFLOW.sub(new web3.utils.BN(1)).toString()).send() // can set just below limit
+    await checkpointing.add(1, UINT192_OVERFLOW.sub(new web3.BigNumber(1)).toString()) // can set just below limit
 
     return assertRevert(async () => {
-      await checkpointing.methods.add(2, UINT192_OVERFLOW.toString()).send()
+      await checkpointing.add(2, UINT192_OVERFLOW.toString())
     })
   })
 
   it('fails if set time is too high', async () => {
-    await checkpointing.methods.add(UINT64_OVERFLOW.sub(new web3.utils.BN(1)).toString(), 1).send() // can set just below limit
+    await checkpointing.add(UINT64_OVERFLOW.sub(new web3.BigNumber(1)).toString(), 1) // can set just below limit
 
     return assertRevert(async () => {
-      await checkpointing.methods.add(UINT64_OVERFLOW.toString(), 1).send()
+      await checkpointing.add(UINT64_OVERFLOW.toString(), 1)
     })
   })
 
   it('fails if requested time is too high', async () => {
-    await checkpointing.methods.add(1, 1).send()
+    await checkpointing.add(1, 1)
 
-    assert.equal(await checkpointing.methods.get(UINT64_OVERFLOW.sub(new web3.utils.BN(1)).toString()).call(), 1) // can request just below limit
+    assert.equal(await checkpointing.get(UINT64_OVERFLOW.sub(new web3.BigNumber(1)).toString()), 1) // can request just below limit
 
     return assertRevert(async () => {
-      await checkpointing.methods.get(UINT64_OVERFLOW.toString()).call()
+      await checkpointing.get(UINT64_OVERFLOW.toString())
     })
   })
 })
