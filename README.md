@@ -3,13 +3,9 @@
 A Staking app with checkpointing (implementing ERC900 interface with history) and locking.
 
 ## Testing
-### Embark
-
-Currently this app is using Embark. You can use it to test with `npm run test`.
-
 ### Truffle
 
-To test using truffle you can run `npm run test:truffle`. This will first convert scripts into `test_truffle` folder.
+Currently this app is using Truffle. You can run tests with `npm test`.
 
 ###  Slither
 [Install slither](https://github.com/trailofbits/slither#how-to-install) and then:
@@ -36,4 +32,4 @@ manticore --detect-all --contract Staking /src/flattened_contracts/Staking.sol
 ```
 
 ## Coverage
-Currently coverage doesn't work with Embark (see [this issue](https://github.com/embark-framework/embark/issues/1115)). So you have to use truffle scripts. After having run previous truffle test command (or `./scripts/truffleit.sh`), use `npm run coverage:truffle`.
+You can measure coverage using Truffle by running `npm run coverage`.
