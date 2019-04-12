@@ -90,16 +90,16 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         // unstaking 0 tokens is not allowed
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
-        // transfer tokens
-        // it will fail for non ERC20 compliant tokens which don't return anything
-        // see: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
-        require(stakingToken.transfer(msg.sender, _amount), ERROR_TOKEN_TRANSFER);
-
         // checkpoint updated staking balance
         _modifyStakeBalance(msg.sender, _amount, false);
 
         // checkpoint total supply
         _modifyTotalStaked(_amount, false);
+
+        // transfer tokens
+        // it will fail for non ERC20 compliant tokens which don't return anything
+        // see: https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
+        require(stakingToken.transfer(msg.sender, _amount), ERROR_TOKEN_TRANSFER);
 
         emit Unstaked(msg.sender, _amount, totalStakedFor(msg.sender), _data);
     }
@@ -161,62 +161,40 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
 
     /**
      * @notice Transfer `_amount` tokens to `_to``_toLockId > 0 ? '\'s lock #' + _toLockId : ''`
-     * @param _amount Number of tokens to be transferred
      * @param _to Recipient of the tokens
      * @param _toLockId Lock id of the recipient to add the tokens to, if any
+     * @param _amount Number of tokens to be transferred
      */
-    function transfer(uint256 _amount, address _to, uint256 _toLockId) external {
-        // transferring 0 staked tokens is invalid
-        require(_amount > 0, ERROR_AMOUNT_ZERO);
+    function transfer(address _to, uint256 _toLockId, uint256 _amount) external {
         // have enough unlocked funds
         require(_amount <= unlockedBalanceOf(msg.sender), ERROR_NOT_ENOUGH_BALANCE);
 
-        // first valid lock starts at 1, so _toLockId = 0 means no lock
-        if (_toLockId > 0) {
-            _updateActiveLockAmount(_to, _toLockId, _amount, true);
-        }
-
-        // update stakes
-        _modifyStakeBalance(msg.sender, _amount, false);
-        _modifyStakeBalance(_to, _amount, true);
-
-        emit StakeTransferred(msg.sender, 0, _amount, _to, _toLockId);
+        _transfer(msg.sender, 0, _to, _toLockId, _amount);
     }
 
     /**
-     * @notice Transfer `_amount` tokens from `_account`'s lock #`_lockId` to `_to``_toLockId > 0 ? '\'s lock #' + _toLockId : ''`
-     * @param _account Owner of locked tokens
-     * @param _lockId Id of the lock for the given account
-     * @param _amount Number of tokens to be transferred
+     * @notice Transfer `_amount` tokens from `_from`'s lock #`_fromLockId` to `_to``_toLockId > 0 ? '\'s lock #' + _toLockId : ''`
+     * @param _from Owner of locked tokens
+     * @param _fromLockId Id of the lock for the given account
      * @param _to Recipient of the tokens
      * @param _toLockId Lock id of the recipient to add the tokens to, if any
+     * @param _amount Number of tokens to be transferred
      */
     function transferFromLock(
-        address _account,
-        uint256 _lockId,
-        uint256 _amount,
+        address _from,
+        uint256 _fromLockId,
         address _to,
-        uint256 _toLockId
+        uint256 _toLockId,
+        uint256 _amount
     )
         external
-        isLockManager(_account, _lockId)
+        isLockManager(_from, _fromLockId)
     {
         // No need to check that lockId > 0, as isLockManager would fail
-        // transferring 0 locked tokens is invalid
-        require(_amount > 0, ERROR_AMOUNT_ZERO);
-        // no need to check that have enough locked funds, as _updateActiveLockAmount will fail
+        // No need to check that have enough locked funds, as _updateActiveLockAmount will fail
 
-        _updateActiveLockAmount(_account, _lockId, _amount, false);
-        // first valid lock starts at 1, so _toLockId = 0 means no lock
-        if (_toLockId > 0) {
-            _updateActiveLockAmount(_to, _toLockId, _amount, true);
-        }
-
-        // update stakes
-        _modifyStakeBalance(_account, _amount, false);
-        _modifyStakeBalance(_to, _amount, true);
-
-        emit StakeTransferred(_account, _lockId, _amount, _to, _toLockId);
+        _transfer(_from, _fromLockId, _to, _toLockId, _amount);
+        _updateActiveLockAmount(_from, _fromLockId, _amount, false);
     }
 
     /**
@@ -503,5 +481,21 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
                 _unlock(_account, _lockId);
             }
         }
+    }
+
+    function _transfer(address _from, uint256 _fromLockId, address _to, uint256 _toLockId, uint256 _amount) internal {
+        // transferring 0 staked tokens is invalid
+        require(_amount > 0, ERROR_AMOUNT_ZERO);
+
+        // first valid lock starts at 1, so _toLockId = 0 means no lock
+        if (_toLockId > 0) {
+            _updateActiveLockAmount(_to, _toLockId, _amount, true);
+        }
+
+        // update stakes
+        _modifyStakeBalance(_from, _amount, false);
+        _modifyStakeBalance(_to, _amount, true);
+
+        emit StakeTransferred(_from, _fromLockId, _amount, _to, _toLockId);
     }
 }

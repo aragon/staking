@@ -61,7 +61,7 @@ contract('Staking app, Transfering', () => {
       it('transfers', async () => {
         //const initialTotalStake = await staking.totalStaked().call()
         await approveAndStake()
-        await staking.transfer(DEFAULT_STAKE_AMOUNT / 2, user1, 0).send()
+        await staking.transfer(user1, 0, DEFAULT_STAKE_AMOUNT / 2).send()
 
         assert.equal((await staking.unlockedBalanceOf(owner).call()).toString(), DEFAULT_STAKE_AMOUNT / 2, "Owner balance should match")
         assert.equal((await staking.unlockedBalanceOf(user1).call()).toString(), DEFAULT_STAKE_AMOUNT / 2, "User 1 balance should match")
@@ -73,7 +73,7 @@ contract('Staking app, Transfering', () => {
         await approveAndStake()
         await token.mint(user1, DEFAULT_STAKE_AMOUNT).send()
         const lockId = await approveStakeAndLock(user2, DEFAULT_LOCK_AMOUNT, DEFAULT_STAKE_AMOUNT, user1)
-        await staking.transfer(DEFAULT_LOCK_AMOUNT, user1, lockId).send()
+        await staking.transfer(user1, lockId, DEFAULT_LOCK_AMOUNT).send()
 
         assert.equal((await staking.unlockedBalanceOf(owner).call()).toString(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Owner balance should match")
         assert.equal((await staking.unlockedBalanceOf(user1).call()).toString(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "User 1 balance should match")
@@ -87,14 +87,14 @@ contract('Staking app, Transfering', () => {
       it('fails transfering zero tokens', async () => {
         await approveAndStake()
         return assertRevert(async () => {
-          await staking.transfer(0, user1, 0).send()
+          await staking.transfer(user1, 0, 0).send()
         })
       })
 
       it('fails transfering more than unlocked balance', async () => {
         await approveAndStake(DEFAULT_STAKE_AMOUNT)
         return assertRevert(async () => {
-          await staking.transfer(DEFAULT_STAKE_AMOUNT + 1, user1, 0).send()
+          await staking.transfer(user1, 0, DEFAULT_STAKE_AMOUNT + 1).send()
         })
       })
     })
@@ -103,7 +103,7 @@ contract('Staking app, Transfering', () => {
       it('transfers', async () => {
         const lockId = await approveStakeAndLock(lockManagerAddress)
         const transferAmount = DEFAULT_LOCK_AMOUNT / 2
-        await lockManager.transferFromLock(stakingAddress, owner, lockId, transferAmount, user1, 0).send()
+        await lockManager.transferFromLock(stakingAddress, owner, lockId, user1, 0, transferAmount).send()
 
         assert.equal((await staking.unlockedBalanceOf(owner).call()).toString(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Owner balance should match")
         assert.equal((await staking.unlockedBalanceOf(user1).call()).toString(), transferAmount, "User 1 balance should match")
@@ -117,7 +117,7 @@ contract('Staking app, Transfering', () => {
 
       it('transfers the whole lock amount', async () => {
         const lockId = await approveStakeAndLock(lockManagerAddress)
-        await lockManager.transferFromLock(stakingAddress, owner, lockId, DEFAULT_LOCK_AMOUNT, user1, 0).send()
+        await lockManager.transferFromLock(stakingAddress, owner, lockId, user1, 0, DEFAULT_LOCK_AMOUNT).send()
 
         assert.equal((await staking.unlockedBalanceOf(owner).call()).toString(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Owner balance should match")
         assert.equal((await staking.unlockedBalanceOf(user1).call()).toString(), DEFAULT_LOCK_AMOUNT, "User 1 balance should match")
@@ -133,7 +133,7 @@ contract('Staking app, Transfering', () => {
         const lockId = await approveStakeAndLock(lockManagerAddress)
         await token.mint(user1, DEFAULT_STAKE_AMOUNT).send()
         const toLockId = await approveStakeAndLock(user2, DEFAULT_LOCK_AMOUNT, DEFAULT_STAKE_AMOUNT, user1)
-        await lockManager.transferFromLock(stakingAddress, owner, lockId, DEFAULT_LOCK_AMOUNT, user1, toLockId).send()
+        await lockManager.transferFromLock(stakingAddress, owner, lockId, user1, toLockId, DEFAULT_LOCK_AMOUNT).send()
 
         assert.equal((await staking.unlockedBalanceOf(owner).call()).toString(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Owner balance should match")
         assert.equal((await staking.unlockedBalanceOf(user1).call()).toString(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "User 1 balance should match")
@@ -148,28 +148,28 @@ contract('Staking app, Transfering', () => {
         await approveStakeAndLock(lockManagerAddress)
         return assertRevert(async () => {
           // it will fail at isLockManager modifier
-          await lockManager.transferFromLock(stakingAddress, owner, 0, DEFAULT_LOCK_AMOUNT, user1, 0).send()
+          await lockManager.transferFromLock(stakingAddress, owner, 0, user1, 0, DEFAULT_LOCK_AMOUNT).send()
         })
       })
 
       it('fails transfering zero tokens', async () => {
         const lockId = await approveStakeAndLock(lockManagerAddress)
         return assertRevert(async () => {
-          await lockManager.transferFromLock(stakingAddress, owner, lockId, 0, user1, 0).send()
+          await lockManager.transferFromLock(stakingAddress, owner, lockId, user1, 0, 0).send()
         })
       })
 
       it('fails transfering more than locked balance', async () => {
         const lockId = await approveStakeAndLock(lockManagerAddress)
         return assertRevert(async () => {
-          await lockManager.transferFromLock(stakingAddress, owner, lockId, DEFAULT_LOCK_AMOUNT + 1, user1, 0).send()
+          await lockManager.transferFromLock(stakingAddress, owner, lockId, user1, 0, DEFAULT_LOCK_AMOUNT + 1).send()
         })
       })
 
       it('fails if sender is not manager', async () => {
         const lockId = await approveStakeAndLock(lockManagerAddress)
         return assertRevert(async () => {
-          await staking.transferFromLock(owner, lockId, DEFAULT_LOCK_AMOUNT, user1, 0).send({ from: user1 })
+          await staking.transferFromLock(owner, lockId, user1, 0, DEFAULT_LOCK_AMOUNT).send({ from: user1 })
         })
       })
 
@@ -178,7 +178,7 @@ contract('Staking app, Transfering', () => {
         // unlock
         await staking.unlock(owner, lockId).send({ from: user1 })
         return assertRevert(async () => {
-          await lockManager.transferFromLock(stakingAddress, owner, lockId, DEFAULT_LOCK_AMOUNT, user1, 0).send()
+          await lockManager.transferFromLock(stakingAddress, owner, lockId, user1, 0, DEFAULT_LOCK_AMOUNT).send()
         })
       })
 
@@ -189,7 +189,7 @@ contract('Staking app, Transfering', () => {
         // unlock
         await staking.unlock(user1, toLockId).send({ from: user2 })
         return assertRevert(async () => {
-          await lockManager.transferFromLock(stakingAddress, owner, lockId, DEFAULT_LOCK_AMOUNT, user1, toLockId).send()
+          await lockManager.transferFromLock(stakingAddress, owner, lockId, user1, toLockId, DEFAULT_LOCK_AMOUNT).send()
         })
       })
     })

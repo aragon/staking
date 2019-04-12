@@ -15,8 +15,8 @@ interface IStakingLocking {
     function setLockAmount(address _account, uint256 _lockId, uint256 _newAmount) external;
     function setLockManager(address _account, uint256 _lockId, ILockManager _newManager) external;
     function setLockData(address _account, uint256 _lockId, bytes _newData) external;
-    function transfer(uint256 _amount, address _to, uint256 _toLockId) external;
-    function transferFromLock(address _account, uint256 _lockId, uint256 _amount, address _to, uint256 _toLockId) external;
+    function transfer(address _to, uint256 _toLockId, uint256 _amount) external;
+    function transferFromLock(address _account, uint256 _lockId, address _to, uint256 _toLockId, uint256 _amount) external;
 
     function locksCount(address _account) external view returns (uint256);
     function getLock(address _account, uint256 _lockId)
