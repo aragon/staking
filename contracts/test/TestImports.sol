@@ -17,6 +17,6 @@ import "@aragon/apps-shared-migrations/contracts/Migrations.sol";
 
 contract TestImports {
   constructor() public {
-    // to avoid lint error
+      // solium-disable-previous-line no-empty-blocks
   }
 }

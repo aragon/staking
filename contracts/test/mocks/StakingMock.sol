@@ -5,6 +5,7 @@ import "../../Staking.sol";
 
 contract StakingMock is Staking {
     constructor(ERC20 _stakingToken) Staking(_stakingToken) public {
+        // solium-disable-previous-line no-empty-blocks
     }
 
     uint64 _mockBlockNumber = uint64(block.number);
