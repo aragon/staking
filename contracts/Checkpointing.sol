@@ -50,11 +50,15 @@ library Checkpointing {
 
         while (high > low) {
             uint256 mid = (high + low + 1) / 2; // average, ceil round
+            Checkpoint storage checkpoint = self.history[mid];
+            uint64 midTime = checkpoint.time;
 
-            if (time >= self.history[mid].time) {
+            if (time > midTime) {
                 low = mid;
-            } else { // time < self.history[mid].time
+            } else if (time < midTime) {
                 high = mid - 1;
+            } else { // time == midTime
+                return checkpoint.value;
             }
         }
 
@@ -82,5 +86,14 @@ library Checkpointing {
         require(time <= MAX_UINT64);
 
         return uint256(get192(self, uint64(time)));
+    }
+
+    function getLatestValue(History storage self) internal view returns (uint256) {
+        uint256 length = self.history.length;
+        if (length > 0) {
+            return uint256(self.history[length - 1].value);
+        }
+
+        return 0;
     }
 }

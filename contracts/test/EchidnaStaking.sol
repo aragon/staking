@@ -137,8 +137,8 @@ contract EchidnaStaking is Staking {
 
     function echidna_user_history_is_ordered() external view returns (bool) {
         address account = msg.sender;
-        for (uint256 i = 1; i < stakedHistory[account].history.length; i++) {
-            if (stakedHistory[account].history[i].time <= stakedHistory[account].history[i - 1].time) {
+        for (uint256 i = 1; i < accounts[account].stakedHistory.history.length; i++) {
+            if (accounts[account].stakedHistory.history[i].time <= accounts[account].stakedHistory.history[i - 1].time) {
                 return false;
             }
         }

@@ -17,11 +17,19 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
     using Checkpointing for Checkpointing.History;
 
     uint64 private constant MAX_UINT64 = uint64(-1);
+    // lock uses ~111k gas with 1 lock, transfer ~28k, unlockedBalanceOf adds 1185 for eack lock
+    // unlock uses ~33k with 2 locks, and adds 558 for each additional one
+    // assuming a safety max gas of ~6M, 5,000 locks is a safe value to avoid OOG issues
+    // it's a sanity check, because as lock uses unlockedBalanceOf, and it's the most expensive
+    // it's unlikely that locks enough could be created to brick the account
+    uint256 internal constant MAX_LOCKS = 5000;
 
+    string private constant ERROR_TOKEN_NOT_CONTRACT = "STAKING_TOKEN_NOT_CONTRACT";
     string private constant ERROR_NOT_LOCK_MANAGER = "STAKING_NOT_LOCK_MANAGER";
     string private constant ERROR_AMOUNT_ZERO = "STAKING_AMOUNT_ZERO";
     string private constant ERROR_TOKEN_TRANSFER = "STAKING_TOKEN_TRANSFER";
     string private constant ERROR_NOT_ENOUGH_BALANCE = "STAKING_NOT_ENOUGH_BALANCE";
+    string private constant ERROR_TOO_MANY_LOCKS = "STAKING_TOO_MANY_LOCKS";
     string private constant ERROR_CAN_NOT_UNLOCK = "STAKING_CAN_NOT_UNLOCK";
     string private constant ERROR_INVALID_LOCK_ID = "STAKING_INVALID_LOCK_ID";
     string private constant ERROR_UNLOCKED_LOCK = "STAKING_UNLOCKED_LOCK";
@@ -38,12 +46,12 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         uint256[] activeLockIds;
         uint256 lastLockId;
         mapping (uint256 => Lock) locks; // first valid lock starts at 1, so _toLockId = 0 means no lock
+        Checkpointing.History stakedHistory;
     }
 
     ERC20 internal stakingToken;
-    mapping (address => Account) accounts;
-    mapping (address => Checkpointing.History) stakedHistory;
-    Checkpointing.History totalStakedHistory;
+    mapping (address => Account) internal accounts;
+    Checkpointing.History internal totalStakedHistory;
 
     event StakeTransferred(address indexed from, uint256 indexed fromLockId, uint256 amount, address to, uint256 toLockId);
 
@@ -56,7 +64,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
     }
 
     constructor(ERC20 _stakingToken) public {
-        require(isContract(_stakingToken));
+        require(isContract(_stakingToken), ERROR_TOKEN_NOT_CONTRACT);
         stakingToken = _stakingToken;
     }
 
@@ -112,16 +120,22 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @return The id of the newly created lock
      */
     function lock(uint256 _amount, address _manager, bytes _data) external returns (uint256) {
+        Account storage account = accounts[msg.sender];
+
         // locking 0 tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
         // check enough unlocked tokens are available
         require(_amount <= unlockedBalanceOf(msg.sender), ERROR_NOT_ENOUGH_BALANCE);
 
-        accounts[msg.sender].lastLockId++;
-        uint256 _lockId = accounts[msg.sender].lastLockId;
-        accounts[msg.sender].activeLockIds.push(_lockId);
-        Lock storage lock_ = accounts[msg.sender].locks[_lockId];
+        // check not too many locks
+        require(account.activeLockIds.length < MAX_LOCKS, ERROR_TOO_MANY_LOCKS);
+
+        // first valid lock starts at 1, so _toLockId = 0 means no lock
+        account.lastLockId++;
+        uint256 _lockId = account.lastLockId;
+        account.activeLockIds.push(_lockId);
+        Lock storage lock_ = account.locks[_lockId];
         lock_.amount = _amount;
         lock_.unlockedAt = MAX_UINT64;
         lock_.manager = ILockManager(_manager);
@@ -259,7 +273,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @return Last block number when account's balance was modified
      */
     function lastStakedFor(address _account) external view returns (uint256) {
-        return stakedHistory[_account].lastUpdated();
+        return accounts[_account].stakedHistory.lastUpdated();
     }
 
     /**
@@ -333,7 +347,8 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @return The amount of tokens staked by the given account
      */
     function totalStakedFor(address _account) public view returns (uint256) {
-        return totalStakedForAt(_account, getBlockNumber64());
+        // we assume it's not possible to stake in the future
+        return accounts[_account].stakedHistory.getLatestValue();
     }
 
     /**
@@ -343,7 +358,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @return The amount of tokens staked by the account at the given block number
      */
     function totalStakedForAt(address _account, uint256 _blockNumber) public view returns (uint256) {
-        return stakedHistory[_account].get(_blockNumber);
+        return accounts[_account].stakedHistory.get(_blockNumber);
     }
 
     /**
@@ -351,7 +366,8 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @return The total amount of tokens staked by all users
      */
     function totalStaked() public view returns (uint256) {
-        return totalStakedAt(getBlockNumber64());
+        // we assume it's not possible to stake in the future
+        return totalStakedHistory.getLatestValue();
     }
 
     /**
@@ -433,7 +449,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
     }
 
     function _setStakedFor(address _account, uint256 _amount) internal {
-        stakedHistory[_account].add(getBlockNumber64(), _amount);
+        accounts[_account].stakedHistory.add(getBlockNumber64(), _amount);
     }
 
     /**
