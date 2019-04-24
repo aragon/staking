@@ -58,32 +58,48 @@ contract('Checkpointing', accounts => {
     },
   ]
 
+  const functionVersions = [
+    {
+      version: ' uint256',
+      getter: 'get',
+      setter: 'add'
+    },
+    {
+      version: ' uint64',
+      getter: 'get64',
+      setter: 'add64'
+    }
+  ]
+
   beforeEach(async () => {
     checkpointing = await CheckpointingMock.new()
   })
 
   context('checkpointing supports:', () => {
     tests.forEach(({ description, values, expects, size }) => {
-      it(description, async () => {
+      functionVersions.forEach(({ version, getter, setter }) => {
+        it(description + version, async () => {
 
-        assert.equal(await checkpointing.lastUpdated(), 0, 'last updated should be 0')
+          assert.equal(await checkpointing.lastUpdated(), 0, 'last updated should be 0')
 
-        // add values sequentially
-        await values.reduce(
-          (prev, { v, t }) => prev.then(() => checkpointing.add(t, v))
-        , Promise.resolve())
+          // add values sequentially
+          await values.reduce(
+            (prev, { v, t }) => prev.then(() => checkpointing[setter](t, v))
+            , Promise.resolve())
 
-        await expects.reduce(async (prev, { t, v }) =>
-          prev.then(async () =>
-            new Promise(async (resolve, reject) => {
-              assert.equal(await checkpointing.get(t), v, 'expected value should match checkpoint')
-              resolve()
-            })
-          )
-        , Promise.resolve())
+          await expects.reduce(
+            async (prev, { t, v }) =>
+              prev.then(
+                async () => new Promise(async (resolve, reject) => {
+                  assert.equal(await checkpointing[getter](t), v, 'expected value should match checkpoint')
+                  resolve()
+                })
+              )
+            , Promise.resolve())
 
-        assert.equal(await checkpointing.getHistorySize(), size, 'size should match')
-        assert.equal(await checkpointing.lastUpdated(), values.slice(-1)[0].t, 'last updated should be correct')
+          assert.equal(await checkpointing.getHistorySize(), size, 'size should match')
+          assert.equal(await checkpointing.lastUpdated(), values.slice(-1)[0].t, 'last updated should be correct')
+        })
       })
     })
   })

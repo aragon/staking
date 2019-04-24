@@ -12,7 +12,15 @@ contract CheckpointingMock {
         history.add(value, time);
     }
 
+    function add64(uint64 value, uint256 time) public {
+        history.add(value, time);
+    }
+
     function get(uint256 time) public view returns (uint256) {
+        return history.get(time);
+    }
+
+    function get64(uint64 time) public view returns (uint256) {
         return history.get(time);
     }
 

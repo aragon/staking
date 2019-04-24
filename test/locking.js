@@ -223,7 +223,7 @@ contract('Staking app, Locking', accounts => {
 
     // change amount
     const newLockAmount = DEFAULT_LOCK_AMOUNT / 2
-    await lockManager.setLockAmount(stakingAddress, owner, lockId, newLockAmount)
+    await lockManager.decreaseLockAmount(stakingAddress, owner, lockId, newLockAmount)
 
     const [ amount2 ] = await staking.getLock(owner, lockId)
     assert.equal(amount2, newLockAmount, "Amount should match")
@@ -235,7 +235,7 @@ contract('Staking app, Locking', accounts => {
 
     // try to change amount
     return assertRevert(async () => {
-      await lockManager.setLockAmount(stakingAddress, owner, lockId, 0)
+      await lockManager.decreaseLockAmount(stakingAddress, owner, lockId, 0)
     })
   })
 
@@ -244,7 +244,7 @@ contract('Staking app, Locking', accounts => {
 
     // try to change amount
     return assertRevert(async () => {
-      await lockManager.setLockAmount(stakingAddress, owner, lockId, DEFAULT_LOCK_AMOUNT + 1)
+      await lockManager.decreaseLockAmount(stakingAddress, owner, lockId, DEFAULT_LOCK_AMOUNT + 1)
     })
   })
 

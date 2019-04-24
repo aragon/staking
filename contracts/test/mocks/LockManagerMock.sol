@@ -20,8 +20,8 @@ contract LockManagerMock is ILockManager {
         _staking.transferFromLock(_from, _fromLockId, _to, _toLockId, _amount);
     }
 
-    function setLockAmount(Staking _staking, address _account, uint256 _lockId, uint256 _newAmount) external {
-        _staking.setLockAmount(_account, _lockId, _newAmount);
+    function decreaseLockAmount(Staking _staking, address _account, uint256 _lockId, uint256 _newAmount) external {
+        _staking.decreaseLockAmount(_account, _lockId, _newAmount);
     }
 
     function setLockManager(Staking _staking, address _account, uint256 _lockId, ILockManager _newManager) external {

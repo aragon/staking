@@ -51,7 +51,7 @@ contract StakingMock is Staking {
 
     function unlockedBalanceOfGas() external returns (uint256) {
         uint256 initialGas = gasleft();
-        uint256 unlockedBalance = unlockedBalanceOf(msg.sender);
+        unlockedBalanceOf(msg.sender);
         uint256 gasConsumed = initialGas - gasleft();
         emit LogGas(gasConsumed);
         return gasConsumed;
@@ -74,12 +74,12 @@ contract StakingMock is Staking {
         unlock(_account, _lockId);
     }
 
-    function getMaxLocks() public view returns (uint256) {
-        return MAX_LOCKS;
-    }
-
     function getBlockNumber64Ext() external view returns (uint64) {
         return getBlockNumber64();
+    }
+
+    function getMaxLocks() public pure returns (uint256) {
+        return MAX_LOCKS;
     }
 
     function setBlockNumber64(uint64 i) public {

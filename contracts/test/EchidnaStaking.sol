@@ -148,8 +148,7 @@ contract EchidnaStaking is Staking {
 
     // total staked matches less or equal than token balance
     function echidna_total_staked_is_balance() external view returns (bool) {
-        // totalStaked() is external
-        if (totalStakedAt(getBlockNumber64()) <= stakingToken.balanceOf(this)) {
+        if (totalStaked() <= stakingToken.balanceOf(this)) {
             return true;
         }
 
