@@ -2,6 +2,13 @@ pragma solidity ^0.4.24;
 
 
 library Checkpointing {
+    uint256 private constant MAX_UINT192 = uint256(uint192(-1));
+    uint256 private constant MAX_UINT64 = uint256(uint64(-1));
+
+    string private constant ERROR_PAST_CHECKPOINT = "CHECKPOINT_PAST_CHECKPOINT";
+    string private constant ERROR_TIME_TOO_BIG = "CHECKPOINT_TIME_TOO_BIG";
+    string private constant ERROR_VALUE_TOO_BIG = "CHECKPOINT_VALUE_TOO_BIG";
+
     struct Checkpoint {
         uint64 time;
         uint192 value;
@@ -10,13 +17,6 @@ library Checkpointing {
     struct History {
         Checkpoint[] history;
     }
-
-    uint256 private constant MAX_UINT192 = uint256(uint192(-1));
-    uint256 private constant MAX_UINT64 = uint256(uint64(-1));
-
-    string private constant ERROR_PAST_CHECKPOINT = "CHECKPOINT_PAST_CHECKPOINT";
-    string private constant ERROR_TIME_TOO_BIG = "CHECKPOINT_TIME_TOO_BIG";
-    string private constant ERROR_VALUE_TOO_BIG = "CHECKPOINT_VALUE_TOO_BIG";
 
     function add(History storage self, uint256 time, uint256 value) internal {
         require(time <= MAX_UINT64, ERROR_TIME_TOO_BIG);
