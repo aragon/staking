@@ -1,8 +1,13 @@
-.embark
-chains.json
-config/production/password
-config/livenet/password
-coverage
-dist
+# dependencies
 node_modules
+
+# coverage
+coverage
+coverage.json
+
+# lock files
+package-lock.json
+
+# build artifacts
 build
+flattened_contracts
