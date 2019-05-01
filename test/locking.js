@@ -59,16 +59,12 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
 
   it('fails locking 0 tokens', async () => {
     await approveAndStake()
-    return assertRevert(async () => {
-      await staking.lock(0, user1, EMPTY_STRING)
-    })
+    await assertRevert(staking.lock(0, user1, EMPTY_STRING))
   })
 
   it('fails locking more tokens than staked', async () => {
     await approveAndStake()
-    return assertRevert(async () => {
-      await staking.lock(DEFAULT_STAKE_AMOUNT + 1, user1, EMPTY_STRING)
-    })
+    await assertRevert(staking.lock(DEFAULT_STAKE_AMOUNT + 1, user1, EMPTY_STRING))
   })
 
   it('unlocks last lock, EOA manager', async () => {
@@ -131,29 +127,23 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     const lockId = await approveStakeAndLock(user1)
 
     // call canUnlock
-    return assertRevert(async () => {
-      await staking.canUnlock(owner, lockId)
-    })
+    await assertRevert(staking.canUnlock(owner, lockId))
   })
 
   it('fails to unlock if it cannot unlock, EOA manager', async () => {
     const lockId = await approveStakeAndLock(user1)
 
     // tries to unlock
-    return assertRevert(async () => {
-      await staking.unlock(owner, lockId)
-    })
+    await assertRevert(staking.unlock(owner, lockId))
   })
 
   it('fails to unlock if can not unlock, contract manager, called by owner', async () => {
     // not needed, is false by default
-    //await lockManager.setResult(false)
+    // await lockManager.setResult(false)
     const lockId = await approveStakeAndLock(lockManager.address)
 
     // tries to unlock
-    return assertRevert(async () => {
-      await staking.unlock(owner, lockId, { from: owner })
-    })
+    await assertRevert(staking.unlock(owner, lockId, { from: owner }))
   })
 
   it('fails to unlock if, contract manager, called by 3rd party (even if condition is true)', async () => {
@@ -161,9 +151,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     const lockId = await approveStakeAndLock(lockManager.address)
 
     // tries to unlock
-    return assertRevert(async () => {
-      await staking.unlock(owner, lockId, { from: user1 })
-    })
+    await assertRevert(staking.unlock(owner, lockId, { from: user1 }))
   })
 
   it('unlocks all', async () => {
@@ -201,9 +189,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await staking.lock(DEFAULT_LOCK_AMOUNT / 2, user2, EMPTY_STRING)
 
     // unlock
-    return assertRevert(async () => {
-      await staking.unlockAllOrNone(owner, { from: user1 })
-    })
+    await assertRevert(staking.unlockAllOrNone(owner, { from: user1 }))
   })
 
   it('change lock amount', async () => {
@@ -225,18 +211,14 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     const lockId = await approveStakeAndLock(lockManager.address)
 
     // try to change amount
-    return assertRevert(async () => {
-      await lockManager.decreaseLockAmount(staking.address, owner, lockId, 0)
-    })
+    await assertRevert(lockManager.decreaseLockAmount(staking.address, owner, lockId, 0))
   })
 
   it('fails to change lock amount to greater than before', async () => {
     const lockId = await approveStakeAndLock(lockManager.address)
 
     // try to change amount
-    return assertRevert(async () => {
-      await lockManager.decreaseLockAmount(staking.address, owner, lockId, DEFAULT_LOCK_AMOUNT + 1)
-    })
+    await assertRevert(lockManager.decreaseLockAmount(staking.address, owner, lockId, DEFAULT_LOCK_AMOUNT + 1))
   })
 
   it('change lock manager', async () => {

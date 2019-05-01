@@ -72,16 +72,12 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
 
       it('fails transfering zero tokens', async () => {
         await approveAndStake()
-        return assertRevert(async () => {
-          await staking.transfer(user1, 0, 0)
-        })
+        await assertRevert(staking.transfer(user1, 0, 0))
       })
 
       it('fails transfering more than unlocked balance', async () => {
         await approveAndStake(DEFAULT_STAKE_AMOUNT)
-        return assertRevert(async () => {
-          await staking.transfer(user1, 0, DEFAULT_STAKE_AMOUNT + 1)
-        })
+        await assertRevert(staking.transfer(user1, 0, DEFAULT_STAKE_AMOUNT + 1))
       })
     })
 
@@ -132,40 +128,31 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
 
       it('fails if lockId is zero', async () => {
         await approveStakeAndLock(lockManager.address)
-        return assertRevert(async () => {
-          // it will fail at isLockManager modifier
-          await lockManager.transferFromLock(staking.address, owner, 0, user1, 0, DEFAULT_LOCK_AMOUNT)
-        })
+
+        // it will fail at isLockManager modifier
+        await assertRevert(lockManager.transferFromLock(staking.address, owner, 0, user1, 0, DEFAULT_LOCK_AMOUNT))
       })
 
       it('fails transfering zero tokens', async () => {
         const lockId = await approveStakeAndLock(lockManager.address)
-        return assertRevert(async () => {
-          await lockManager.transferFromLock(staking.address, owner, lockId, user1, 0, 0)
-        })
+        await assertRevert(lockManager.transferFromLock(staking.address, owner, lockId, user1, 0, 0))
       })
 
       it('fails transfering more than locked balance', async () => {
         const lockId = await approveStakeAndLock(lockManager.address)
-        return assertRevert(async () => {
-          await lockManager.transferFromLock(staking.address, owner, lockId, user1, 0, DEFAULT_LOCK_AMOUNT + 1)
-        })
+        await assertRevert(lockManager.transferFromLock(staking.address, owner, lockId, user1, 0, DEFAULT_LOCK_AMOUNT + 1))
       })
 
       it('fails if sender is not manager', async () => {
         const lockId = await approveStakeAndLock(lockManager.address)
-        return assertRevert(async () => {
-          await staking.transferFromLock(owner, lockId, user1, 0, DEFAULT_LOCK_AMOUNT, { from: user1 })
-        })
+        await assertRevert(staking.transferFromLock(owner, lockId, user1, 0, DEFAULT_LOCK_AMOUNT, { from: user1 }))
       })
 
       it('fails transfering from unlocked lock', async () => {
         const lockId = await approveStakeAndLock(user1)
         // unlock
         await staking.unlock(owner, lockId, { from: user1 })
-        return assertRevert(async () => {
-          await lockManager.transferFromLock(staking.address, owner, lockId, user1, 0, DEFAULT_LOCK_AMOUNT)
-        })
+        await assertRevert(lockManager.transferFromLock(staking.address, owner, lockId, user1, 0, DEFAULT_LOCK_AMOUNT))
       })
 
       it('fails transfering to unlocked lock', async () => {
@@ -174,9 +161,7 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
         const toLockId = await approveStakeAndLock(user2, DEFAULT_LOCK_AMOUNT, DEFAULT_STAKE_AMOUNT, user1)
         // unlock
         await staking.unlock(user1, toLockId, { from: user2 })
-        return assertRevert(async () => {
-          await lockManager.transferFromLock(staking.address, owner, lockId, user1, toLockId, DEFAULT_LOCK_AMOUNT)
-        })
+        await assertRevert(lockManager.transferFromLock(staking.address, owner, lockId, user1, toLockId, DEFAULT_LOCK_AMOUNT))
       })
     })
   })

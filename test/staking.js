@@ -38,9 +38,7 @@ contract('Staking app', ([owner, other]) => {
   })
 
   it('fails deploying if token is not a contract', async() => {
-    return assertRevert(async () => {
-      await StakingMock.new(owner)
-    })
+    await assertRevert(StakingMock.new(owner))
   })
 
   it('stakes', async () => {
@@ -60,18 +58,14 @@ contract('Staking app', ([owner, other]) => {
 
   it('fails staking 0 amount', async () => {
     await token.approve(stakingAddress, 1)
-    return assertRevert(async () => {
-      await staking.stake(0, EMPTY_STRING)
-    })
+    await assertRevert(staking.stake(0, EMPTY_STRING))
   })
 
   it('fails staking more than balance', async () => {
     const balance = await getTokenBalance(token, owner)
     const amount = balance + 1
     await token.approve(stakingAddress, amount)
-    return assertRevert(async () => {
-      await staking.stake(amount, EMPTY_STRING)
-    })
+    await assertRevert(staking.stake(amount, EMPTY_STRING))
   })
 
   it('stakes for', async () => {
@@ -112,16 +106,12 @@ contract('Staking app', ([owner, other]) => {
 
   it('fails unstaking 0 amount', async () => {
     await approveAndStake()
-    return assertRevert(async () => {
-      await staking.unstake(0, EMPTY_STRING)
-    })
+    await assertRevert(staking.unstake(0, EMPTY_STRING))
   })
 
   it('fails unstaking more than staked', async () => {
     await approveAndStake()
-    return assertRevert(async () => {
-      await staking.unstake(DEFAULT_AMOUNT + 1, EMPTY_STRING)
-    })
+    await assertRevert(staking.unstake(DEFAULT_AMOUNT + 1, EMPTY_STRING))
   })
 
   context('History', async () => {
@@ -176,10 +166,8 @@ contract('Staking app', ([owner, other]) => {
       // stake tokens
       await badStaking.stake(DEFAULT_AMOUNT, EMPTY_STRING, { from: owner })
 
-      return assertRevert(async () => {
-        // unstake half of them, fails on token transfer
-        await badStaking.unstake(DEFAULT_AMOUNT / 2, EMPTY_STRING)
-      })
+      // unstake half of them, fails on token transfer
+      await assertRevert(badStaking.unstake(DEFAULT_AMOUNT / 2, EMPTY_STRING))
     })
   })
 })
