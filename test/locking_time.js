@@ -107,9 +107,7 @@ contract('Staking app, Time locking', ([owner]) => {
     const lockId = await approveStakeAndLock(data)
 
     // tries to unlock
-    return assertRevert(async () => {
-      await staking.unlock(owner, lockId)
-    })
+    await assertRevert(staking.unlock(owner, lockId))
   })
 
   it('changes lock data', async () => {

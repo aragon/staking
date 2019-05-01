@@ -67,8 +67,6 @@ contract('Staking app, Locking max locks', accounts => {
       await approveStakeAndLockMany(number, user1, 1, number)
       locks -= number
     }
-    return assertRevert(async () => {
-      await approveStakeAndLock(user1)
-    })
+    await assertRevert(approveStakeAndLock(user1))
   })
 })
