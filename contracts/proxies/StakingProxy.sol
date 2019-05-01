@@ -14,13 +14,13 @@ contract StakingProxy is ThinProxy {
         bytes memory initializeData = abi.encodeWithSelector(selector, _token);
         bool success = address(_implementation).delegatecall(initializeData);
 
-        if (success) return;
-
-        assembly {
-            let output := mload(0x40)
-            mstore(0x40, add(output, returndatasize))
-            returndatacopy(output, 0, returndatasize)
-            revert(output, returndatasize)
+        if (!success) {
+            assembly {
+                let output := mload(0x40)
+                mstore(0x40, add(output, returndatasize))
+                returndatacopy(output, 0, returndatasize)
+                revert(output, returndatasize)
+            }
         }
     }
 
