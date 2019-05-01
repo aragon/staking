@@ -1,7 +1,8 @@
 module.exports = {
-    copyPackages: ['@aragon/os'],
-    testCommand: 'truffle test test_truffle/*.js --network coverage',
+    norpc: true,
+    copyPackages: ['@aragon/os', '@aragon/test-helpers'],
     skipFiles: [
         'test/',
+        '@aragon/test-helpers/contracts/TimeHelpersMock.sol',
     ]
 }
