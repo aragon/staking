@@ -3,25 +3,24 @@ pragma solidity 0.4.24;
 import "../../Staking.sol";
 
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
+import "@aragon/test-helpers/contracts/TimeHelpersMock.sol";
 
 
-contract StakingMock is Staking {
+contract StakingMock is Staking, TimeHelpersMock {
     using SafeMath for uint256;
 
-    uint64 private constant MAX_UINT64 = uint64(-1);
-
-    constructor(ERC20 _stakingToken) Staking(_stakingToken) public {
-        // solium-disable-previous-line no-empty-blocks
-    }
-
-    uint64 _mockBlockNumber = uint64(block.number);
-
     event LogGas(uint256 gas);
+
+    uint64 private constant MAX_UINT64 = uint64(-1);
 
     modifier measureGas {
         uint256 initialGas = gasleft();
         _;
         emit LogGas(initialGas - gasleft());
+    }
+
+    constructor(ERC20 _stakingToken) public {
+        initialize(_stakingToken);
     }
 
     function lockMany(uint256 _number, uint256 _amount, address _manager, bytes _data) external {
@@ -57,12 +56,6 @@ contract StakingMock is Staking {
         return gasConsumed;
     }
 
-    /*
-    function lockGas(uint256 _amount, address _manager, bytes _data) external measureGas returns (uint256) {
-        return lock(_amount, _manager, _data);
-    }
-    */
-
     function transferGas(address _to, uint256 _toLockId, uint256 _amount) external measureGas {
         // have enough unlocked funds
         require(_amount <= unlockedBalanceOf(msg.sender));
@@ -74,19 +67,16 @@ contract StakingMock is Staking {
         unlock(_account, _lockId);
     }
 
-    function getBlockNumber64Ext() external view returns (uint64) {
-        return getBlockNumber64();
-    }
-
     function getMaxLocks() public pure returns (uint256) {
         return MAX_LOCKS;
     }
 
-    function setBlockNumber64(uint64 i) public {
-        _mockBlockNumber = i;
+    function setBlockNumber(uint64 _mockedBlockNumber) public {
+        mockedBlockNumber = _mockedBlockNumber;
     }
 
-    function getBlockNumber64() internal view returns (uint64) {
-        return _mockBlockNumber;
+    // Override petrify functions to allow mocking the initialization process
+    function petrify() internal onlyInit {
+        // initializedAt(PETRIFIED_BLOCK);
     }
 }
