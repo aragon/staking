@@ -3,16 +3,15 @@ pragma solidity 0.4.24;
 import "./ERCStaking.sol";
 import "./IStakingLocking.sol";
 import "./ILockManager.sol";
-
 import "./Checkpointing.sol";
 
+import "@aragon/os/contracts/common/Autopetrified.sol";
 import "@aragon/os/contracts/common/IsContract.sol";
 import "@aragon/os/contracts/common/SafeERC20.sol";
-import "@aragon/os/contracts/common/TimeHelpers.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 
 
-contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers, IsContract {
+contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLocking, IsContract {
     using SafeMath for uint256;
     using Checkpointing for Checkpointing.History;
     using SafeERC20 for ERC20;
@@ -65,8 +64,9 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
         _;
     }
 
-    constructor(ERC20 _stakingToken) public {
+    function initialize(ERC20 _stakingToken) public onlyInit {
         require(isContract(_stakingToken), ERROR_TOKEN_NOT_CONTRACT);
+        initialized();
         stakingToken = _stakingToken;
     }
 
@@ -77,7 +77,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @param _amount Number of tokens staked
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
-    function stake(uint256 _amount, bytes _data) external {
+    function stake(uint256 _amount, bytes _data) external isInitialized {
         _stakeFor(msg.sender, _amount, _data);
     }
 
@@ -87,7 +87,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @param _amount Number of tokens staked
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
-    function stakeFor(address _accountAddress, uint256 _amount, bytes _data) external {
+    function stakeFor(address _accountAddress, uint256 _amount, bytes _data) external isInitialized {
         _stakeFor(_accountAddress, _amount, _data);
     }
 
@@ -96,7 +96,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @param _amount Number of tokens staked
      * @param _data Used in Unstaked event, to add signalling information in more complex staking applications
      */
-    function unstake(uint256 _amount, bytes _data) external {
+    function unstake(uint256 _amount, bytes _data) external isInitialized {
         // unstaking 0 tokens is not allowed
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
@@ -119,9 +119,8 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @param _data Data to parametrize logic for the lock to be enforced by the manager
      * @return The id of the newly created lock
      */
-    function lock(uint256 _amount, address _manager, bytes _data) external returns (uint256) {
+    function lock(uint256 _amount, address _manager, bytes _data) external isInitialized returns (uint256) {
         Account storage account = accounts[msg.sender];
-
         // locking 0 tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
@@ -151,7 +150,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @dev It won't work (it will revert) if one of the managers is an EOA
      * @param _accountAddress Owner whose locks are to be unlocked
      */
-    function unlockAll(address _accountAddress) external {
+    function unlockAll(address _accountAddress) external isInitialized {
         Account storage account = accounts[_accountAddress];
 
         for (uint256 i = account.activeLockIds.length; i > 0; i--) {
@@ -165,7 +164,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @notice Try to unlock all locks belonging to `_accountAddress` and revert if any of them fail
      * @param _accountAddress Owner whose locks are to be unlocked
      */
-    function unlockAllOrNone(address _accountAddress) external {
+    function unlockAllOrNone(address _accountAddress) external isInitialized {
         Account storage account = accounts[_accountAddress];
 
         for (uint256 i = account.activeLockIds.length; i > 0; i--) {
@@ -179,7 +178,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @param _toLockId Lock id of the recipient to add the tokens to, if any
      * @param _amount Number of tokens to be transferred
      */
-    function transfer(address _to, uint256 _toLockId, uint256 _amount) external {
+    function transfer(address _to, uint256 _toLockId, uint256 _amount) external isInitialized {
         // have enough unlocked funds
         require(_amount <= unlockedBalanceOf(msg.sender), ERROR_NOT_ENOUGH_BALANCE);
 
@@ -262,7 +261,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @notice Get the token used by the contract for staking and locking
      * @return The token used by the contract for staking and locking
      */
-    function token() external view returns (address) {
+    function token() external view isInitialized returns (address) {
         return address(stakingToken);
     }
 
@@ -279,7 +278,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @param _accountAddress Account requesting for
      * @return Last block number when account's balance was modified
      */
-    function lastStakedFor(address _accountAddress) external view returns (uint256) {
+    function lastStakedFor(address _accountAddress) external view isInitialized returns (uint256) {
         return accounts[_accountAddress].stakedHistory.lastUpdated();
     }
 
@@ -288,7 +287,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
      * @param _accountAddress Owner of locks
      * @return The number of locks belonging to the given account
      */
-    function locksCount(address _accountAddress) external view returns (uint256) {
+    function locksCount(address _accountAddress) external view isInitialized returns (uint256) {
         return accounts[_accountAddress].activeLockIds.length;
     }
 
@@ -304,6 +303,7 @@ contract Staking is ERCStaking, ERCStakingHistory, IStakingLocking, TimeHelpers,
     function getLock(address _accountAddress, uint256 _lockId)
         external
         view
+        isInitialized
         returns (
             uint256 _amount,
             uint64 _unlockedAt,

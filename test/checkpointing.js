@@ -1,9 +1,8 @@
-const { assertRevert, assertInvalidOpcode } = require('@aragon/test-helpers/assertThrow')
-//const getBalance = require('@aragon/test-helpers/balance')(web3)
+const { assertRevert } = require('@aragon/test-helpers/assertThrow')
 
 const CheckpointingMock = artifacts.require('CheckpointingMock')
 
-contract('Checkpointing', accounts => {
+contract('Checkpointing', () => {
   let checkpointing
 
   const generateRandomTest = size => {

@@ -1,13 +1,13 @@
 const { assertRevert } = require('@aragon/test-helpers/assertThrow')
-const getEvent = (receipt, event, arg) => { return receipt.logs.filter(l => l.event == event)[0].args[arg] }
+const getEvent = (receipt, event, arg) => { return receipt.logs.filter(l => l.event === event)[0].args[arg] }
 
 const Staking = artifacts.require('Staking');
+const StakingFactory = artifacts.require('StakingFactory');
 const StandardTokenMock = artifacts.require('StandardTokenMock');
 const LockManagerMock = artifacts.require('LockManagerMock');
 
-contract('Staking app, Locking', accounts => {
-  let staking, token, lockManager, stakingAddress, tokenAddress, lockManagerAddress
-  let owner, user1, user2
+contract('Staking app, Locking', ([owner, user1, user2]) => {
+  let staking, token, lockManager
 
   const zeroBytes = "0x"
   const MAX_UINT64 = (new web3.BigNumber(2)).pow(new web3.BigNumber(64)).sub(new web3.BigNumber(1))
@@ -16,7 +16,7 @@ contract('Staking app, Locking', accounts => {
   const EMPTY_STRING = ''
 
   const approveAndStake = async (amount = DEFAULT_STAKE_AMOUNT, from = owner) => {
-    await token.approve(stakingAddress, amount, { from })
+    await token.approve(staking.address, amount, { from })
     await staking.stake(amount, EMPTY_STRING, { from })
   }
 
@@ -28,28 +28,19 @@ contract('Staking app, Locking', accounts => {
   ) => {
     await approveAndStake(stakeAmount, from)
     const r = await staking.lock(lockAmount, manager, EMPTY_STRING, { from })
-    const lockId = getEvent(r, 'Locked', 'lockId')
-
-    return lockId
+    return getEvent(r, 'Locked', 'lockId')
   }
-
-  before(async () => {
-    owner = accounts[0]
-    user1 = accounts[1]
-    user2 = accounts[2]
-  })
 
   beforeEach(async () => {
     const initialAmount = 1000 * DEFAULT_STAKE_AMOUNT
-    const tokenContract = await StandardTokenMock.new(owner, initialAmount)
-    token = tokenContract
-    tokenAddress = tokenContract.address
-    const stakingContract = await Staking.new(tokenAddress)
-    staking = stakingContract
-    stakingAddress = stakingContract.address
-    const lockManagerContract = await LockManagerMock.new()
-    lockManager = lockManagerContract
-    lockManagerAddress = lockManagerContract.address
+    token = await StandardTokenMock.new(owner, initialAmount)
+
+    const factory = await StakingFactory.new()
+    const receipt = await factory.getOrCreateInstance(token.address)
+    const stakingAddress = getEvent(receipt, 'NewStaking', 'instance');
+    staking = Staking.at(stakingAddress)
+
+    lockManager = await LockManagerMock.new()
   })
 
   it('locks', async () => {
@@ -104,7 +95,7 @@ contract('Staking app, Locking', accounts => {
 
   it('unlocks, contract manager, called by owner', async () => {
     await lockManager.setResult(true)
-    const lockId = await approveStakeAndLock(lockManagerAddress)
+    const lockId = await approveStakeAndLock(lockManager.address)
 
     // unlock
     await staking.unlock(owner, lockId, { from: owner })
@@ -115,10 +106,10 @@ contract('Staking app, Locking', accounts => {
 
   it('unlocks, contract manager, called by manager', async () => {
     await lockManager.setResult(true)
-    const lockId = await approveStakeAndLock(lockManagerAddress)
+    const lockId = await approveStakeAndLock(lockManager.address)
 
     // unlock
-    await lockManager.unlock(stakingAddress, owner, lockId)
+    await lockManager.unlock(staking.address, owner, lockId)
 
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT, "Unlocked balance should match")
     assert.equal((await staking.locksCount(owner)).valueOf(), 0, "there shouldn't be locks")
@@ -127,10 +118,10 @@ contract('Staking app, Locking', accounts => {
   it('unlocks, contract manager, called by manager, even if condition is not satisfied', async () => {
     // not needed, is false by default
     //await lockManager.setResult(false)
-    const lockId = await approveStakeAndLock(lockManagerAddress)
+    const lockId = await approveStakeAndLock(lockManager.address)
 
     // unlock
-    await lockManager.unlock(stakingAddress, owner, lockId)
+    await lockManager.unlock(staking.address, owner, lockId)
 
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT, "Unlocked balance should match")
     assert.equal((await staking.locksCount(owner)).valueOf(), 0, "there shouldn't be locks")
@@ -157,7 +148,7 @@ contract('Staking app, Locking', accounts => {
   it('fails to unlock if can not unlock, contract manager, called by owner', async () => {
     // not needed, is false by default
     //await lockManager.setResult(false)
-    const lockId = await approveStakeAndLock(lockManagerAddress)
+    const lockId = await approveStakeAndLock(lockManager.address)
 
     // tries to unlock
     return assertRevert(async () => {
@@ -167,7 +158,7 @@ contract('Staking app, Locking', accounts => {
 
   it('fails to unlock if, contract manager, called by 3rd party (even if condition is true)', async () => {
     await lockManager.setResult(true)
-    const lockId = await approveStakeAndLock(lockManagerAddress)
+    const lockId = await approveStakeAndLock(lockManager.address)
 
     // tries to unlock
     return assertRevert(async () => {
@@ -216,14 +207,14 @@ contract('Staking app, Locking', accounts => {
   })
 
   it('change lock amount', async () => {
-    const lockId = await approveStakeAndLock(lockManagerAddress)
+    const lockId = await approveStakeAndLock(lockManager.address)
     const [ amount1 ] = await staking.getLock(owner, lockId)
     assert.equal(amount1, DEFAULT_LOCK_AMOUNT, "Amount should match")
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Unlocked balance should match")
 
     // change amount
     const newLockAmount = DEFAULT_LOCK_AMOUNT / 2
-    await lockManager.decreaseLockAmount(stakingAddress, owner, lockId, newLockAmount)
+    await lockManager.decreaseLockAmount(staking.address, owner, lockId, newLockAmount)
 
     const [ amount2 ] = await staking.getLock(owner, lockId)
     assert.equal(amount2, newLockAmount, "Amount should match")
@@ -231,20 +222,20 @@ contract('Staking app, Locking', accounts => {
   })
 
   it('fails to change lock amount to zero', async () => {
-    const lockId = await approveStakeAndLock(lockManagerAddress)
+    const lockId = await approveStakeAndLock(lockManager.address)
 
     // try to change amount
     return assertRevert(async () => {
-      await lockManager.decreaseLockAmount(stakingAddress, owner, lockId, 0)
+      await lockManager.decreaseLockAmount(staking.address, owner, lockId, 0)
     })
   })
 
   it('fails to change lock amount to greater than before', async () => {
-    const lockId = await approveStakeAndLock(lockManagerAddress)
+    const lockId = await approveStakeAndLock(lockManager.address)
 
     // try to change amount
     return assertRevert(async () => {
-      await lockManager.decreaseLockAmount(stakingAddress, owner, lockId, DEFAULT_LOCK_AMOUNT + 1)
+      await lockManager.decreaseLockAmount(staking.address, owner, lockId, DEFAULT_LOCK_AMOUNT + 1)
     })
   })
 

@@ -9,8 +9,8 @@ import "@aragon/os/contracts/lib/math/SafeMath.sol";
 contract EchidnaStaking is Staking {
     using SafeMath for uint256;
 
-    constructor(ERC20) public Staking(ERC20(address(0))) {
-        stakingToken = ERC20(new NoApproveTokenMock(msg.sender, 10 ** 24));
+    constructor() public {
+        initialize(ERC20(new NoApproveTokenMock(msg.sender, 10 ** 24)));
     }
 
     // check that staked amount for an account is always >= total locked
