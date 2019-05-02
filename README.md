@@ -1,5 +1,7 @@
 # Staking App
 
+[![Build Status](https://img.shields.io/travis/aragon/staking/master.svg?style=for-the-badge)](https://travis-ci.org/aragon/staking)
+
 A Staking app with checkpointing (implementing ERC900 interface with history) and locking.
 
 ## Testing
