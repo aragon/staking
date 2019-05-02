@@ -25,8 +25,7 @@ contract StakingFactory {
 
     function getOrCreateInstance(ERC20 token) external returns (Staking) {
         address instance = _getInstance(token);
-        if (instance != address(0)) return Staking(instance);
-        return _createInstance(token);
+        return instance != address(0) ? Staking(instance) : _createInstance(token);
     }
 
     function _getInstance(ERC20 token) internal view returns (address) {

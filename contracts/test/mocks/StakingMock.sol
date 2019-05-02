@@ -20,7 +20,9 @@ contract StakingMock is Staking, TimeHelpersMock {
     }
 
     constructor(ERC20 _stakingToken) public {
-        initialize(_stakingToken);
+        require(isContract(_stakingToken));
+        initialized();
+        stakingToken = _stakingToken;
     }
 
     function lockMany(uint256 _number, uint256 _amount, address _manager, bytes _data) external {
@@ -77,6 +79,7 @@ contract StakingMock is Staking, TimeHelpersMock {
 
     // Override petrify functions to allow mocking the initialization process
     function petrify() internal onlyInit {
+        // solium-disable-previous-line no-empty-blocks
         // initializedAt(PETRIFIED_BLOCK);
     }
 }

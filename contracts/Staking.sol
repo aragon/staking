@@ -64,7 +64,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         _;
     }
 
-    function initialize(ERC20 _stakingToken) public onlyInit {
+    function initialize(ERC20 _stakingToken) external onlyInit {
         require(isContract(_stakingToken), ERROR_TOKEN_NOT_CONTRACT);
         initialized();
         stakingToken = _stakingToken;

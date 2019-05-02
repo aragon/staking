@@ -4,6 +4,7 @@ node_modules
 # coverage
 coverage
 coverage.json
+coverageEnv/
 
 # lock files
 package-lock.json
