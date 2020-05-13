@@ -17,36 +17,27 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     using SafeERC20 for ERC20;
 
     uint64 private constant MAX_UINT64 = uint64(-1);
-    // lock uses ~111k gas with 1 lock, transfer ~28k, unlockedBalanceOf adds 1185 for eack lock
-    // unlock uses ~33k with 2 locks, and adds 558 for each additional one
-    // assuming a safety max gas of ~6M, 5,000 locks is a safe value to avoid OOG issues
-    // it's a sanity check, because as lock uses unlockedBalanceOf, and it's the most expensive
-    // it's unlikely that locks enough could be created to brick the account
-    uint256 internal constant MAX_LOCKS = 5000;
 
     string private constant ERROR_TOKEN_NOT_CONTRACT = "STAKING_TOKEN_NOT_CONTRACT";
     string private constant ERROR_NOT_LOCK_MANAGER = "STAKING_NOT_LOCK_MANAGER";
     string private constant ERROR_AMOUNT_ZERO = "STAKING_AMOUNT_ZERO";
     string private constant ERROR_TOKEN_TRANSFER = "STAKING_TOKEN_TRANSFER";
     string private constant ERROR_NOT_ENOUGH_BALANCE = "STAKING_NOT_ENOUGH_BALANCE";
-    string private constant ERROR_TOO_MANY_LOCKS = "STAKING_TOO_MANY_LOCKS";
+    string private constant ERROR_LOCK_ALREADY_EXISTS = "STAKING_LOCK_ALREADY_EXISTS";
     string private constant ERROR_LOCK_DOES_NOT_EXIST = "STAKING_LOCK_DOES_NOT_EXIST";
     string private constant ERROR_CAN_NOT_UNLOCK = "STAKING_CAN_NOT_UNLOCK";
-    string private constant ERROR_INVALID_LOCK_ID = "STAKING_INVALID_LOCK_ID";
     string private constant ERROR_UNLOCKED_LOCK = "STAKING_UNLOCKED_LOCK";
     string private constant ERROR_INCREASING_LOCK_AMOUNT = "STAKING_INCREASING_LOCK_AMOUNT";
 
     struct Lock {
         uint256 amount;
-        uint64 unlockedAt;
-        ILockManager manager; // can also be an EOA
+        uint64 unlockedAt; // TODO: remove!
         bytes data;
     }
 
     struct Account {
-        uint256[] activeLockIds;
-        uint256 lastLockId;
-        mapping (uint256 => Lock) locks; // first valid lock starts at 1, so _toLockId = 0 means no lock
+        mapping (address => Lock) locks; // from manager to lock
+        uint256 totalLocked;
         Checkpointing.History stakedHistory;
     }
 
@@ -54,15 +45,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     mapping (address => Account) internal accounts;
     Checkpointing.History internal totalStakedHistory;
 
-    event StakeTransferred(address indexed from, uint256 indexed fromLockId, uint256 amount, address to, uint256 toLockId);
-
-    modifier isLockManager(address _accountAddress, uint256 _lockId) {
-        require(
-            msg.sender == address(accounts[_accountAddress].locks[_lockId].manager),
-            ERROR_NOT_LOCK_MANAGER
-        );
-        _;
-    }
+    event StakeTransferred(address indexed from, address indexed fromLockId, uint256 amount, address to, address toLockId);
 
     function initialize(ERC20 _stakingToken) external onlyInit {
         require(isContract(_stakingToken), ERROR_TOKEN_NOT_CONTRACT);
@@ -113,148 +96,125 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Lock `_amount` staked tokens and assign `_manager` as manager with `_data` as data, so they can not be unstaked
+     * @notice Lock `_amount` staked tokens and assign `_lockManager` as manager with `_data` as data, so they can not be unstaked
      * @param _amount The amount of tokens to be locked
-     * @param _manager The manager entity for this particular lock. This entity will have full control over the lock, in particular will be able to unlock it
+     * @param _lockManager The manager entity for this particular lock. This entity will have full control over the lock, in particular will be able to unlock it
      * @param _data Data to parametrize logic for the lock to be enforced by the manager
-     * @return The id of the newly created lock
      */
-    function lock(uint256 _amount, address _manager, bytes _data) external isInitialized returns (uint256) {
+    function lock(uint256 _amount, address _lockManager, bytes _data) external isInitialized {
         Account storage account = accounts[msg.sender];
         // locking 0 tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
         // check enough unlocked tokens are available
-        require(_amount <= unlockedBalanceOf(msg.sender), ERROR_NOT_ENOUGH_BALANCE);
+        require(_amount <= _unlockedBalanceOf(msg.sender), ERROR_NOT_ENOUGH_BALANCE);
 
-        // check not too many locks
-        require(account.activeLockIds.length < MAX_LOCKS, ERROR_TOO_MANY_LOCKS);
-
-        // first valid lock starts at 1, so _toLockId = 0 means no lock
-        account.lastLockId++;
-        uint256 _lockId = account.lastLockId;
-        account.activeLockIds.push(_lockId);
-        Lock storage lock_ = account.locks[_lockId];
+        Lock storage lock_ = account.locks[_lockManager];
+        // check if lock exists
+        require(lock_.unlockedAt == 0, ERROR_LOCK_ALREADY_EXISTS);
         lock_.amount = _amount;
         lock_.unlockedAt = MAX_UINT64;
-        lock_.manager = ILockManager(_manager);
         lock_.data = _data;
 
-        emit Locked(msg.sender, _lockId, _amount, _manager, _data);
+        // update total
+        account.totalLocked = account.totalLocked.add(_amount);
 
-        return _lockId;
+        emit Locked(msg.sender, _lockManager, _amount, _data);
     }
 
     /**
-     * @notice Try to unlock as much locks belonging to `_accountAddress` as possible
-     * @dev It won't work (it will revert) if one of the managers is an EOA
-     * @param _accountAddress Owner whose locks are to be unlocked
-     */
-    function unlockAll(address _accountAddress) external isInitialized {
-        Account storage account = accounts[_accountAddress];
-
-        for (uint256 i = account.activeLockIds.length; i > 0; i--) {
-            if (canUnlock(_accountAddress, account.activeLockIds[i - 1])) {
-                unlock(_accountAddress, account.activeLockIds[i - 1]);
-            }
-        }
-    }
-
-    /**
-     * @notice Try to unlock all locks belonging to `_accountAddress` and revert if any of them fail
-     * @param _accountAddress Owner whose locks are to be unlocked
-     */
-    function unlockAllOrNone(address _accountAddress) external isInitialized {
-        Account storage account = accounts[_accountAddress];
-
-        for (uint256 i = account.activeLockIds.length; i > 0; i--) {
-            unlock(_accountAddress, account.activeLockIds[i - 1]);
-        }
-    }
-
-    /**
-     * @notice Transfer `_amount` tokens to `_to``_toLockId > 0 ? '\'s lock #' + _toLockId : ''`
+     * @notice Transfer `_amount` tokens to `_to``_toLockManager != 0 ? '\'s lock ' + _toLockManager : ''`
      * @param _to Recipient of the tokens
-     * @param _toLockId Lock id of the recipient to add the tokens to, if any
+     * @param _toLockManager Manager of the recipient lock to add the tokens to, if any
      * @param _amount Number of tokens to be transferred
      */
-    function transfer(address _to, uint256 _toLockId, uint256 _amount) external isInitialized {
+    function transfer(address _to, address _toLockManager, uint256 _amount) external isInitialized {
         // have enough unlocked funds
-        require(_amount <= unlockedBalanceOf(msg.sender), ERROR_NOT_ENOUGH_BALANCE);
+        require(_amount <= _unlockedBalanceOf(msg.sender), ERROR_NOT_ENOUGH_BALANCE);
 
-        _transfer(msg.sender, 0, _to, _toLockId, _amount);
+        _transfer(msg.sender, address(0), _to, _toLockManager, _amount);
     }
 
     /**
-     * @notice Transfer `_amount` tokens from `_from`'s lock #`_fromLockId` to `_to``_toLockId > 0 ? '\'s lock #' + _toLockId : ''`
+     * @notice Transfer `_amount` tokens from `_from`'s lock by `msg.sender` to `_to``_toLockManager > 0 ? '\'s lock by ' + _toLockManager : ''`
      * @param _from Owner of locked tokens
-     * @param _fromLockId Id of the lock for the given account
      * @param _to Recipient of the tokens
-     * @param _toLockId Lock id of the recipient to add the tokens to, if any
+     * @param _toLockManager Manager of the recipient lock to add the tokens to, if any
      * @param _amount Number of tokens to be transferred
      */
     function transferFromLock(
         address _from,
-        uint256 _fromLockId,
         address _to,
-        uint256 _toLockId,
+        address _toLockManager,
         uint256 _amount
     )
         external
-        isLockManager(_from, _fromLockId)
     {
-        // No need to check that lockId > 0, as isLockManager would fail
-        // No need to check that have enough locked funds, as _updateActiveLockAmount will fail
+        // No need to check that have enough locked funds, as _decreaseActiveLockAmount will fail
 
-        _transfer(_from, _fromLockId, _to, _toLockId, _amount);
-        _updateActiveLockAmount(_from, _fromLockId, _amount, false);
+        _transfer(_from, msg.sender, _to, _toLockManager, _amount);
+        _decreaseActiveLockAmount(_from, msg.sender, _amount);
     }
 
     /**
-     * @notice Decrease the amount of tokens locked in `_accountAddress`'s lock #`_lockId` to `_newAmount`
+     * @notice Decrease the amount of tokens locked in `_accountAddress`'s lock by `msg.sender` to `_newAmount`
      * @param _accountAddress Owner of locked tokens
-     * @param _lockId Id of the lock for the given account
      * @param _newAmount New amount of locked tokens
      */
-    function decreaseLockAmount(address _accountAddress, uint256 _lockId, uint256 _newAmount) external isLockManager(_accountAddress, _lockId) {
+    function decreaseLockAmount(address _accountAddress, uint256 _newAmount) external {
         // lock 0 tokens makes no sense
         require(_newAmount > 0, ERROR_AMOUNT_ZERO);
 
         // manager can only decrease locked amount
-        Lock storage lock_ = accounts[_accountAddress].locks[_lockId];
+        Account storage account = accounts[_accountAddress];
+        Lock storage lock_ = account.locks[msg.sender];
         require(_newAmount < lock_.amount, ERROR_INCREASING_LOCK_AMOUNT);
 
+        // update total
+        // no need for SafeMath:
+        // - totalLocked must be greater or equal than lock._amount
+        // - final result will be less than initial one (checked in require above)
+        account.totalLocked = account.totalLocked - lock_.amount + _newAmount;
+
+        // update lock amount
         lock_.amount = _newAmount;
-        emit LockAmountChanged(_accountAddress, _lockId, _newAmount);
+
+        emit LockAmountChanged(_accountAddress, msg.sender, _newAmount);
     }
 
     /**
-     * @notice Change the manager of `_accountAddress`'s lock #`_lockId` to `_newManager`
+     * @notice Change the manager of `_accountAddress`'s lock from `msg.sender` to `_newLockManager`
      * @param _accountAddress Owner of lock
-     * @param _lockId Id of the lock for the given account
-     * @param _newManager New lock's manager
+     * @param _newLockManager New lock's manager
      */
-    function setLockManager(
-        address _accountAddress,
-        uint256 _lockId,
-        ILockManager _newManager
-    )
-        external
-        isLockManager(_accountAddress, _lockId)
-    {
-        accounts[_accountAddress].locks[_lockId].manager = _newManager;
-        emit LockManagerChanged(_accountAddress, _lockId, _newManager);
+    function setLockManager(address _accountAddress, address _newLockManager) external {
+        Lock storage oldLock = accounts[_accountAddress].locks[msg.sender];
+        accounts[_accountAddress].locks[_newLockManager] = oldLock;
+
+        oldLock.amount = 0;
+        oldLock.unlockedAt = 0;
+        oldLock.data = new bytes(0); // TODO: make sure this is properly cleaned
+
+        emit LockManagerChanged(_accountAddress, msg.sender, _newLockManager);
     }
 
     /**
-     * @notice Change data of `_accountAddress`'s lock #`_lockId` to `_newData`
+     * @notice Change data of `_accountAddress`'s lock by `_lockManager` to `_newData`
      * @param _accountAddress Owner of lock
-     * @param _lockId Id of the lock for the given account
      * @param _newData New data containing logic to enforce the lock
      */
-    function setLockData(address _accountAddress, uint256 _lockId, bytes _newData) external isLockManager(_accountAddress, _lockId) {
-        accounts[_accountAddress].locks[_lockId].data = _newData;
-        emit LockDataChanged(_accountAddress, _lockId, _newData);
+    function setLockData(address _accountAddress, bytes _newData) external {
+        accounts[_accountAddress].locks[msg.sender].data = _newData;
+        emit LockDataChanged(_accountAddress, msg.sender, _newData);
+    }
+
+    /**
+     * @notice Unlock `_accountAddress`'s lock by `_lockManager` so locked tokens can be unstaked again
+     * @param _accountAddress Owner of locked tokens
+     * @param _lockManager Manager of the lock for the given account
+     */
+    function unlock(address _accountAddress, address _lockManager) external {
+        _unlock(_accountAddress, _lockManager);
     }
 
     /**
@@ -283,39 +243,36 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Get the number of locks belonging to `_accountAddress`
+     * @notice Get total amount of locked tokens for `_accountAddress`
      * @param _accountAddress Owner of locks
-     * @return The number of locks belonging to the given account
+     * @return Total amount of locked tokens
      */
-    function locksCount(address _accountAddress) external view isInitialized returns (uint256) {
-        return accounts[_accountAddress].activeLockIds.length;
+    function getTotalLocked(address _accountAddress) external view isInitialized returns (uint256) {
+        return accounts[_accountAddress].totalLocked;
     }
 
     /**
-     * @notice Get details of `_accountAddress`'s lock #`_lockId`
+     * @notice Get details of `_accountAddress`'s lock by `_lockManager`
      * @param _accountAddress Owner of lock
-     * @param _lockId Id of the lock for the given account
+     * @param _lockManager Manager of the lock for the given account
      * @return Amount of locked tokens
      * @return Block number when the lock was released
-     * @return Lock's manager
      * @return Lock's data
      */
-    function getLock(address _accountAddress, uint256 _lockId)
+    function getLock(address _accountAddress, address _lockManager)
         external
         view
         isInitialized
         returns (
             uint256 _amount,
             uint64 _unlockedAt,
-            address _manager,
             bytes _data
         )
     {
-        Lock storage lock_ = accounts[_accountAddress].locks[_lockId];
+        Lock storage lock_ = accounts[_accountAddress].locks[_lockManager];
         _unlockedAt = lock_.unlockedAt;
         require(_unlockedAt > 0, ERROR_LOCK_DOES_NOT_EXIST);
         _amount = lock_.amount;
-        _manager = lock_.manager;
         _data = lock_.data;
     }
 
@@ -338,35 +295,26 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         return totalStakedHistory.get(_blockNumber);
     }
 
-    /* Public functions */
-
-    /**
-     * @notice Unlock `_accountAddress`'s lock #`_lockId` so locked tokens can be unstaked again
-     * @param _accountAddress Owner of locked tokens
-     * @param _lockId Id of the lock for the given account
-     */
-    function unlock(address _accountAddress, uint256 _lockId) public {
-        // only manager and owner (if manager allows) can unlock
-        require(canUnlock(_accountAddress, _lockId), ERROR_CAN_NOT_UNLOCK);
-
-        _unlock(_accountAddress, _lockId);
-    }
-
     /**
      * @notice Get the staked but unlocked amount of tokens by `_accountAddress`
      * @param _accountAddress Owner of the staked but unlocked balance
      * @return Amount of tokens staked but not locked by given account
      */
-    function unlockedBalanceOf(address _accountAddress) public view returns (uint256) {
-        uint256 unlockedTokens = totalStakedFor(_accountAddress);
-
-        Account storage account = accounts[_accountAddress];
-        for (uint256 i = 0; i < account.activeLockIds.length; i++) {
-            unlockedTokens = unlockedTokens.sub(account.locks[account.activeLockIds[i]].amount);
-        }
-
-        return unlockedTokens;
+    function unlockedBalanceOf(address _accountAddress) external view returns (uint256) {
+        return _unlockedBalanceOf(_accountAddress);
     }
+
+    /**
+     * @notice Check if `_accountAddress`'s by `_lockManager` can be unlocked
+     * @param _accountAddress Owner of lock
+     * @param _lockManager Manager of the lock for the given account
+     * @return Whether given lock of given account can be unlocked
+     */
+    function canUnlock(address _accountAddress, address _lockManager) external view returns (bool) {
+        return _canUnlock(_accountAddress, _lockManager);
+    }
+
+    /* Public functions */
 
     /**
      * @notice Get the amount of tokens staked by `_accountAddress`
@@ -385,23 +333,6 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     function totalStaked() public view returns (uint256) {
         // we assume it's not possible to stake in the future
         return totalStakedHistory.getLatestValue();
-    }
-
-    /**
-     * @notice Check if `_accountAddress`'s lock #`_lockId` can be unlocked
-     * @param _accountAddress Owner of lock
-     * @param _lockId Id of the lock for the given account
-     * @return Whether given lock of given account can be unlocked
-     */
-    function canUnlock(address _accountAddress, uint256 _lockId) public view returns (bool) {
-        Lock storage lock_ = accounts[_accountAddress].locks[_lockId];
-
-        if (msg.sender == address(lock_.manager) ||
-            (msg.sender == _accountAddress && lock_.manager.canUnlock(_accountAddress, _lockId, lock_.data))) {
-            return true;
-        }
-
-        return false;
     }
 
     /*
@@ -458,66 +389,100 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         totalStakedHistory.add64(getBlockNumber64(), newStake);
     }
 
-    /**
-     * Note: So far this function is called from unlock and from transferFromLock,
-     * which both ensure that lock can be unlocked (the latter through isLockManager modifier)
-     */
-    function _unlock(address _accountAddress, uint256 _lockId) internal {
+    function _unlock(address _accountAddress, address _lockManager) internal {
+        // only manager and owner (if manager allows) can unlock
+        require(_canUnlock(_accountAddress, _lockManager), ERROR_CAN_NOT_UNLOCK);
+
+        _unsafeUnlock(_accountAddress, _lockManager);
+    }
+
+    function _unsafeUnlock(address _accountAddress, address _lockManager) internal {
         Account storage account = accounts[_accountAddress];
-        Lock storage lock_ = account.locks[_lockId];
+        Lock storage lock_ = account.locks[_lockManager];
 
         lock_.unlockedAt = getTimestamp64();
 
-        // remove from active locks, replacing it by the last one in the array
-        // we assume consistency here, i.e., that lock exists in active array
-        uint256 locksLength = account.activeLockIds.length;
-        if (locksLength == 1) {
-            delete account.activeLockIds;
-            return;
-        }
+        // update total
+        // no need for SafeMath: totalLocked must be greater or equal than lock._amount
+        account.totalLocked = account.totalLocked - lock_.amount;
 
-        for (uint256 i = 0; i < locksLength; i++) {
-            if (account.activeLockIds[i] == _lockId) {
-                account.activeLockIds[i] = account.activeLockIds[locksLength - 1];
-                delete account.activeLockIds[locksLength - 1];
-                account.activeLockIds.length--;
-                break;
-            }
-        }
-
-        emit Unlocked(_accountAddress, _lockId, lock_.amount, lock_.manager, lock_.data);
+        emit Unlocked(_accountAddress, _lockManager, lock_.amount, lock_.data);
     }
 
-    function _updateActiveLockAmount(address _accountAddress, uint256 _lockId, uint256 _amount, bool _increase) internal {
-        Lock storage lock_ = accounts[_accountAddress].locks[_lockId];
+    function _increaseActiveLockAmount(address _accountAddress, address _lockManager, uint256 _amount) internal {
+        Account storage account = accounts[_accountAddress];
+        Lock storage lock_ = account.locks[_lockManager];
         // check that lock hasn't been unlocked
         require(lock_.unlockedAt > getTimestamp64(), ERROR_UNLOCKED_LOCK); // locks are created with a MAX_UINT64 unlockedAt
-        // checking that lock is in active array shouldn't be needed if data is consistent
 
-        if (_increase) {
-            lock_.amount = lock_.amount.add(_amount);
-        } else {
-            lock_.amount = lock_.amount.sub(_amount);
-            // if lock gets down to zero, unlock
-            if (lock_.amount == 0) {
-                _unlock(_accountAddress, _lockId);
-            }
+        lock_.amount = lock_.amount.add(_amount);
+
+        // update total
+        account.totalLocked = account.totalLocked.add(_amount);
+    }
+
+    function _decreaseActiveLockAmount(address _accountAddress, address _lockManager, uint256 _amount) internal {
+        Account storage account = accounts[_accountAddress];
+        Lock storage lock_ = account.locks[_lockManager];
+        // check that lock hasn't been unlocked
+        require(lock_.unlockedAt > getTimestamp64(), ERROR_UNLOCKED_LOCK); // locks are created with a MAX_UINT64 unlockedAt
+
+        lock_.amount = lock_.amount.sub(_amount);
+
+        // update total
+        // no need for SafeMath: totalLocked must be greater or equal than lock._amount
+        account.totalLocked = account.totalLocked - _amount;
+
+        // if lock gets down to zero, unlock
+        if (lock_.amount == 0) {
+            // it comes from transferFromLock, which uses msg.sender as _lockManager
+            _unsafeUnlock(_accountAddress, _lockManager);
         }
     }
 
-    function _transfer(address _from, uint256 _fromLockId, address _to, uint256 _toLockId, uint256 _amount) internal {
+    function _transfer(address _from, address _fromLockManager, address _to, address _toLockManager, uint256 _amount) internal {
         // transferring 0 staked tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
-        // first valid lock starts at 1, so _toLockId = 0 means no lock
-        if (_toLockId > 0) {
-            _updateActiveLockAmount(_to, _toLockId, _amount, true);
+        // _toLockManager = 0 means no lock
+        if (_toLockManager != address(0)) {
+            _increaseActiveLockAmount(_to, _toLockManager, _amount);
         }
 
         // update stakes
         _modifyStakeBalance(_from, _amount, false);
         _modifyStakeBalance(_to, _amount, true);
 
-        emit StakeTransferred(_from, _fromLockId, _amount, _to, _toLockId);
+        emit StakeTransferred(_from, _fromLockManager, _amount, _to, _toLockManager);
+    }
+
+    /**
+     * @notice Get the staked but unlocked amount of tokens by `_accountAddress`
+     * @param _accountAddress Owner of the staked but unlocked balance
+     * @return Amount of tokens staked but not locked by given account
+     */
+    function _unlockedBalanceOf(address _accountAddress) internal view returns (uint256) {
+        uint256 unlockedTokens = totalStakedFor(_accountAddress).sub(accounts[_accountAddress].totalLocked);
+
+        return unlockedTokens;
+    }
+
+    /**
+     * @notice Check if `_accountAddress`'s by `_lockManager` can be unlocked
+     * @param _accountAddress Owner of lock
+     * @param _lockManager Manager of the lock for the given account
+     * @return Whether given lock of given account can be unlocked
+     */
+    function _canUnlock(address _accountAddress, address _lockManager) internal view returns (bool) {
+        Lock storage lock_ = accounts[_accountAddress].locks[_lockManager];
+
+        require(lock_.unlockedAt > 0, ERROR_LOCK_DOES_NOT_EXIST);
+
+        if (msg.sender == _lockManager ||
+            (msg.sender == _accountAddress && ILockManager(_lockManager).canUnlock(_accountAddress, lock_.data))) {
+            return true;
+        }
+
+        return false;
     }
 }

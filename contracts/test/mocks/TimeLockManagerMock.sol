@@ -10,8 +10,8 @@ contract TimeLockManagerMock is TimeLockManager {
     uint256 _mockTime = now;
     uint256 _mockBlockNumber = block.number;
 
-    function setLockData(Staking _staking, address _account, uint256 _lockId, bytes _newData) external {
-        _staking.setLockData(_account, _lockId, _newData);
+    function setLockData(Staking _staking, address _account, bytes _newData) external {
+        _staking.setLockData(_account, _newData);
     }
 
     function getTimestampExt() external view returns (uint256) {

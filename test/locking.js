@@ -27,8 +27,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     from = owner
   ) => {
     await approveAndStake(stakeAmount, from)
-    const r = await staking.lock(lockAmount, manager, EMPTY_STRING, { from })
-    return getEvent(r, 'Locked', 'lockId')
+    await staking.lock(lockAmount, manager, EMPTY_STRING, { from })
   }
 
   beforeEach(async () => {
@@ -44,17 +43,19 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
   })
 
   it('locks', async () => {
-    const lockId = await approveStakeAndLock(user1)
+    await approveStakeAndLock(user1)
 
     // check lock values
-    const [ _amount, _unlockedAt, _manager, _data ] = await staking.getLock(owner, lockId)
+    const [ _amount, _unlockedAt, _data ] = await staking.getLock(owner, user1)
     assert.equal(_amount, DEFAULT_LOCK_AMOUNT, "locked amount should match")
     assert.equal(_unlockedAt.toString(), MAX_UINT64.toString(), "unlock time should match")
-    assert.equal(_manager, user1, "unlocker should match")
     assert.equal(_data, zeroBytes, "lock data should match")
 
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Unlocked balance should match")
-    assert.equal((await staking.locksCount(owner)).valueOf(), parseInt(lockId, 10), "last lock id should match")
+  })
+
+  it('fails getting non-existent lock', async () => {
+    await assertRevert(staking.getLock(user1, user2))
   })
 
   it('fails locking 0 tokens', async () => {
@@ -67,173 +68,137 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await assertRevert(staking.lock(DEFAULT_STAKE_AMOUNT + 1, user1, EMPTY_STRING))
   })
 
-  it('unlocks last lock, EOA manager', async () => {
-    const lockId = await approveStakeAndLock(user1)
+  it('unlocks with only 1 lock, EOA manager', async () => {
+    await approveStakeAndLock(user1, DEFAULT_LOCK_AMOUNT)
 
     // unlock
-    await staking.unlock(owner, lockId, { from: user1 })
+    await staking.unlock(owner, user1, { from: user1 })
 
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT, "Unlocked balance should match")
-    assert.equal((await staking.locksCount(owner)).valueOf(), 0, "there shouldn't be locks")
+    assert.equal((await staking.getTotalLocked(owner)).toString(), '0', "total locked doesn’t match")
   })
 
-  it('unlocks non-last lock, EOA manager', async () => {
-    const lockId = await approveStakeAndLock(user1)
+  it('unlocks with more than 1 lock, EOA manager', async () => {
+    await approveStakeAndLock(user1)
     // lock again
-    await staking.lock(DEFAULT_LOCK_AMOUNT, user1, EMPTY_STRING)
+    await staking.lock(DEFAULT_LOCK_AMOUNT, user2, EMPTY_STRING)
+
+    const previousTotalLocked = await staking.getTotalLocked(owner)
 
     // unlock
-    await staking.unlock(owner, lockId, { from: user1 })
+    await staking.unlock(owner, user1, { from: user1 })
 
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Unlocked balance should match")
-    assert.equal((await staking.locksCount(owner)).valueOf(), 1, "there should be just 1 lock")
+    assert.equal((await staking.getTotalLocked(owner)).toString(), (previousTotalLocked.sub(DEFAULT_LOCK_AMOUNT)).toString(), "total locked doesn’t match")
   })
 
   it('unlocks, contract manager, called by owner', async () => {
     await lockManager.setResult(true)
-    const lockId = await approveStakeAndLock(lockManager.address)
+    await approveStakeAndLock(lockManager.address)
 
     // unlock
-    await staking.unlock(owner, lockId, { from: owner })
+    await staking.unlock(owner, lockManager.address, { from: owner })
 
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT, "Unlocked balance should match")
-    assert.equal((await staking.locksCount(owner)).valueOf(), 0, "there shouldn't be locks")
+    assert.equal((await staking.getTotalLocked(owner)).toString(), '0', "total locked doesn’t match")
   })
 
   it('unlocks, contract manager, called by manager', async () => {
     await lockManager.setResult(true)
-    const lockId = await approveStakeAndLock(lockManager.address)
+    await approveStakeAndLock(lockManager.address)
 
     // unlock
-    await lockManager.unlock(staking.address, owner, lockId)
+    await lockManager.unlock(staking.address, owner, lockManager.address)
 
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT, "Unlocked balance should match")
-    assert.equal((await staking.locksCount(owner)).valueOf(), 0, "there shouldn't be locks")
+    assert.equal((await staking.getTotalLocked(owner)).toString(), '0', "total locked doesn’t match")
   })
 
   it('unlocks, contract manager, called by manager, even if condition is not satisfied', async () => {
     // not needed, is false by default
     //await lockManager.setResult(false)
-    const lockId = await approveStakeAndLock(lockManager.address)
+    await approveStakeAndLock(lockManager.address)
 
     // unlock
-    await lockManager.unlock(staking.address, owner, lockId)
+    await lockManager.unlock(staking.address, owner, lockManager.address)
 
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT, "Unlocked balance should match")
-    assert.equal((await staking.locksCount(owner)).valueOf(), 0, "there shouldn't be locks")
+    assert.equal((await staking.getTotalLocked(owner)).toString(), '0', "total locked doesn’t match")
   })
 
   it('fails calling canUnlock, EOA manager', async () => {
-    const lockId = await approveStakeAndLock(user1)
+    await approveStakeAndLock(user1)
 
     // call canUnlock
-    await assertRevert(staking.canUnlock(owner, lockId))
+    await assertRevert(staking.canUnlock(owner, user1))
   })
 
   it('fails to unlock if it cannot unlock, EOA manager', async () => {
-    const lockId = await approveStakeAndLock(user1)
+    await approveStakeAndLock(user1)
 
     // tries to unlock
-    await assertRevert(staking.unlock(owner, lockId))
+    await assertRevert(staking.unlock(owner, user1))
   })
 
   it('fails to unlock if can not unlock, contract manager, called by owner', async () => {
     // not needed, is false by default
     // await lockManager.setResult(false)
-    const lockId = await approveStakeAndLock(lockManager.address)
+    await approveStakeAndLock(lockManager.address)
 
     // tries to unlock
-    await assertRevert(staking.unlock(owner, lockId, { from: owner }))
+    await assertRevert(staking.unlock(owner, lockManager.address, { from: owner }))
   })
 
   it('fails to unlock if, contract manager, called by 3rd party (even if condition is true)', async () => {
     await lockManager.setResult(true)
-    const lockId = await approveStakeAndLock(lockManager.address)
+    await approveStakeAndLock(lockManager.address)
 
     // tries to unlock
-    await assertRevert(staking.unlock(owner, lockId, { from: user1 }))
-  })
-
-  it('unlocks all', async () => {
-    const lockId = await approveStakeAndLock(user1, DEFAULT_LOCK_AMOUNT / 2)
-    // lock again
-    await staking.lock(DEFAULT_LOCK_AMOUNT / 2, user1, EMPTY_STRING)
-
-    // unlock
-    await staking.unlockAll(owner, { from: user1 })
-
-    assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT, "Unlocked balance should match")
-    assert.equal((await staking.locksCount(owner)).valueOf(), 0, "there shouldn't be locks")
-  })
-
-  it('unlocks all with no previous locks', async () => {
-    await staking.unlockAll(owner, { from: user1 })
-    assert.equal((await staking.locksCount(owner)).valueOf(), 0, "there shouldn't be locks")
-  })
-
-  it('tries to unlockAll but it only unlocks one', async () => {
-    const lockId = await approveStakeAndLock(user2)
-    // lock again, different EOA manager
-    await staking.lock(DEFAULT_LOCK_AMOUNT / 2, user1, EMPTY_STRING)
-
-    // unlock
-    await staking.unlockAll(owner, { from: user1 })
-
-    assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Unlocked balance should match")
-    assert.equal((await staking.locksCount(owner)).valueOf(), 1, "there shouldn't be locks")
-  })
-
-  it('fails trying to unlockAllOrNone if a lock cannot be unlocked', async () => {
-    const lockId = await approveStakeAndLock(user1)
-    // lock again, different EOA manager
-    await staking.lock(DEFAULT_LOCK_AMOUNT / 2, user2, EMPTY_STRING)
-
-    // unlock
-    await assertRevert(staking.unlockAllOrNone(owner, { from: user1 }))
+    await assertRevert(staking.unlock(owner, lockManager.address, { from: user1 }))
   })
 
   it('change lock amount', async () => {
-    const lockId = await approveStakeAndLock(lockManager.address)
-    const [ amount1 ] = await staking.getLock(owner, lockId)
+    await approveStakeAndLock(lockManager.address)
+    const [ amount1 ] = await staking.getLock(owner, lockManager.address)
     assert.equal(amount1, DEFAULT_LOCK_AMOUNT, "Amount should match")
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Unlocked balance should match")
 
     // change amount
     const newLockAmount = DEFAULT_LOCK_AMOUNT / 2
-    await lockManager.decreaseLockAmount(staking.address, owner, lockId, newLockAmount)
+    await lockManager.decreaseLockAmount(staking.address, owner, newLockAmount)
 
-    const [ amount2 ] = await staking.getLock(owner, lockId)
+    const [ amount2 ] = await staking.getLock(owner, lockManager.address)
     assert.equal(amount2, newLockAmount, "Amount should match")
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT - newLockAmount, "Unlocked balance should match")
   })
 
   it('fails to change lock amount to zero', async () => {
-    const lockId = await approveStakeAndLock(lockManager.address)
+    await approveStakeAndLock(lockManager.address)
 
     // try to change amount
-    await assertRevert(lockManager.decreaseLockAmount(staking.address, owner, lockId, 0))
+    await assertRevert(lockManager.decreaseLockAmount(staking.address, owner, 0))
   })
 
   it('fails to change lock amount to greater than before', async () => {
-    const lockId = await approveStakeAndLock(lockManager.address)
+    await approveStakeAndLock(lockManager.address)
 
     // try to change amount
-    await assertRevert(lockManager.decreaseLockAmount(staking.address, owner, lockId, DEFAULT_LOCK_AMOUNT + 1))
+    await assertRevert(lockManager.decreaseLockAmount(staking.address, owner, DEFAULT_LOCK_AMOUNT + 1))
   })
 
   it('change lock manager', async () => {
-    const lockId = await approveStakeAndLock(user1)
-    const [ amount1, unlockedAt1, manager1, data1 ] = await staking.getLock(owner, lockId)
-    assert.equal(manager1, user1, "Manager should match")
-    assert.equal(await staking.canUnlock(owner, lockId, { from: user1 }), true, "User 1 can unlock")
-    assert.equal(await staking.canUnlock(owner, lockId, { from: user2 }), false, "User 2 can not unlock")
+    await approveStakeAndLock(user1)
+    const [ amount1, unlockedAt1, data1 ] = await staking.getLock(owner, user1)
+    assert.equal(await staking.canUnlock(owner, user1, { from: user1 }), true, "User 1 can unlock")
+    assert.equal(await staking.canUnlock(owner, user1, { from: user2 }), false, "User 2 can not unlock")
+    await assertRevert(staking.canUnlock(owner, user2, { from: user2 })) // it doesn’t exist
 
     // change manager
-    await staking.setLockManager(owner, lockId, user2, { from: user1 })
+    await staking.setLockManager(owner, user2, { from: user1 })
 
-    const [ amount2, unlockedAt2, manager2, data2 ] = await staking.getLock(owner, lockId)
-    assert.equal(manager2, user2, "Manager should match")
-    assert.equal(await staking.canUnlock(owner, lockId, { from: user1 }), false, "User 1 can not unlock")
-    assert.equal(await staking.canUnlock(owner, lockId, { from: user2 }), true, "User 2 can unlock")
+    const [ amount2, unlockedAt2, data2 ] = await staking.getLock(owner, user2)
+    await assertRevert(staking.canUnlock(owner, user1, { from: user1 })) // it doesn’t exist
+    assert.equal(await staking.canUnlock(owner, user2, { from: user1 }), false, "User 1 can not unlock")
+    assert.equal(await staking.canUnlock(owner, user2, { from: user2 }), true, "User 2 can unlock")
   })
 })
