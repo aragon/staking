@@ -13,6 +13,7 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
   const MAX_UINT64 = (new web3.BigNumber(2)).pow(new web3.BigNumber(64)).sub(new web3.BigNumber(1))
   const DEFAULT_STAKE_AMOUNT = 120
   const DEFAULT_LOCK_AMOUNT = DEFAULT_STAKE_AMOUNT / 3
+  const ACTIVATED_LOCK = "0x01"
   const EMPTY_STRING = ''
 
   const approveAndStake = async (amount = DEFAULT_STAKE_AMOUNT, from = owner) => {
@@ -27,7 +28,7 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
     from = owner
   ) => {
     await approveAndStake(stakeAmount, from)
-    await staking.lock(lockAmount, manager, EMPTY_STRING, { from })
+    await staking.lock(lockAmount, manager, ACTIVATED_LOCK, { from })
   }
 
   beforeEach(async () => {
@@ -92,9 +93,8 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
         // total stake remains the same
         assert.equal((await staking.totalStaked()).toString(), DEFAULT_STAKE_AMOUNT, "Total stake should match")
         // check lock values
-        const [ amount, unlockedAt, manager, data ]  = await staking.getLock(owner, lockManager.address)
+        const [ amount, data ]  = await staking.getLock(owner, lockManager.address)
         assert.equal(amount, DEFAULT_LOCK_AMOUNT - transferAmount, "locked amount should match")
-        assert.equal(unlockedAt.toString(), MAX_UINT64.toString(), "unlock time should match")
       })
 
       it('transfers the whole lock amount', async () => {
@@ -106,9 +106,8 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
         // total stake remains the same
         assert.equal((await staking.totalStaked()).toString(), DEFAULT_STAKE_AMOUNT, "Total stake should match")
         // check lock values
-        const [amount, unlockedAt, manager, data ] = await staking.getLock(owner, lockManager.address)
+        const [amount, data ] = await staking.getLock(owner, lockManager.address)
         assert.equal(amount, 0, "locked amount should match")
-        assert.notEqual(unlockedAt.toString(), MAX_UINT64.toString(), "unlock time should  be a 'real' number")
       })
 
       it('transfers to lock', async () => {

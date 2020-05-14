@@ -20,14 +20,14 @@ contract LockManagerMock is ILockManager {
     }
 
     function decreaseLockAmount(Staking _staking, address _account, uint256 _newAmount) external {
-        _staking.decreaseLockAmount(_account, _newAmount);
+        _staking.decreaseLockAmount(_account, address(this), _newAmount);
     }
 
     function setLockManager(Staking _staking, address _account, ILockManager _newManager) external {
         _staking.setLockManager(_account, _newManager);
     }
 
-    function canUnlock(address, bytes) external view returns (bool) {
+    function canUnlock(address, bytes, uint256) external view returns (bool) {
         return result;
     }
 

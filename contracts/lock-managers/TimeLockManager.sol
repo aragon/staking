@@ -11,7 +11,7 @@ contract TimeLockManager is ILockManager, TimeHelpers {
 
     enum TimeUnit { Blocks, Seconds }
 
-    function canUnlock(address, bytes _lockData) external view returns (bool) {
+    function canUnlock(address, bytes _lockData, uint256) external view returns (bool) {
         uint256 unit = _lockData.uint256At(0);
         uint256 start = _lockData.uint256At(32);
         uint256 end = _lockData.uint256At(64);
