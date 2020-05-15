@@ -2,15 +2,18 @@ pragma solidity ^0.4.24;
 
 
 interface IStakingLocking {
-    event Locked(address indexed account, address indexed lockManager, uint256 amount, bytes data);
+    event Locked(address indexed account, address indexed lockManager, uint256 amount, uint256 allowance, bytes data);
     event Unlocked(address indexed account, address indexed lockManager, uint256 amount, bytes data);
     event LockAmountChanged(address indexed account, address indexed lockManager, uint256 amount, bool increase);
+    event LockAllowanceChanged(address indexed account, address indexed lockManager, uint256 allowance, bool increase);
     event LockManagerChanged(address indexed account, address indexed oldLockManager, address newLockManager);
     event LockDataChanged(address indexed account, address indexed lockManager, bytes data);
 
-    function lock(uint256 _amount, address _lockManager, bytes _data) external;
+    function lock(uint256 _amount, address _lockManager, uint256 _allowance, bytes _data) external;
     function unlock(address _account, address _lockManager) external;
-    function increaseLockAmount(address _lockManager, uint256 _amount) external;
+    function increaseLockAllowance(address _lockManager, uint256 _allowance) external;
+    function decreaseLockAllowance(address _account, address _lockManager, uint256 _allowance) external;
+    function increaseLockAmount(address _account, address _lockManager, uint256 _amount) external;
     function decreaseLockAmount(address _account, address _lockManager, uint256 _amount) external;
     function setLockManager(address _account, address _newLockManager) external;
     function setLockData(address _account, bytes _newData) external;
@@ -22,6 +25,7 @@ interface IStakingLocking {
         view
         returns (
             uint256 _amount,
+            uint256 _allowance,
             bytes _data
         );
     function unlockedBalanceOf(address _account) external view returns (uint256);

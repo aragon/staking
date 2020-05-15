@@ -37,7 +37,7 @@ contract('Staking app, Time locking', ([owner]) => {
 
   const approveStakeAndLock = async(data, lockAmount = DEFAULT_AMOUNT / 2, stakeAmount = DEFAULT_AMOUNT) => {
     await approveAndStake(stakeAmount)
-    await staking.lock(lockAmount, manager.address, data)
+    await staking.lock(lockAmount, manager.address, lockAmount, data)
   }
 
   beforeEach(async () => {
@@ -59,8 +59,9 @@ contract('Staking app, Time locking', ([owner]) => {
     await approveStakeAndLock(data)
 
     // check lock values
-    const [ _amount, _data ] = await staking.getLock(owner, manager.address)
+    const [ _amount, _allowance, _data ] = await staking.getLock(owner, manager.address)
     assert.equal(_amount, DEFAULT_AMOUNT / 2, "locked amount should match")
+    assert.equal(_allowance, DEFAULT_AMOUNT / 2, "locked allowance should match")
     assert.equal(_data, data, "lock data should match")
 
     // can not unlock
@@ -80,8 +81,9 @@ contract('Staking app, Time locking', ([owner]) => {
     await approveStakeAndLock(data)
 
     // check lock values
-    const [ _amount, _data ] = await staking.getLock(owner, manager.address)
+    const [ _amount, _allowance, _data ] = await staking.getLock(owner, manager.address)
     assert.equal(_amount, DEFAULT_AMOUNT / 2, "locked amount should match")
+    assert.equal(_allowance, DEFAULT_AMOUNT / 2, "locked allowance should match")
     assert.equal(_data, data, "lock data should match")
 
     // can not unlock
@@ -110,7 +112,7 @@ contract('Staking app, Time locking', ([owner]) => {
     await approveStakeAndLock(data)
 
     // check lock values
-    const [ amount1, lockData1 ] = await staking.getLock(owner, manager.address)
+    const [ , , lockData1 ] = await staking.getLock(owner, manager.address)
     assert.equal(lockData1, data, "lock data should match")
 
     // can not unlock
@@ -124,7 +126,7 @@ contract('Staking app, Time locking', ([owner]) => {
 
 
     // check lock values
-    const [ amount2, lockData2 ] = await staking.getLock(owner, manager.address)
+    const [ , , lockData2 ] = await staking.getLock(owner, manager.address)
     assert.equal(lockData2, data2, "lock data should match")
 
     // can unlock

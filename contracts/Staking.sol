@@ -19,20 +19,21 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     uint64 private constant MAX_UINT64 = uint64(-1);
 
     string private constant ERROR_TOKEN_NOT_CONTRACT = "STAKING_TOKEN_NOT_CONTRACT";
-    string private constant ERROR_NOT_LOCK_MANAGER = "STAKING_NOT_LOCK_MANAGER";
     string private constant ERROR_AMOUNT_ZERO = "STAKING_AMOUNT_ZERO";
-    string private constant ERROR_EMPTY_DATA = "STAKING_EMPTY_DATA";
     string private constant ERROR_TOKEN_TRANSFER = "STAKING_TOKEN_TRANSFER";
     string private constant ERROR_NOT_ENOUGH_BALANCE = "STAKING_NOT_ENOUGH_BALANCE";
+    string private constant ERROR_NOT_ENOUGH_ALLOWANCE = "STAKING_NOT_ENOUGH_ALLOWANCE";
+    string private constant ERROR_ALLOWANCE_ZERO = "STAKING_ALLOWANCE_ZERO";
     string private constant ERROR_LOCK_ALREADY_EXISTS = "STAKING_LOCK_ALREADY_EXISTS";
     string private constant ERROR_LOCK_DOES_NOT_EXIST = "STAKING_LOCK_DOES_NOT_EXIST";
     string private constant ERROR_NOT_ENOUGH_LOCK = "STAKING_NOT_ENOUGH_LOCK";
-    string private constant ERROR_CAN_NOT_UNLOCK = "STAKING_CAN_NOT_UNLOCK";
-    string private constant ERROR_UNLOCKED_LOCK = "STAKING_UNLOCKED_LOCK";
+    string private constant ERROR_CANNOT_UNLOCK = "STAKING_CANNOT_UNLOCK";
+    string private constant ERROR_CANNOT_CHANGE_ALLOWANCE = "STAKING_CANNOT_CHANGE_ALLOWANCE";
 
     struct Lock {
         uint256 amount;
-        bytes data; // must be non-empty to consider the lock active
+        uint256 allowance;  // must be greater than zero to consider the lock active, and always greater than or equal to amount
+        bytes data;
     }
 
     struct Account {
@@ -101,26 +102,26 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @param _lockManager The manager entity for this particular lock. This entity will have full control over the lock, in particular will be able to unlock it
      * @param _data Data to parametrize logic for the lock to be enforced by the manager
      */
-    function lock(uint256 _amount, address _lockManager, bytes _data) external isInitialized {
+    function lock(uint256 _amount, address _lockManager, uint256 _allowance, bytes _data) external isInitialized {
         Account storage account = accounts[msg.sender];
         // locking 0 tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
-        // locking without data is invalid
-        require(_data.length > 0, ERROR_EMPTY_DATA);
+        require(_allowance >= _amount, ERROR_NOT_ENOUGH_ALLOWANCE);
 
         // check enough unlocked tokens are available
         require(_amount <= _unlockedBalanceOf(msg.sender), ERROR_NOT_ENOUGH_BALANCE);
 
         Lock storage lock_ = account.locks[_lockManager];
         // check if lock exists
-        require(lock_.data.length == 0, ERROR_LOCK_ALREADY_EXISTS);
+        require(lock_.allowance == 0, ERROR_LOCK_ALREADY_EXISTS);
         lock_.amount = _amount;
+        lock_.allowance = _allowance;
         lock_.data = _data;
 
         // update total
         account.totalLocked = account.totalLocked.add(_amount);
 
-        emit Locked(msg.sender, _lockManager, _amount, _data);
+        emit Locked(msg.sender, _lockManager, _amount, _allowance, _data);
     }
 
     /**
@@ -159,15 +160,52 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Increase `_amount` tokens from lock of `msg.sender` by `_lockManager`
+     * @notice Increase `_allowance` allowed tokens for lock of `msg.sender` by `_lockManager`
+     * @param _lockManager The manager entity for this particular lock
+     * @param _allowance Amount of allowed tokens increase
+     */
+    function increaseLockAllowance(address _lockManager, uint256 _allowance) external isInitialized {
+        require(_allowance > 0, ERROR_AMOUNT_ZERO);
+
+        Lock storage lock_ = accounts[msg.sender].locks[_lockManager];
+        lock_.allowance = lock_.allowance.add(_allowance);
+
+        emit LockAllowanceChanged(msg.sender, _lockManager, _allowance, true);
+    }
+
+    /**
+     * @notice Decrease `_allowance` allowed tokens for lock of `_accountAddress` by `_lockManager`
+     * @param _accountAddress Owner of locked tokens
+     * @param _lockManager The manager entity for this particular lock
+     * @param _allowance Amount of allowed tokens decrease
+     */
+    function decreaseLockAllowance(address _accountAddress, address _lockManager, uint256 _allowance) external isInitialized {
+        // only owner and manager can decrease allowance
+        require(msg.sender == _accountAddress || msg.sender == _lockManager, ERROR_CANNOT_CHANGE_ALLOWANCE);
+        require(_allowance > 0, ERROR_AMOUNT_ZERO);
+
+        Lock storage lock_ = accounts[_accountAddress].locks[_lockManager];
+        uint256 newAllowance = lock_.allowance.sub(_allowance);
+        require(newAllowance >= lock_.amount, ERROR_NOT_ENOUGH_ALLOWANCE);
+        // unlock must be used for this:
+        require(newAllowance > 0, ERROR_ALLOWANCE_ZERO);
+
+        lock_.allowance = newAllowance;
+
+        emit LockAllowanceChanged(_accountAddress, _lockManager, _allowance, false);
+    }
+
+    /**
+     * @notice Increase `_amount` tokens from lock of `_accountAddress` by `_lockManager`
+     * @param _accountAddress Owner of locked tokens
      * @param _lockManager The manager entity for this particular lock
      * @param _amount Amount of locked tokens increase
      */
-    function increaseLockAmount(address _lockManager, uint256 _amount) external isInitialized {
+    function increaseLockAmount(address _accountAddress, address _lockManager, uint256 _amount) external isInitialized {
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
         // check enough unlocked tokens are available
-        require(_amount <= _unlockedBalanceOf(msg.sender), ERROR_NOT_ENOUGH_BALANCE);
+        require(_amount <= _unlockedBalanceOf(_accountAddress), ERROR_NOT_ENOUGH_BALANCE);
 
         _increaseActiveLockAmount(msg.sender, _lockManager, _amount);
 
@@ -175,15 +213,16 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Decrease `_amount` tokens from lock of `_accountAddress` by `msg.sender`
+     * @notice Decrease `_amount` tokens from lock of `_accountAddress` by `_lockManager`
      * @param _accountAddress Owner of locked tokens
+     * @param _lockManager The manager entity for this particular lock
      * @param _amount Amount of locked tokens decrease
      */
     function decreaseLockAmount(address _accountAddress, address _lockManager, uint256 _amount) external isInitialized {
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
         // only manager and owner (if manager allows) can unlock
-        require(_canUnlock(_accountAddress, _lockManager, _amount), ERROR_CAN_NOT_UNLOCK);
+        require(_canUnlock(_accountAddress, _lockManager, _amount), ERROR_CANNOT_UNLOCK);
 
         Account storage account = accounts[_accountAddress];
         Lock storage lock_ = account.locks[_lockManager];
@@ -207,7 +246,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      */
     function unlock(address _accountAddress, address _lockManager) external isInitialized {
         // only manager and owner (if manager allows) can unlock
-        require(_canUnlock(_accountAddress, _lockManager, 0), ERROR_CAN_NOT_UNLOCK);
+        require(_canUnlock(_accountAddress, _lockManager, 0), ERROR_CANNOT_UNLOCK);
 
         _unsafeUnlock(_accountAddress, _lockManager);
     }
@@ -282,11 +321,13 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         isInitialized
         returns (
             uint256 _amount,
+            uint256 _allowance,
             bytes _data
         )
     {
         Lock storage lock_ = accounts[_accountAddress].locks[_lockManager];
         _amount = lock_.amount;
+        _allowance = lock_.allowance;
         _data = lock_.data;
     }
 
@@ -419,10 +460,12 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     function _increaseActiveLockAmount(address _accountAddress, address _lockManager, uint256 _amount) internal {
         Account storage account = accounts[_accountAddress];
         Lock storage lock_ = account.locks[_lockManager];
-        // check that lock hasn't been unlocked
-        require(lock_.data.length > 0, ERROR_UNLOCKED_LOCK);
 
-        lock_.amount = lock_.amount.add(_amount);
+        uint256 newAmount = lock_.amount.add(_amount);
+        // check allowance is enough, it also means that lock hasn't been unlocked
+        require(newAmount <= lock_.allowance, ERROR_NOT_ENOUGH_ALLOWANCE);
+
+        lock_.amount = newAmount;
 
         // update total
         account.totalLocked = account.totalLocked.add(_amount);
@@ -483,7 +526,8 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      */
     function _canUnlock(address _accountAddress, address _lockManager, uint256 _amount) internal view returns (bool) {
         Lock storage lock_ = accounts[_accountAddress].locks[_lockManager];
-        require(lock_.amount > _amount, ERROR_NOT_ENOUGH_LOCK);
+        require(lock_.allowance > 0, ERROR_LOCK_DOES_NOT_EXIST);
+        require(lock_.amount >= _amount, ERROR_NOT_ENOUGH_LOCK);
 
         uint256 amount = _amount == 0 ? lock_.amount : _amount;
 
