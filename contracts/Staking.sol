@@ -207,9 +207,9 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         // check enough unlocked tokens are available
         require(_amount <= _unlockedBalanceOf(_accountAddress), ERROR_NOT_ENOUGH_BALANCE);
 
-        _increaseActiveLockAmount(msg.sender, _lockManager, _amount);
+        _increaseActiveLockAmount(_accountAddress, _lockManager, _amount);
 
-        emit LockAmountChanged(msg.sender, _lockManager, _amount, true);
+        emit LockAmountChanged(_accountAddress, _lockManager, _amount, true);
     }
 
     /**
