@@ -75,6 +75,36 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await assertRevert(staking.lock(DEFAULT_STAKE_AMOUNT, user1, DEFAULT_STAKE_AMOUNT, "0x02"))
   })
 
+  it('creates a new allowance', async () => {
+    await staking.allowNewLockManager(user1, DEFAULT_LOCK_AMOUNT)
+
+    const [ , _allowance  ] = await staking.getLock(owner, user1)
+    assert.equal(_allowance, DEFAULT_LOCK_AMOUNT, "allowed amount should match")
+  })
+
+  it('creates a new allowance and then lock manager locks', async () => {
+    await approveAndStake()
+    await staking.allowNewLockManager(user1, DEFAULT_LOCK_AMOUNT)
+    await staking.increaseLockAmount(owner, user1, DEFAULT_LOCK_AMOUNT, { from: user1 })
+
+    // check lock values
+    const [ _amount, _allowance, _data ] = await staking.getLock(owner, user1)
+    assert.equal(_amount, DEFAULT_LOCK_AMOUNT, "locked amount should match")
+    assert.equal(_allowance, DEFAULT_LOCK_AMOUNT, "locked allowance should match")
+    assert.equal(_data, EMPTY_DATA, "lock data should match")
+
+    assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Unlocked balance should match")
+  })
+
+  it('fails creating allowance of 0 tokens', async () => {
+    await assertRevert(staking.allowNewLockManager(user1, 0))
+  })
+
+  it('fails creating allowance if lock exists', async () => {
+    await approveStakeAndLock(user1)
+    await assertRevert(staking.allowNewLockManager(user1, 1))
+  })
+
   it('increases allowance of existing lock', async () => {
     await approveStakeAndLock(user1)
 
@@ -82,6 +112,10 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
 
     const [ , _allowance  ] = await staking.getLock(owner, user1)
     assert.equal(_allowance, 2 * DEFAULT_LOCK_AMOUNT, "allowed amount should match")
+  })
+
+  it('fails increasing allowance of non-existing', async () => {
+    await assertRevert(staking.increaseLockAllowance(user1, 1))
   })
 
   it('fails increasing allowance of existing lock by 0', async () => {

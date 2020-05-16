@@ -160,17 +160,28 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
+     * @notice Allow `_lockManager` to lock up to `_allowance` allowed tokens of `msg.sender`
+     *         It creates a new inactive lock, so the lock for this manager cannot exist before.
+     * @param _lockManager The manager entity for this particular lock
+     * @param _allowance Amount of allowed tokens increase
+     */
+    function allowNewLockManager(address _lockManager, uint256 _allowance) external isInitialized {
+        Lock storage lock_ = accounts[msg.sender].locks[_lockManager];
+        require(lock_.allowance == 0, ERROR_LOCK_ALREADY_EXISTS);
+
+        _increaseLockAllowance(_lockManager, lock_, _allowance);
+    }
+
+    /**
      * @notice Increase `_allowance` allowed tokens for lock of `msg.sender` by `_lockManager`
      * @param _lockManager The manager entity for this particular lock
      * @param _allowance Amount of allowed tokens increase
      */
     function increaseLockAllowance(address _lockManager, uint256 _allowance) external isInitialized {
-        require(_allowance > 0, ERROR_AMOUNT_ZERO);
-
         Lock storage lock_ = accounts[msg.sender].locks[_lockManager];
-        lock_.allowance = lock_.allowance.add(_allowance);
+        require(lock_.allowance > 0, ERROR_LOCK_DOES_NOT_EXIST);
 
-        emit LockAllowanceChanged(msg.sender, _lockManager, _allowance, true);
+        _increaseLockAllowance(_lockManager, lock_, _allowance);
     }
 
     /**
@@ -455,6 +466,14 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         emit Unlocked(_accountAddress, _lockManager, lock_.amount, lock_.data);
 
         delete account.locks[_lockManager];
+    }
+
+    function _increaseLockAllowance(address _lockManager, Lock storage _lock, uint256 _allowance) internal {
+        require(_allowance > 0, ERROR_AMOUNT_ZERO);
+
+        _lock.allowance = _lock.allowance.add(_allowance);
+
+        emit LockAllowanceChanged(msg.sender, _lockManager, _allowance, true);
     }
 
     function _increaseActiveLockAmount(address _accountAddress, address _lockManager, uint256 _amount) internal {
