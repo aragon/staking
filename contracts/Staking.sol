@@ -160,6 +160,28 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
+     * @notice Transfer `@tokenAmount(stakingToken: address, _amount)` from `_from`'s lock by `msg.sender` to `_to`, and unlock the rest
+     * @param _from Owner of locked tokens
+     * @param _to Recipient of the tokens
+     * @param _amount Number of tokens to be transferred
+     */
+    function unlockAndSlash(
+        address _from,
+        address _to,
+        uint256 _amount
+    )
+        external
+        isInitialized
+    {
+        // No need to check that amount is positive, as _transfer will fail
+        // No need to check that have enough locked funds, as _decreaseActiveLockAmount will fail
+
+        _transfer(_from, msg.sender, _to, address(0), _amount);
+        _decreaseActiveLockAmount(_from, msg.sender, _amount);
+        _unsafeUnlock(_from, msg.sender);
+    }
+
+    /**
      * @notice Increase allowance in `@tokenAmount(stakingToken: address, _allowance)` of lock manager `_lockManager` for user `msg.sender`
      * @param _lockManager The manager entity for this particular lock
      * @param _allowance Amount of allowed tokens increase

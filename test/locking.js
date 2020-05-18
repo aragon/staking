@@ -300,6 +300,25 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await assertRevert(staking.decreaseAndRemoveManager(owner, lockManager.address, { from: user1 }))
   })
 
+  it('unlocks and transfers (slash) in one transaction', async () => {
+    const totalLock = 120
+    const slashAmount = 40
+
+    await approveStakeAndLock(user1, totalLock)
+
+    // unlock
+    await staking.unlockAndSlash(owner, user2, slashAmount, { from: user1 })
+
+    assert.equal((await staking.unlockedBalanceOf(owner)).toString(), (totalLock - slashAmount).toString(), "Unlocked balance should match")
+    assert.equal((await staking.getTotalLockedOf(owner)).toString(), '0', "total locked doesn’t match")
+    // lock manager
+    assert.equal((await staking.unlockedBalanceOf(user1)).toString(), '0', "Unlocked balance should match")
+    assert.equal((await staking.getTotalLockedOf(user1)).toString(), '0', "total locked doesn’t match")
+    // recipient
+    assert.equal((await staking.unlockedBalanceOf(user2)).toString(), slashAmount.toString(), "Unlocked balance should match")
+    assert.equal((await staking.getTotalLockedOf(user2)).toString(), '0', "total locked doesn’t match")
+  })
+
   it('change lock amount', async () => {
     await approveStakeAndLock(lockManager.address)
     const [ amount1 ] = await staking.getLock(owner, lockManager.address)
