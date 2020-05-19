@@ -315,8 +315,8 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @param _accountAddress Owner of locks
      * @return Total amount of locked tokens
      */
-    function getTotalLocked(address _accountAddress) external view isInitialized returns (uint256) {
-        return accounts[_accountAddress].totalLocked;
+    function getTotalLockedOf(address _accountAddress) external view isInitialized returns (uint256) {
+        return _getTotalLockedOf(_accountAddress);
     }
 
     /**
@@ -340,6 +340,11 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         _amount = lock_.amount;
         _allowance = lock_.allowance;
         _data = lock_.data;
+    }
+
+    function getBalancesOf(address _accountAddress) external view returns (uint256 staked, uint256 locked) {
+        staked = totalStakedFor(_accountAddress);
+        locked = _getTotalLockedOf(_accountAddress);
     }
 
     /**
@@ -535,6 +540,10 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         uint256 unlockedTokens = totalStakedFor(_accountAddress).sub(accounts[_accountAddress].totalLocked);
 
         return unlockedTokens;
+    }
+
+    function _getTotalLockedOf(address _accountAddress) internal view returns (uint256) {
+        return accounts[_accountAddress].totalLocked;
     }
 
     /**
