@@ -24,20 +24,12 @@ contract('Staking app, Time locking', ([owner]) => {
     await staking.stake(amount, EMPTY_STRING)
   }
 
-  const timeSpanToData = (unit, start, end) => {
-    return "0x" +
-      unit.toString().padStart(64, "0") +
-      web3.fromDecimal(start).slice(2).padStart(64, "0") +
-      web3.fromDecimal(end).slice(2).padStart(64, "0")
-  }
-
-  const timeToData = (start, end) => timeSpanToData(TIME_UNIT_SECONDS, start, end)
-
-  const blocksToData = (start, end) => timeSpanToData(TIME_UNIT_BLOCKS, start, end)
-
-  const approveStakeAndLock = async(data, lockAmount = DEFAULT_AMOUNT / 2, stakeAmount = DEFAULT_AMOUNT) => {
+  const approveStakeAndLock = async(unit, start, end, lockAmount = DEFAULT_AMOUNT / 2, stakeAmount = DEFAULT_AMOUNT) => {
     await approveAndStake(stakeAmount)
-    await staking.lock(lockAmount, manager.address, lockAmount, data)
+    // allow manager
+    await staking.allowNewLockManager(manager.address, lockAmount)
+    // lock amount
+    await manager.lock(staking.address, owner, lockAmount, unit, start, end)
   }
 
   beforeEach(async () => {
@@ -55,14 +47,12 @@ contract('Staking app, Time locking', ([owner]) => {
   it('locks using seconds', async () => {
     const startTime = await manager.getTimestampExt()
     const endTime = parseInt(startTime, 10) + DEFAULT_TIME
-    const data = timeToData(startTime, endTime)
-    await approveStakeAndLock(data)
+    await approveStakeAndLock(TIME_UNIT_SECONDS, startTime, endTime)
 
     // check lock values
-    const [ _amount, _allowance, _data ] = await staking.getLock(owner, manager.address)
+    const [ _amount, _allowance ] = await staking.getLock(owner, manager.address)
     assert.equal(_amount, DEFAULT_AMOUNT / 2, "locked amount should match")
     assert.equal(_allowance, DEFAULT_AMOUNT / 2, "locked allowance should match")
-    assert.equal(_data, data, "lock data should match")
 
     // can not unlock
     assert.equal(await staking.canUnlock(owner, manager.address, 0), false, "Shouldn't be able to unlock")
@@ -77,14 +67,12 @@ contract('Staking app, Time locking', ([owner]) => {
   it('locks using blocks', async () => {
     const startBlock = (await manager.getBlockNumberExt())
     const endBlock = parseInt(startBlock, 10) + DEFAULT_BLOCKS
-    const data = blocksToData(startBlock, endBlock)
-    await approveStakeAndLock(data)
+    await approveStakeAndLock(TIME_UNIT_BLOCKS, startBlock, endBlock)
 
     // check lock values
-    const [ _amount, _allowance, _data ] = await staking.getLock(owner, manager.address)
+    const [ _amount, _allowance ] = await staking.getLock(owner, manager.address)
     assert.equal(_amount, DEFAULT_AMOUNT / 2, "locked amount should match")
     assert.equal(_allowance, DEFAULT_AMOUNT / 2, "locked allowance should match")
-    assert.equal(_data, data, "lock data should match")
 
     // can not unlock
     assert.equal(await staking.canUnlock(owner, manager.address, 0), false, "Shouldn't be able to unlock")
@@ -98,38 +86,29 @@ contract('Staking app, Time locking', ([owner]) => {
   it('fails to unlock if can not unlock', async () => {
     const startTime = await manager.getTimestampExt()
     const endTime = parseInt(startTime, 10) + DEFAULT_TIME
-    const data = timeToData(startTime, endTime)
-    await approveStakeAndLock(data)
+    await approveStakeAndLock(TIME_UNIT_SECONDS, startTime, endTime)
 
     // tries to unlock
     await assertRevert(staking.unlock(owner, manager.address))
   })
 
-  it('changes lock data', async () => {
+  it('fails trying to lock twice', async () => {
     const startTime = await manager.getTimestampExt()
     const endTime = parseInt(startTime, 10) + DEFAULT_TIME
-    const data = timeToData(startTime, endTime)
-    await approveStakeAndLock(data)
+    await approveStakeAndLock(TIME_UNIT_SECONDS, startTime, endTime)
 
-    // check lock values
-    const [ , , lockData1 ] = await staking.getLock(owner, manager.address)
-    assert.equal(lockData1, data, "lock data should match")
-
-    // can not unlock
-    assert.equal(await staking.canUnlock(owner, manager.address, 0), false, "Shouldn't be able to unlock")
-
-    // change data
-    const startTime2 = fromBn(await manager.getTimestampExt()) - 2
-    const endTime2 = startTime2 + 1
-    const data2 = timeToData(startTime2, endTime2)
-    await manager.setLockData(staking.address, owner, data2)
+    await assertRevert(manager.lock(staking.address, owner, DEFAULT_AMOUNT / 2, TIME_UNIT_SECONDS, startTime, endTime))
+  })
 
 
-    // check lock values
-    const [ , , lockData2 ] = await staking.getLock(owner, manager.address)
-    assert.equal(lockData2, data2, "lock data should match")
+  it('fails trying to lock with wrong interval', async () => {
+    const startTime = await manager.getTimestampExt()
+    const endTime = parseInt(startTime, 10) + DEFAULT_TIME
 
-    // can unlock
-    assert.equal(await staking.canUnlock(owner, manager.address, 0), true, "Should be able to unlock")
+    await approveAndStake(DEFAULT_AMOUNT)
+    // allow manager
+    await staking.allowNewLockManager(manager.address, DEFAULT_AMOUNT)
+    // times are reverted!
+    await assertRevert(manager.lock(staking.address, owner, DEFAULT_AMOUNT / 2, TIME_UNIT_SECONDS, endTime, startTime))
   })
 })

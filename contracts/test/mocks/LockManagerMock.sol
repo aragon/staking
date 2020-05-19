@@ -27,7 +27,7 @@ contract LockManagerMock is ILockManager {
         _staking.setLockManager(_account, _newManager);
     }
 
-    function canUnlock(address, bytes, uint256) external view returns (bool) {
+    function canUnlock(address, uint256) external view returns (bool) {
         return result;
     }
 

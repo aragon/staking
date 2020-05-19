@@ -33,7 +33,6 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     struct Lock {
         uint256 amount;
         uint256 allowance;  // must be greater than zero to consider the lock active, and always greater than or equal to amount
-        bytes data;
     }
 
     struct Account {
@@ -116,7 +115,6 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         require(lock_.allowance == 0, ERROR_LOCK_ALREADY_EXISTS);
         lock_.amount = _amount;
         lock_.allowance = _allowance;
-        lock_.data = _data;
 
         // update total
         account.totalLocked = account.totalLocked.add(_amount);
@@ -276,16 +274,6 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Change data of `_accountAddress`'s lock by `_lockManager` to `_newData`
-     * @param _accountAddress Owner of lock
-     * @param _newData New data containing logic to enforce the lock
-     */
-    function setLockData(address _accountAddress, bytes _newData) external isInitialized {
-        accounts[_accountAddress].locks[msg.sender].data = _newData;
-        emit LockDataChanged(_accountAddress, msg.sender, _newData);
-    }
-
-    /**
      * @notice Get the token used by the contract for staking and locking
      * @return The token used by the contract for staking and locking
      */
@@ -332,14 +320,12 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         isInitialized
         returns (
             uint256 _amount,
-            uint256 _allowance,
-            bytes _data
+            uint256 _allowance
         )
     {
         Lock storage lock_ = accounts[_accountAddress].locks[_lockManager];
         _amount = lock_.amount;
         _allowance = lock_.allowance;
-        _data = lock_.data;
     }
 
     function getBalancesOf(address _accountAddress) external view returns (uint256 staked, uint256 locked) {
@@ -468,7 +454,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         // no need for SafeMath: totalLocked must be greater or equal than lock._amount
         account.totalLocked = account.totalLocked - lock_.amount;
 
-        emit Unlocked(_accountAddress, _lockManager, lock_.amount, lock_.data);
+        emit Unlocked(_accountAddress, _lockManager, lock_.amount);
 
         delete account.locks[_lockManager];
     }
@@ -560,7 +546,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         uint256 amount = _amount == 0 ? lock_.amount : _amount;
 
         if (msg.sender == _lockManager ||
-            (msg.sender == _accountAddress && ILockManager(_lockManager).canUnlock(_accountAddress, lock_.data, amount))) {
+            (msg.sender == _accountAddress && ILockManager(_lockManager).canUnlock(_accountAddress, amount))) {
             return true;
         }
 
