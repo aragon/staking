@@ -101,7 +101,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @param _lockManager The manager entity for this particular lock. This entity will have full control over the lock, in particular will be able to unlock it
      * @param _data Data to parametrize logic for the lock to be enforced by the manager
      */
-    function lock(uint256 _amount, address _lockManager, uint256 _allowance, bytes _data) external isInitialized {
+    function allowManagerAndLock(uint256 _amount, address _lockManager, uint256 _allowance, bytes _data) external isInitialized {
         Account storage account = accounts[msg.sender];
         // locking 0 tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
@@ -253,7 +253,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @param _accountAddress Owner of locked tokens
      * @param _lockManager Manager of the lock for the given account
      */
-    function unlock(address _accountAddress, address _lockManager) external isInitialized {
+    function unlockAndRemoveManager(address _accountAddress, address _lockManager) external isInitialized {
         // only manager and owner (if manager allows) can unlock
         require(_canUnlock(_accountAddress, _lockManager, 0), ERROR_CANNOT_UNLOCK);
 

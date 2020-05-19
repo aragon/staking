@@ -1,4 +1,3 @@
-
 const { assertRevert } = require('@aragon/test-helpers/assertThrow')
 const getEvent = (receipt, event, arg) => { return receipt.logs.filter(l => l.event === event)[0].args[arg] }
 
@@ -27,7 +26,7 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
     from = owner
   ) => {
     await approveAndStake(stakeAmount, from)
-    await staking.lock(lockAmount, manager, lockAmount, EMPTY_STRING, { from })
+    await staking.allowManagerAndLock(lockAmount, manager, lockAmount, EMPTY_STRING, { from })
   }
 
   beforeEach(async () => {
@@ -144,7 +143,7 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
       it('fails transfering from unlocked lock', async () => {
         await approveStakeAndLock(user1)
         // unlock
-        await staking.unlock(owner, user1, { from: user1 })
+        await staking.unlockAndRemoveManager(owner, user1, { from: user1 })
         await assertRevert(staking.transferFromLock(owner, user2, 0, DEFAULT_LOCK_AMOUNT, { from: user1 }))
       })
 
@@ -153,7 +152,7 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
         await token.mint(user1, DEFAULT_STAKE_AMOUNT)
         await approveStakeAndLock(user2, DEFAULT_LOCK_AMOUNT, DEFAULT_STAKE_AMOUNT, user1)
         // unlock
-        await staking.unlock(user1, user2, { from: user2 })
+        await staking.unlockAndRemoveManager(user1, user2, { from: user2 })
         await assertRevert(lockManager.transferFromLock(staking.address, owner, user1, user2, DEFAULT_LOCK_AMOUNT))
       })
     })
