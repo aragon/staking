@@ -19,6 +19,8 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     string private constant ERROR_TOKEN_NOT_CONTRACT = "STAKING_TOKEN_NOT_CONTRACT";
     string private constant ERROR_AMOUNT_ZERO = "STAKING_AMOUNT_ZERO";
     string private constant ERROR_TOKEN_TRANSFER = "STAKING_TOKEN_TRANSFER";
+    string private constant ERROR_TOKEN_NOT_SENDER = "STAKING_TOKEN_NOT_SENDER";
+    string private constant ERROR_WRONG_TOKEN = "STAKING_WRONG_TOKEN";
     string private constant ERROR_NOT_ENOUGH_BALANCE = "STAKING_NOT_ENOUGH_BALANCE";
     string private constant ERROR_NOT_ENOUGH_ALLOWANCE = "STAKING_NOT_ENOUGH_ALLOWANCE";
     string private constant ERROR_NOT_ALLOWED = "STAKING_NOT_ALLOWED";
@@ -58,7 +60,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
     function stake(uint256 _amount, bytes _data) external isInitialized {
-        _stakeFor(msg.sender, _amount, _data);
+        _stakeFor(msg.sender, msg.sender, _amount, _data);
     }
 
     /**
@@ -68,7 +70,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
     function stakeFor(address _accountAddress, uint256 _amount, bytes _data) external isInitialized {
-        _stakeFor(_accountAddress, _amount, _data);
+        _stakeFor(msg.sender, _accountAddress, _amount, _data);
     }
 
     /**
@@ -382,6 +384,20 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     /* Public functions */
 
     /**
+     * @dev MiniMeToken ApproveAndCallFallBack compliance
+     * @param _from Account approving tokens
+     * @param _amount Amount of `_token` tokens being approved
+     * @param _token MiniMeToken that is being approved and that the call comes from
+     * @param _data TODO
+     */
+    function receiveApproval(address _from, uint256 _amount, address _token, bytes _data) public {
+        require(_token == msg.sender, ERROR_TOKEN_NOT_SENDER);
+        require(_token == address(stakingToken), ERROR_WRONG_TOKEN);
+
+        _stakeFor(_from, _from, _amount, _data);
+    }
+
+    /**
      * @notice Get the amount of tokens staked by `_accountAddress`
      * @param _accountAddress The owner of the tokens
      * @return The amount of tokens staked by the given account
@@ -410,7 +426,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
 
     /* Internal functions */
 
-    function _stakeFor(address _accountAddress, uint256 _amount, bytes _data) internal {
+    function _stakeFor(address _from, address _accountAddress, uint256 _amount, bytes _data) internal {
         // staking 0 tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
@@ -421,7 +437,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         _modifyTotalStaked(_amount, true);
 
         // pull tokens into Staking contract
-        require(stakingToken.safeTransferFrom(msg.sender, this, _amount), ERROR_TOKEN_TRANSFER);
+        require(stakingToken.safeTransferFrom(_from, this, _amount), ERROR_TOKEN_TRANSFER);
 
         emit Staked(_accountAddress, _amount, totalStakedFor(_accountAddress), _data);
     }
