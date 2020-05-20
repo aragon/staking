@@ -568,4 +568,12 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
 
         return false;
     }
+
+    function toBytes4(bytes memory _data) internal pure returns (bytes4 result) {
+        if (_data.length < 4) {
+            return bytes4(0);
+        }
+
+        assembly { result := mload(add(_data, 0x20)) }
+    }
 }

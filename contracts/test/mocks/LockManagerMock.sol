@@ -7,6 +7,12 @@ import "../../Staking.sol";
 contract LockManagerMock is ILockManager {
     bool result;
 
+    event LogLockCallback(uint256 amount, uint256 allowance, bytes data);
+
+    function lockCallback(uint256 _amount, uint256 _allowance, bytes _data) external returns (bool) {
+        emit LogLockCallback(_amount, _allowance, _data);
+    }
+
     function transferFromLock(
         Staking _staking,
         address _from,
