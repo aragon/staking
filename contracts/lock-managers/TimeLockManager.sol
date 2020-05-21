@@ -20,6 +20,7 @@ contract TimeLockManager is ILockManager, TimeHelpers {
         uint256 start;
         uint256 end;
     }
+
     mapping (address => TimeInterval) timeIntervals;
 
     function lock(IStakingLocking _staking, address _owner, uint256 _amount, uint256 _unit, uint256 _start, uint256 _end) external {

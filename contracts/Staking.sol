@@ -96,7 +96,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Lock `_amount` staked tokens and assign `_lockManager` as manager with `_data` as data, so they can not be unstaked
+     * @notice Lock `_amount` staked tokens and assign `_lockManager` as manager with `@tokenAmount(stakingToken: address, _allowance)` allowance and `_data` as data, so they can not be unstaked
      * @param _amount The amount of tokens to be locked
      * @param _lockManager The manager entity for this particular lock. This entity will have full control over the lock, in particular will be able to unlock it
      * @param _data Data to parametrize logic for the lock to be enforced by the manager
@@ -158,7 +158,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Allow `_lockManager` to lock up to `_allowance` allowed tokens of `msg.sender`
+     * @notice Allow `_lockManager` to lock up to `@tokenAmount(stakingToken: address, _allowance)` of `msg.sender`
      *         It creates a new inactive lock, so the lock for this manager cannot exist before.
      * @param _lockManager The manager entity for this particular lock
      * @param _allowance Amount of allowed tokens increase
@@ -171,7 +171,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Increase `_allowance` allowed tokens for lock of `msg.sender` by `_lockManager`
+     * @notice Increase allowance in `@tokenAmount(stakingToken: address, _allowance)` of lock manager `_lockManager` for user `msg.sender`
      * @param _lockManager The manager entity for this particular lock
      * @param _allowance Amount of allowed tokens increase
      */
@@ -183,7 +183,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Decrease `_allowance` allowed tokens for lock of `_accountAddress` by `_lockManager`
+     * @notice Decrease allowance in `@tokenAmount(stakingToken: address, _allowance)` of lock manager `_lockManager` for user `_accountAddress`
      * @param _accountAddress Owner of locked tokens
      * @param _lockManager The manager entity for this particular lock
      * @param _allowance Amount of allowed tokens decrease
@@ -205,7 +205,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Increase `_amount` tokens from lock of `_accountAddress` by `_lockManager`
+     * @notice Increase locked amount by `@tokenAmount(stakingToken: address, _amount)` for user `_accountAddress` by lock manager `_lockManager`
      * @param _accountAddress Owner of locked tokens
      * @param _lockManager The manager entity for this particular lock
      * @param _amount Amount of locked tokens increase
@@ -222,7 +222,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Decrease `_amount` tokens from lock of `_accountAddress` by `_lockManager`
+     * @notice Decrease locked amount by `@tokenAmount(stakingToken: address, _amount)` for user `_accountAddress` by lock manager `_lockManager`
      * @param _accountAddress Owner of locked tokens
      * @param _lockManager The manager entity for this particular lock
      * @param _amount Amount of locked tokens decrease
