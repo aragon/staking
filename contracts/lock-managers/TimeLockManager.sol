@@ -7,6 +7,11 @@ import "@aragon/os/contracts/common/TimeHelpers.sol";
 import "@aragon/os/contracts/evmscript/ScriptHelpers.sol";
 
 
+/**
+ * Time based lock manager for Staking contract
+ * Allows to set a time interval, either in blocks or seconds, during which the funds are locked.
+ * Outside that window the owner can unlock them.
+ */
 contract TimeLockManager is ILockManager, TimeHelpers {
     using ScriptHelpers for bytes;
 
@@ -23,6 +28,15 @@ contract TimeLockManager is ILockManager, TimeHelpers {
 
     mapping (address => TimeInterval) timeIntervals;
 
+    /**
+     * @notice Set a lockde amount, along a time interval, either in blocks or seconds, during which the funds are locked.
+     * @param _staking The Staking contract holding the lock
+     * @param _owner The account owning the locked funds
+     * @param _amount The amount to be locked
+     * @param _unit Blocks or seconds, the unit for the time interval
+     * @param _start The start of the time interval
+     * @param _end The end of the time interval
+     */
     function lock(IStakingLocking _staking, address _owner, uint256 _amount, uint256 _unit, uint256 _start, uint256 _end) external {
         require(timeIntervals[_owner].end == 0, ERROR_ALREADY_LOCKED);
         require(_end > _start, ERROR_WRONG_INTERVAL);
@@ -31,6 +45,11 @@ contract TimeLockManager is ILockManager, TimeHelpers {
         _staking.increaseLockAmount(_owner, address(this), _amount);
     }
 
+    /**
+     * @notice Check if the owner can unlock the funds, i.e., if current timestamp is outside the lock interval
+     * @param _owner Owner of the locked funds
+     * @return True if current timestamp is outside the lock interval
+     */
     function canUnlock(address _owner, uint256) external view returns (bool) {
         TimeInterval storage timeInterval = timeIntervals[_owner];
         uint256 comparingValue;

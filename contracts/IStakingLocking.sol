@@ -2,7 +2,6 @@ pragma solidity ^0.4.24;
 
 
 interface IStakingLocking {
-    event Locked(address indexed account, address indexed lockManager, uint256 amount, uint256 allowance, bytes data);
     event Unlocked(address indexed account, address indexed lockManager, uint256 amount);
     event LockAmountChanged(address indexed account, address indexed lockManager, uint256 amount, bool increase);
     event LockAllowanceChanged(address indexed account, address indexed lockManager, uint256 allowance, bool increase);
