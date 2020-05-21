@@ -41,7 +41,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     lockManager = await LockManagerMock.new()
   })
 
-  it('locks', async () => {
+  it('allows new manager and locks amount', async () => {
     await approveStakeAndLock(user1)
 
     // check lock values
@@ -125,7 +125,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await assertRevert(staking.increaseLockAllowance(user1, 0))
   })
 
-  it('decreases allowance of existing lock, owner', async () => {
+  it('decreases allowance of existing lock by the owner', async () => {
     await approveAndStake()
     await staking.allowManagerAndLock(DEFAULT_LOCK_AMOUNT, user1, DEFAULT_LOCK_AMOUNT + 1, EMPTY_DATA)
 
@@ -135,7 +135,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     assert.equal(_allowance, DEFAULT_LOCK_AMOUNT, "allowed amount should match")
   })
 
-  it('decreases allowance of existing lock, manager', async () => {
+  it('decreases allowance of existing lock by manager', async () => {
     await approveAndStake()
     await staking.allowManagerAndLock(DEFAULT_LOCK_AMOUNT, user1, DEFAULT_LOCK_AMOUNT + 1, EMPTY_DATA)
 
