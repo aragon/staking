@@ -26,7 +26,7 @@ contract TimeLockManager is ILockManager, TimeHelpers {
         uint256 end;
     }
 
-    mapping (address => TimeInterval) timeIntervals;
+    mapping (address => TimeInterval) internal timeIntervals;
 
     /**
      * @notice Set a locked amount, along with a time interval, either in blocks or seconds during which the funds are locked.
@@ -60,5 +60,11 @@ contract TimeLockManager is ILockManager, TimeHelpers {
         }
 
         return comparingValue < timeInterval.start || comparingValue > timeInterval.end;
+    }
+
+    function getTimeInterval(address _owner) external view returns (uint256, uint256, uint256) {
+        TimeInterval storage timeInterval = timeIntervals[_owner];
+
+        return (timeInterval.unit, timeInterval.start, timeInterval.end);
     }
 }

@@ -27,7 +27,7 @@ contract('Staking app, Time locking', ([owner]) => {
   const approveStakeAndLock = async(unit, start, end, lockAmount = DEFAULT_AMOUNT / 2, stakeAmount = DEFAULT_AMOUNT) => {
     await approveAndStake(stakeAmount)
     // allow manager
-    await staking.allowNewLockManager(manager.address, lockAmount)
+    await staking.allowNewLockManager(manager.address, lockAmount, EMPTY_STRING)
     // lock amount
     await manager.lock(staking.address, owner, lockAmount, unit, start, end)
   }
@@ -54,6 +54,12 @@ contract('Staking app, Time locking', ([owner]) => {
     assert.equal(_amount, DEFAULT_AMOUNT / 2, "locked amount should match")
     assert.equal(_allowance, DEFAULT_AMOUNT / 2, "locked allowance should match")
 
+    // check time values
+    const [ _unit, _start, _end ] = await manager.getTimeInterval(owner)
+    assert.equal(_unit, TIME_UNIT_SECONDS, "interval unit should match")
+    assert.equal(_start.toString(), startTime.toString(), "interval start should match")
+    assert.equal(_end.toString(), endTime.toString(), "interval end should match")
+
     // can not unlock
     assert.equal(await staking.canUnlock(owner, manager.address, 0), false, "Shouldn't be able to unlock")
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_AMOUNT / 2, "Unlocked balance should match")
@@ -73,6 +79,12 @@ contract('Staking app, Time locking', ([owner]) => {
     const [ _amount, _allowance ] = await staking.getLock(owner, manager.address)
     assert.equal(_amount, DEFAULT_AMOUNT / 2, "locked amount should match")
     assert.equal(_allowance, DEFAULT_AMOUNT / 2, "locked allowance should match")
+
+    // check time values
+    const [ _unit, _start, _end ] = await manager.getTimeInterval(owner)
+    assert.equal(_unit, TIME_UNIT_BLOCKS, "interval unit should match")
+    assert.equal(_start.toString(), startBlock.toString(), "interval start should match")
+    assert.equal(_end.toString(), endBlock.toString(), "interval end should match")
 
     // can not unlock
     assert.equal(await staking.canUnlock(owner, manager.address, 0), false, "Shouldn't be able to unlock")
@@ -107,7 +119,7 @@ contract('Staking app, Time locking', ([owner]) => {
 
     await approveAndStake(DEFAULT_AMOUNT)
     // allow manager
-    await staking.allowNewLockManager(manager.address, DEFAULT_AMOUNT)
+    await staking.allowNewLockManager(manager.address, DEFAULT_AMOUNT, EMPTY_STRING)
     // times are reverted!
     await assertRevert(manager.lock(staking.address, owner, DEFAULT_AMOUNT / 2, TIME_UNIT_SECONDS, endTime, startTime))
   })
