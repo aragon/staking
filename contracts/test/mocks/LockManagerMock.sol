@@ -36,6 +36,6 @@ contract LockManagerMock is ILockManager {
     }
 
     function unlock(Staking _staking, address _account, address _manager) public {
-        _staking.unlockAndRemoveManager(_account, _manager);
+        _staking.decreaseAndRemoveManager(_account, _manager);
     }
 }

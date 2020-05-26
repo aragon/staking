@@ -215,7 +215,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await approveStakeAndLock(user1, DEFAULT_LOCK_AMOUNT)
 
     // unlock
-    await staking.unlockAndRemoveManager(owner, user1, { from: user1 })
+    await staking.decreaseAndRemoveManager(owner, user1, { from: user1 })
 
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT, "Unlocked balance should match")
     assert.equal((await staking.getTotalLockedOf(owner)).toString(), '0', "total locked doesn’t match")
@@ -229,7 +229,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     const previousTotalLocked = await staking.getTotalLockedOf(owner)
 
     // unlock
-    await staking.unlockAndRemoveManager(owner, user1, { from: user1 })
+    await staking.decreaseAndRemoveManager(owner, user1, { from: user1 })
 
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Unlocked balance should match")
     assert.equal((await staking.getTotalLockedOf(owner)).toString(), (previousTotalLocked.sub(DEFAULT_LOCK_AMOUNT)).toString(), "total locked doesn’t match")
@@ -240,7 +240,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await approveStakeAndLock(lockManager.address)
 
     // unlock
-    await staking.unlockAndRemoveManager(owner, lockManager.address, { from: owner })
+    await staking.decreaseAndRemoveManager(owner, lockManager.address, { from: owner })
 
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT, "Unlocked balance should match")
     assert.equal((await staking.getTotalLockedOf(owner)).toString(), '0', "total locked doesn’t match")
@@ -280,7 +280,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await approveStakeAndLock(user1)
 
     // tries to unlock
-    await assertRevert(staking.unlockAndRemoveManager(owner, user1))
+    await assertRevert(staking.decreaseAndRemoveManager(owner, user1))
   })
 
   it('fails to unlock if can not unlock, contract manager, called by owner', async () => {
@@ -289,7 +289,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await approveStakeAndLock(lockManager.address)
 
     // tries to unlock
-    await assertRevert(staking.unlockAndRemoveManager(owner, lockManager.address, { from: owner }))
+    await assertRevert(staking.decreaseAndRemoveManager(owner, lockManager.address, { from: owner }))
   })
 
   it('fails to unlock if, contract manager, called by 3rd party (even if condition is true)', async () => {
@@ -297,7 +297,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await approveStakeAndLock(lockManager.address)
 
     // tries to unlock
-    await assertRevert(staking.unlockAndRemoveManager(owner, lockManager.address, { from: user1 }))
+    await assertRevert(staking.decreaseAndRemoveManager(owner, lockManager.address, { from: user1 }))
   })
 
   it('change lock amount', async () => {

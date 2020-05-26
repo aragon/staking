@@ -143,7 +143,7 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
       it('fails transfering from unlocked lock', async () => {
         await approveStakeAndLock(user1)
         // unlock
-        await staking.unlockAndRemoveManager(owner, user1, { from: user1 })
+        await staking.decreaseAndRemoveManager(owner, user1, { from: user1 })
         await assertRevert(staking.transferFromLock(owner, user2, 0, DEFAULT_LOCK_AMOUNT, { from: user1 }))
       })
 
@@ -152,7 +152,7 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
         await token.mint(user1, DEFAULT_STAKE_AMOUNT)
         await approveStakeAndLock(user2, DEFAULT_LOCK_AMOUNT, DEFAULT_STAKE_AMOUNT, user1)
         // unlock
-        await staking.unlockAndRemoveManager(user1, user2, { from: user2 })
+        await staking.decreaseAndRemoveManager(user1, user2, { from: user2 })
         await assertRevert(lockManager.transferFromLock(staking.address, owner, user1, user2, DEFAULT_LOCK_AMOUNT))
       })
     })

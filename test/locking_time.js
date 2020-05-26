@@ -101,7 +101,7 @@ contract('Staking app, Time locking', ([owner]) => {
     await approveStakeAndLock(TIME_UNIT_SECONDS, startTime, endTime)
 
     // tries to unlock
-    await assertRevert(staking.unlockAndRemoveManager(owner, manager.address))
+    await assertRevert(staking.decreaseAndRemoveManager(owner, manager.address))
   })
 
   it('fails trying to lock twice', async () => {
