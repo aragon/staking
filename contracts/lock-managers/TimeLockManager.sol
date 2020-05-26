@@ -29,7 +29,7 @@ contract TimeLockManager is ILockManager, TimeHelpers {
     mapping (address => TimeInterval) timeIntervals;
 
     /**
-     * @notice Set a lockde amount, along a time interval, either in blocks or seconds, during which the funds are locked.
+     * @notice Set a locked amount, along with a time interval, either in blocks or seconds during which the funds are locked.
      * @param _staking The Staking contract holding the lock
      * @param _owner The account owning the locked funds
      * @param _amount The amount to be locked
