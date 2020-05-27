@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@aragon/apps-shared-migrations": "1.0.0",
+    "@aragon/apps-shared-minime": "^1.0.2",
     "@aragon/os": "4.2.0",
     "@aragon/test-helpers": "2.1.0",
     "eth-gas-reporter": "^0.1.5",
