@@ -46,36 +46,66 @@ contract('Staking app, Locking and calling', ([owner, user1, user2]) => {
     return receipt
   }
 
-  const checkCallbackLog = (receipt, data) => {
-    assert.equal(getDeepEventArgument(receipt, LockManagerMock.abi, 'LogLockCallback', 'amount'), DEFAULT_LOCK_AMOUNT, 'Amount in callback should match')
+  const checkCallbackLog = (receipt, data, lockAmount = DEFAULT_LOCK_AMOUNT) => {
+    assert.equal(getDeepEventArgument(receipt, LockManagerMock.abi, 'LogLockCallback', 'amount'), lockAmount, 'Amount in callback should match')
     assert.equal(getDeepEventArgument(receipt, LockManagerMock.abi, 'LogLockCallback', 'allowance'), DEFAULT_STAKE_AMOUNT, 'Allowance in callback should match')
     // TODO: assert.equal(getDeepEventArgument(receipt, LockManagerMock.abi, 'LogLockCallback', 'data'), data, 'Data in callback should match')
   }
 
-  it('allows lock manager, locks and calls lock manager, with just the signature', async () => {
-    const data = CALLBACK_DATA
-    const receipt = await approveStakeAndLock(data)
-    checkCallbackLog(receipt, data)
+  describe('allows lock manager and locks', () => {
+    it('and calls lock manager, with just the signature', async () => {
+      const data = CALLBACK_DATA
+      const receipt = await approveStakeAndLock(data)
+      checkCallbackLog(receipt, data)
+    })
+
+    it('and calls lock manager, with added data', async () => {
+      const data = CALLBACK_DATA + '0'.repeat(63) + '1'
+      const receipt = await approveStakeAndLock(data)
+      checkCallbackLog(receipt, data)
+    })
+
+    it('but doesn’t call lock manager without proper data', async () => {
+      // some random data
+      const data = '0x1234'
+      const receipt = await approveStakeAndLock(data)
+
+      assert.equal(getDeepEventLogs(receipt, LockManagerMock.abi, 'LogLockCallback').length, 0, 'There should be no logs')
+    })
+
+    it('but doesn’t call lock manager with empty data', async () => {
+      const receipt = await approveStakeAndLock(EMPTY_DATA)
+
+      assert.equal(getDeepEventLogs(receipt, LockManagerMock.abi, 'LogLockCallback').length, 0, 'There should be no logs')
+    })
   })
 
-  it('allows lock manager, locks and calls lock manager, with added data', async () => {
-    const data = CALLBACK_DATA + '0'.repeat(63) + '1'
-    const receipt = await approveStakeAndLock(data)
-    checkCallbackLog(receipt, data)
-  })
+  describe('allows lock manager without locking', () => {
+    it('and calls lock manager, with just the signature', async () => {
+      const data = CALLBACK_DATA
+      const receipt = await staking.allowNewLockManager(lockManager.address, DEFAULT_STAKE_AMOUNT, data, { from: user1 })
+      checkCallbackLog(receipt, data, 0)
+    })
 
-  it('allows lock manager and locks, but doesn’t call lock manager without proper data', async () => {
-    // some random data
-    const data = '0x1234'
-    const receipt = await approveStakeAndLock(data)
+    it('and calls lock manager, with added data', async () => {
+      const data = CALLBACK_DATA + '0'.repeat(63) + '1'
+      const receipt = await staking.allowNewLockManager(lockManager.address, DEFAULT_STAKE_AMOUNT, data, { from: user1 })
+      checkCallbackLog(receipt, data, 0)
+    })
 
-    assert.equal(getDeepEventLogs(receipt, LockManagerMock.abi, 'LogLockCallback').length, 0, 'There should be no logs')
-  })
+    it('but doesn’t call lock manager without proper data', async () => {
+      // some random data
+      const data = '0x1234'
+      const receipt = await staking.allowNewLockManager(lockManager.address, DEFAULT_STAKE_AMOUNT, data, { from: user1 })
 
-  it('allows lock manager and locks, but doesn’t call lock manager with empty data', async () => {
-    // some random data
-    const receipt = await approveStakeAndLock(EMPTY_DATA)
+      assert.equal(getDeepEventLogs(receipt, LockManagerMock.abi, 'LogLockCallback').length, 0, 'There should be no logs')
+    })
 
-    assert.equal(getDeepEventLogs(receipt, LockManagerMock.abi, 'LogLockCallback').length, 0, 'There should be no logs')
+    it('but doesn’t call lock manager with empty data', async () => {
+      const data = EMPTY_DATA
+      const receipt = await staking.allowNewLockManager(lockManager.address, DEFAULT_STAKE_AMOUNT, data, { from: user1 })
+
+      assert.equal(getDeepEventLogs(receipt, LockManagerMock.abi, 'LogLockCallback').length, 0, 'There should be no logs')
+    })
   })
 })
