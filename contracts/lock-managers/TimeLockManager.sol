@@ -45,6 +45,10 @@ contract TimeLockManager is ILockManager, TimeHelpers {
         _staking.increaseLockAmount(_owner, address(this), _amount);
     }
 
+    function receiveLock(uint256, uint256, bytes) external returns (bool) {
+        // Do nothing
+    }
+
     /**
      * @notice Check if the owner can unlock the funds, i.e., if current timestamp is outside the lock interval
      * @param _owner Owner of the locked funds

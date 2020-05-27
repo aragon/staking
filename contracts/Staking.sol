@@ -102,6 +102,8 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      */
     function allowNewLockManager(address _lockManager, uint256 _allowance, bytes _data) external isInitialized {
         _allowNewLockManager(_lockManager, _allowance, _data);
+
+        _callLockManagerCallback(0, _lockManager, _allowance, _data);
     }
 
     /**
@@ -120,6 +122,8 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         require(_amount <= _unlockedBalanceOf(msg.sender), ERROR_NOT_ENOUGH_BALANCE);
 
         _increaseLockAmountUnsafe(msg.sender, _lockManager, _amount);
+
+        _callLockManagerCallback(_amount, _lockManager, _allowance, _data);
     }
 
     /**
@@ -480,6 +484,12 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         _increaseLockAllowance(_lockManager, lock, _allowance);
     }
 
+    function _callLockManagerCallback(uint256 _amount, address _lockManager, uint _allowance, bytes _data) internal {
+        if (_toBytes4(_data) == ILockManager(_lockManager).receiveLock.selector) {
+            ILockManager(_lockManager).receiveLock(_amount, _allowance, _data);
+        }
+    }
+
     function _increaseLockAllowance(address _lockManager, Lock storage _lock, uint256 _allowance) internal {
         require(_allowance > 0, ERROR_AMOUNT_ZERO);
 
@@ -567,5 +577,13 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         }
 
         return false;
+    }
+
+    function _toBytes4(bytes memory _data) internal pure returns (bytes4 result) {
+        if (_data.length < 4) {
+            return bytes4(0);
+        }
+
+        assembly { result := mload(add(_data, 0x20)) }
     }
 }
