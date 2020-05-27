@@ -165,7 +165,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @param _decreaseAmount Number of tokens to be unlocked
      * @param _transferAmount Number of tokens to be transferred
      */
-    function decreaseAndTransfer(
+    function decreaseAndTransferFromLock(
         address _from,
         address _to,
         uint256 _decreaseAmount,

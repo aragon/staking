@@ -306,8 +306,8 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
 
     await approveStakeAndLock(user1, totalLock)
 
-    // unlock
-    await staking.decreaseAndTransfer(owner, user2, totalLock - transferAmount, transferAmount, { from: user1 })
+    // unlock and transfer
+    await staking.decreaseAndTransferFromLock(owner, user2, totalLock - transferAmount, transferAmount, { from: user1 })
 
     //assert.equal((await staking.unlockedBalanceOf(owner)).toString(), (totalLock - transferAmount).toString(), "Unlocked balance should match")
     assert.equal((await staking.getTotalLockedOf(owner)).toString(), '0', "total locked doesn’t match")
@@ -326,8 +326,8 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
 
     await approveStakeAndLock(user1, totalLock)
 
-    // unlock
-    await staking.decreaseAndTransfer(owner, user2, decreaseAmount, transferAmount, { from: user1 })
+    // unlock and transfer
+    await staking.decreaseAndTransferFromLock(owner, user2, decreaseAmount, transferAmount, { from: user1 })
 
     assert.equal((await staking.unlockedBalanceOf(owner)).toString(), decreaseAmount.toString(), "Unlocked balance should match")
     assert.equal((await staking.getTotalLockedOf(owner)).toString(), totalLock - decreaseAmount - transferAmount, "total locked doesn’t match")
@@ -337,6 +337,17 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     // recipient
     assert.equal((await staking.unlockedBalanceOf(user2)).toString(), transferAmount.toString(), "Unlocked balance should match")
     assert.equal((await staking.getTotalLockedOf(user2)).toString(), '0', "total locked doesn’t match")
+  })
+
+  it('fails to transfer (slash) and unlock in one transaction if not owner nor manager', async () => {
+    const totalLock = 120
+    const transferAmount = 40
+    const decreaseAmount = 60
+
+    await approveStakeAndLock(user1, totalLock)
+
+    // unlock and transfer
+    await assertRevert(staking.decreaseAndTransferFromLock(owner, user2, decreaseAmount, transferAmount, { from: user2 }))
   })
 
   it('change lock amount', async () => {
