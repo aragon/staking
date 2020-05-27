@@ -9,7 +9,7 @@ contract LockManagerMock is ILockManager {
 
     event LogLockCallback(uint256 amount, uint256 allowance/* TODO:, bytes data */);
 
-    function lockCallback(uint256 _amount, uint256 _allowance, bytes /* TODO: _data */) external returns (bool) {
+    function receiveLockManager(uint256 _amount, uint256 _allowance, bytes /* TODO: _data */) external returns (bool) {
         emit LogLockCallback(_amount, _allowance/* TODO:, _data */);
     }
 

@@ -103,8 +103,8 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     function allowNewLockManager(address _lockManager, uint256 _allowance, bytes _data) external isInitialized {
         _allowNewLockManager(_lockManager, _allowance, _data);
 
-        if (_toBytes4(_data) == ILockManager(_lockManager).lockCallback.selector) {
-            ILockManager(_lockManager).lockCallback(0, _allowance, _data);
+        if (_toBytes4(_data) == ILockManager(_lockManager).receiveLockManager.selector) {
+            ILockManager(_lockManager).receiveLockManager(0, _allowance, _data);
         }
     }
 
@@ -125,8 +125,8 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
 
         _increaseLockAmountUnsafe(msg.sender, _lockManager, _amount);
 
-        if (_toBytes4(_data) == ILockManager(_lockManager).lockCallback.selector) {
-            ILockManager(_lockManager).lockCallback(_amount, _allowance, _data);
+        if (_toBytes4(_data) == ILockManager(_lockManager).receiveLockManager.selector) {
+            ILockManager(_lockManager).receiveLockManager(_amount, _allowance, _data);
         }
     }
 

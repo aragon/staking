@@ -45,7 +45,7 @@ contract TimeLockManager is ILockManager, TimeHelpers {
         _staking.increaseLockAmount(_owner, address(this), _amount);
     }
 
-    function lockCallback(uint256, uint256, bytes) external returns (bool) {
+    function receiveLockManager(uint256, uint256, bytes) external returns (bool) {
         // Do nothing
     }
 
