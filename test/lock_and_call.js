@@ -49,7 +49,7 @@ contract('Staking app, Locking and calling', ([owner, user1, user2]) => {
   const checkCallbackLog = (receipt, data, lockAmount = DEFAULT_LOCK_AMOUNT) => {
     assert.equal(getDeepEventArgument(receipt, LockManagerMock.abi, 'LogLockCallback', 'amount'), lockAmount, 'Amount in callback should match')
     assert.equal(getDeepEventArgument(receipt, LockManagerMock.abi, 'LogLockCallback', 'allowance'), DEFAULT_STAKE_AMOUNT, 'Allowance in callback should match')
-    // TODO: assert.equal(getDeepEventArgument(receipt, LockManagerMock.abi, 'LogLockCallback', 'data'), data, 'Data in callback should match')
+    assert.equal(getDeepEventArgument(receipt, LockManagerMock.abi, 'LogLockCallback', 'data'), data, 'Data in callback should match')
   }
 
   describe('allows lock manager and locks', () => {
