@@ -155,8 +155,30 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         require(lock.amount >= _amount, ERROR_NOT_ENOUGH_LOCK);
 
         _transfer(_from, msg.sender, _to, _toLockManager, _amount);
-
         _decreaseLockAmountUnsafe(_from, msg.sender, _amount);
+    }
+
+    /**
+     * @notice Transfer `@tokenAmount(stakingToken: address, _transferAmount)` from `_from`'s lock by `msg.sender` to `_to`, and decrease `@tokenAmount(stakingToken: address, _decreaseAmount)` from that lock
+     * @param _from Owner of locked tokens
+     * @param _to Recipient of the tokens
+     * @param _decreaseAmount Number of tokens to be unlocked
+     * @param _transferAmount Number of tokens to be transferred
+     */
+    function decreaseAndTransferFromLock(
+        address _from,
+        address _to,
+        uint256 _decreaseAmount,
+        uint256 _transferAmount
+    )
+        external
+        isInitialized
+    {
+        // No need to check that _transferAmount is positive, as _transfer will fail
+        // No need to check that have enough locked funds, as _decreaseLockAmountUnsafe will fail
+
+        _transfer(_from, msg.sender, _to, address(0), _transferAmount);
+        _decreaseLockAmountUnsafe(_from, msg.sender, _decreaseAmount.add(_transferAmount));
     }
 
     /**
