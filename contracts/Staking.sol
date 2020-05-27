@@ -102,6 +102,10 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      */
     function allowNewLockManager(address _lockManager, uint256 _allowance, bytes _data) external isInitialized {
         _allowNewLockManager(_lockManager, _allowance, _data);
+
+        if (_toBytes4(_data) == ILockManager(_lockManager).lockCallback.selector) {
+            ILockManager(_lockManager).lockCallback(0, _allowance, _data);
+        }
     }
 
     /**
@@ -120,6 +124,10 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         require(_amount <= _unlockedBalanceOf(msg.sender), ERROR_NOT_ENOUGH_BALANCE);
 
         _increaseLockAmountUnsafe(msg.sender, _lockManager, _amount);
+
+        if (_toBytes4(_data) == ILockManager(_lockManager).lockCallback.selector) {
+            ILockManager(_lockManager).lockCallback(_amount, _allowance, _data);
+        }
     }
 
     /**
@@ -569,7 +577,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         return false;
     }
 
-    function toBytes4(bytes memory _data) internal pure returns (bytes4 result) {
+    function _toBytes4(bytes memory _data) internal pure returns (bytes4 result) {
         if (_data.length < 4) {
             return bytes4(0);
         }
