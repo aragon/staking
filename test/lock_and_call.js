@@ -24,7 +24,7 @@ contract('Staking app, Locking and calling', ([owner, user1, user2]) => {
   const DEFAULT_STAKE_AMOUNT = 120
   const DEFAULT_LOCK_AMOUNT = DEFAULT_STAKE_AMOUNT / 3
   const EMPTY_DATA = '0x'
-  const CALLBACK_DATA = sha3('receiveLockManager(uint256,uint256,bytes)').slice(0, 10)
+  const CALLBACK_DATA = sha3('receiveLock(uint256,uint256,bytes)').slice(0, 10)
 
   beforeEach(async () => {
     const initialAmount = 1000 * DEFAULT_STAKE_AMOUNT
