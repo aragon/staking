@@ -388,7 +388,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @param _from Account approving tokens
      * @param _amount Amount of `_token` tokens being approved
      * @param _token MiniMeToken that is being approved and that the call comes from
-     * @param _data TODO
+     * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
     function receiveApproval(address _from, uint256 _amount, address _token, bytes _data) public {
         require(_token == msg.sender, ERROR_TOKEN_NOT_SENDER);
