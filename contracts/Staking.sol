@@ -16,8 +16,6 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     using Checkpointing for Checkpointing.History;
     using SafeERC20 for ERC20;
 
-    uint64 private constant MAX_UINT64 = uint64(-1);
-
     string private constant ERROR_TOKEN_NOT_CONTRACT = "STAKING_TOKEN_NOT_CONTRACT";
     string private constant ERROR_AMOUNT_ZERO = "STAKING_AMOUNT_ZERO";
     string private constant ERROR_TOKEN_TRANSFER = "STAKING_TOKEN_TRANSFER";
@@ -45,8 +43,6 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     ERC20 internal stakingToken;
     mapping (address => Account) internal accounts;
     Checkpointing.History internal totalStakedHistory;
-
-    event StakeTransferred(address indexed from, address indexed fromLockId, uint256 amount, address to, address toLockId);
 
     function initialize(ERC20 _stakingToken) external onlyInit {
         require(isContract(_stakingToken), ERROR_TOKEN_NOT_CONTRACT);

@@ -7,6 +7,8 @@ interface IStakingLocking {
     event LockAmountChanged(address indexed account, address indexed lockManager, uint256 amount, bool increase);
     event LockAllowanceChanged(address indexed account, address indexed lockManager, uint256 allowance, bool increase);
     event LockManagerChanged(address indexed account, address indexed oldLockManager, address newLockManager);
+    event StakeTransferred(address indexed from, address indexed fromLockManager, uint256 amount, address to, address toLockManager);
+
 
     function allowNewLockManager(address _lockManager, uint256 _allowance, bytes _data) external;
     function allowManagerAndLock(uint256 _amount, address _lockManager, uint256 _allowance, bytes _data) external;
