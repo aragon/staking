@@ -66,7 +66,7 @@ contract TimeLockManager is ILockManager, TimeHelpers {
         return comparingValue < timeInterval.start || comparingValue > timeInterval.end;
     }
 
-    function getTimeInterval(address _owner) external view returns (uint256, uint256, uint256) {
+    function getTimeInterval(address _owner) external view returns (uint256 unit, uint256 start, uint256 end) {
         TimeInterval storage timeInterval = timeIntervals[_owner];
 
         return (timeInterval.unit, timeInterval.start, timeInterval.end);

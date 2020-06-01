@@ -22,8 +22,8 @@ contract('StakingProxy', ([_, owner]) => {
 
   describe('implementation', async () => {
     it('uses an unstructured storage slot for the implementation address', async () => {
-      const implementationAddress = await web3.eth.getStorageAt(proxy.address, web3.sha3('aragon.network.staking'))
-      assert.equal(implementationAddress, implementation.address, 'implementation address does not match')
+      const implementationAddress = await web3.eth.getStorageAt(proxy.address, web3.utils.sha3('aragon.network.staking'))
+      assert.equal(implementationAddress.toLowerCase(), implementation.address.toLowerCase(), 'implementation address does not match')
     })
 
     it('uses the given implementation', async () => {

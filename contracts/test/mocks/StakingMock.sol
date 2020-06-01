@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "../../Staking.sol";
 
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
-import "@aragon/test-helpers/contracts/TimeHelpersMock.sol";
+import "@aragon/contract-helpers-test/contracts/TimeHelpersMock.sol";
 
 
 contract StakingMock is Staking, TimeHelpersMock {
