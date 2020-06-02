@@ -1,6 +1,7 @@
 const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
 
 const { ZERO_ADDRESS } = require('./helpers/constants')
+const { STAKING_ERRORS } = require('./helpers/errors')
 
 const Staking = artifacts.require('Staking')
 const StakingFactory = artifacts.require('StakingFactory')
@@ -84,7 +85,7 @@ contract('StakingFactory', ([_, owner, someone]) => {
         const tokenAddress = ZERO_ADDRESS
 
         it('reverts', async () => {
-          await assertRevert(factory.getOrCreateInstance(tokenAddress), 'STAKING_TOKEN_NOT_CONTRACT')
+          await assertRevert(factory.getOrCreateInstance(tokenAddress), STAKING_ERRORS.ERROR_TOKEN_NOT_CONTRACT)
         })
       })
 
@@ -92,7 +93,7 @@ contract('StakingFactory', ([_, owner, someone]) => {
         const tokenAddress = someone
 
         it('reverts', async () => {
-          await assertRevert(factory.getOrCreateInstance(tokenAddress), 'STAKING_TOKEN_NOT_CONTRACT')
+          await assertRevert(factory.getOrCreateInstance(tokenAddress), STAKING_ERRORS.ERROR_TOKEN_NOT_CONTRACT)
         })
       })
     })

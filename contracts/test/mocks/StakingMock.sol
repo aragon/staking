@@ -11,6 +11,8 @@ contract StakingMock is Staking, TimeHelpersMock {
 
     event LogGas(uint256 gas);
 
+    string private constant ERROR_TOKEN_NOT_CONTRACT = "STAKING_TOKEN_NOT_CONTRACT";
+
     uint64 private constant MAX_UINT64 = uint64(-1);
 
     modifier measureGas {
@@ -20,7 +22,7 @@ contract StakingMock is Staking, TimeHelpersMock {
     }
 
     constructor(ERC20 _stakingToken) public {
-        require(isContract(_stakingToken));
+        require(isContract(_stakingToken), ERROR_TOKEN_NOT_CONTRACT);
         initialized();
         stakingToken = _stakingToken;
     }

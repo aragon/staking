@@ -3,6 +3,7 @@ const { bn, assertBn, MAX_UINT64 } = require('@aragon/contract-helpers-test/numb
 
 const { deploy } = require('./helpers/deploy')(artifacts)
 const { DEFAULT_STAKE_AMOUNT, DEFAULT_LOCK_AMOUNT, EMPTY_DATA, ZERO_ADDRESS } = require('./helpers/constants')
+const { STAKING_ERRORS, SAFE_MATH_ERRORS } = require('./helpers/errors')
 
 contract('Staking app, Locking', ([owner, user1, user2]) => {
   let staking, token, lockManager
@@ -45,24 +46,24 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
 
   it('fails locking 0 tokens', async () => {
     await approveAndStake()
-    await assertRevert(staking.allowManagerAndLock(0, user1, 1, EMPTY_DATA))
+    await assertRevert(staking.allowManagerAndLock(0, user1, 1, EMPTY_DATA), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
   })
 
   it('fails locking without enough allowance', async () => {
     await approveAndStake()
-    await assertRevert(staking.allowManagerAndLock(2, user1, 1, EMPTY_DATA))
+    await assertRevert(staking.allowManagerAndLock(2, user1, 1, EMPTY_DATA), STAKING_ERRORS.ERROR_NOT_ENOUGH_ALLOWANCE)
   })
 
   it('fails locking more tokens than staked', async () => {
     await approveAndStake()
-    await assertRevert(staking.allowManagerAndLock(DEFAULT_STAKE_AMOUNT + 1, user1, DEFAULT_STAKE_AMOUNT + 1, EMPTY_DATA))
+    await assertRevert(staking.allowManagerAndLock(DEFAULT_STAKE_AMOUNT + 1, user1, DEFAULT_STAKE_AMOUNT + 1, EMPTY_DATA), STAKING_ERRORS.ERROR_NOT_ENOUGH_BALANCE)
   })
 
   it('fails locking if already locked', async () => {
     await approveStakeAndLock(user1)
 
     await approveAndStake()
-    await assertRevert(staking.allowManagerAndLock(DEFAULT_STAKE_AMOUNT, user1, DEFAULT_STAKE_AMOUNT, "0x02"))
+    await assertRevert(staking.allowManagerAndLock(DEFAULT_STAKE_AMOUNT, user1, DEFAULT_STAKE_AMOUNT, "0x02"), STAKING_ERRORS.ERROR_LOCK_ALREADY_EXISTS)
   })
 
   it('creates a new allowance', async () => {
@@ -86,12 +87,12 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
   })
 
   it('fails creating allowance of 0 tokens', async () => {
-    await assertRevert(staking.allowNewLockManager(user1, 0, EMPTY_DATA))
+    await assertRevert(staking.allowNewLockManager(user1, 0, EMPTY_DATA), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
   })
 
   it('fails creating allowance if lock exists', async () => {
     await approveStakeAndLock(user1)
-    await assertRevert(staking.allowNewLockManager(user1, 1, EMPTY_DATA))
+    await assertRevert(staking.allowNewLockManager(user1, 1, EMPTY_DATA), STAKING_ERRORS.ERROR_LOCK_ALREADY_EXISTS)
   })
 
   it('increases allowance of existing lock', async () => {
@@ -104,19 +105,19 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
   })
 
   it('fails increasing allowance of non-existing', async () => {
-    await assertRevert(staking.increaseLockAllowance(user1, 1))
+    await assertRevert(staking.increaseLockAllowance(user1, 1), STAKING_ERRORS.ERROR_LOCK_DOES_NOT_EXIST)
   })
 
   it('fails increasing allowance of existing lock by 0', async () => {
     await approveStakeAndLock(user1)
 
-    await assertRevert(staking.increaseLockAllowance(user1, 0))
+    await assertRevert(staking.increaseLockAllowance(user1, 0), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
   })
 
   it('fails increasing allowance of existing lock if not owner or manager', async () => {
     await approveStakeAndLock(user1)
 
-    await assertRevert(staking.increaseLockAllowance(user1, 1, { from: user2 }))
+    await assertRevert(staking.increaseLockAllowance(user1, 1, { from: user2 }), STAKING_ERRORS.ERROR_LOCK_DOES_NOT_EXIST)
   })
 
   it('decreases allowance of existing lock by the owner', async () => {
@@ -142,7 +143,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
   it('fails decreasing allowance of existing lock by 0', async () => {
     await approveStakeAndLock(user1)
 
-    await assertRevert(staking.decreaseLockAllowance(owner, user1, 0))
+    await assertRevert(staking.decreaseLockAllowance(owner, user1, 0), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
   })
 
   it('fails decreasing allowance of existing lock to 0', async () => {
@@ -150,21 +151,21 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
 
     await staking.decreaseLockAmount(owner, user1, DEFAULT_LOCK_AMOUNT, { from: user1 })
 
-    await assertRevert(staking.decreaseLockAllowance(owner, user1, DEFAULT_LOCK_AMOUNT))
+    await assertRevert(staking.decreaseLockAllowance(owner, user1, DEFAULT_LOCK_AMOUNT), STAKING_ERRORS.ERROR_ALLOWANCE_ZERO)
   })
 
   it('fails decreasing allowance to less than lock', async () => {
     await approveAndStake()
     await staking.allowManagerAndLock(DEFAULT_LOCK_AMOUNT, user1, DEFAULT_LOCK_AMOUNT + 1, EMPTY_DATA)
 
-    await assertRevert(staking.decreaseLockAllowance(owner, user1, 2))
+    await assertRevert(staking.decreaseLockAllowance(owner, user1, 2), STAKING_ERRORS.ERROR_NOT_ENOUGH_ALLOWANCE)
   })
 
   it('fails decreasing allowance by 3rd party', async () => {
     await approveAndStake()
     await staking.allowManagerAndLock(DEFAULT_LOCK_AMOUNT, user1, DEFAULT_LOCK_AMOUNT + 1, EMPTY_DATA)
 
-    await assertRevert(staking.decreaseLockAllowance(owner, user1, 1, { from: user2 }))
+    await assertRevert(staking.decreaseLockAllowance(owner, user1, 1, { from: user2 }), STAKING_ERRORS.ERROR_CANNOT_CHANGE_ALLOWANCE)
   })
 
   it('increases amount of existing lock', async () => {
@@ -182,21 +183,21 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await approveStakeAndLock(user1)
 
     await approveAndStake()
-    await assertRevert(staking.increaseLockAmount(owner, user1, 0))
+    await assertRevert(staking.increaseLockAmount(owner, user1, 0), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
   })
 
   it('fails increasing lock with more tokens than staked', async () => {
     await approveStakeAndLock(user1)
 
     await approveAndStake()
-    await assertRevert(staking.increaseLockAmount(owner, user1, 2 * DEFAULT_STAKE_AMOUNT + 1))
+    await assertRevert(staking.increaseLockAmount(owner, user1, 2 * DEFAULT_STAKE_AMOUNT + 1), STAKING_ERRORS.ERROR_NOT_ENOUGH_BALANCE)
   })
 
   it('fails increasing lock if not owner or manager', async () => {
     await approveStakeAndLock(user1)
 
     await approveAndStake()
-    await assertRevert(staking.increaseLockAmount(owner, user1, 1, { from: user2 }))
+    await assertRevert(staking.increaseLockAmount(owner, user1, 1, { from: user2 }), STAKING_ERRORS.ERROR_NOT_ALLOWED)
   })
 
   it('unlocks with only 1 lock, EOA manager', async () => {
@@ -261,14 +262,14 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await approveStakeAndLock(user1)
 
     // call canUnlock
-    await assertRevert(staking.canUnlock(owner, user1, 0))
+    await assertRevert(staking.canUnlock(owner, user1, 0)) // no reason: it’s trying to call an EOA
   })
 
   it('fails to unlock if it cannot unlock, EOA manager', async () => {
     await approveStakeAndLock(user1)
 
     // tries to unlock
-    await assertRevert(staking.decreaseAndRemoveManager(owner, user1))
+    await assertRevert(staking.decreaseAndRemoveManager(owner, user1)) // no reason: it’s trying to call an EOA
   })
 
   it('fails to unlock if can not unlock, contract manager, called by owner', async () => {
@@ -277,7 +278,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await approveStakeAndLock(lockManager.address)
 
     // tries to unlock
-    await assertRevert(staking.decreaseAndRemoveManager(owner, lockManager.address, { from: owner }))
+    await assertRevert(staking.decreaseAndRemoveManager(owner, lockManager.address, { from: owner }), STAKING_ERRORS.ERROR_CANNOT_UNLOCK)
   })
 
   it('fails to unlock if, contract manager, called by 3rd party (even if condition is true)', async () => {
@@ -285,7 +286,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await approveStakeAndLock(lockManager.address)
 
     // tries to unlock
-    await assertRevert(staking.decreaseAndRemoveManager(owner, lockManager.address, { from: user1 }))
+    await assertRevert(staking.decreaseAndRemoveManager(owner, lockManager.address, { from: user1 }), STAKING_ERRORS.ERROR_CANNOT_UNLOCK)
   })
 
   it('transfers (slash) and unlocks (everything else) in one transaction', async () => {
@@ -335,7 +336,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await approveStakeAndLock(user1, totalLock)
 
     // unlock and transfer
-    await assertRevert(staking.decreaseAndTransferFromLock(owner, user2, decreaseAmount, transferAmount, { from: user2 }))
+    await assertRevert(staking.decreaseAndTransferFromLock(owner, user2, decreaseAmount, transferAmount, { from: user2 }), SAFE_MATH_ERRORS.ERROR_SUB_UNDERFLOW)
   })
 
   it('change lock amount', async () => {
@@ -357,26 +358,26 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await approveStakeAndLock(lockManager.address)
 
     // try to change amount
-    await assertRevert(lockManager.decreaseLockAmount(staking.address, owner, 0))
+    await assertRevert(lockManager.decreaseLockAmount(staking.address, owner, 0), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
   })
 
   it('fails to change lock amount to greater than before', async () => {
     await approveStakeAndLock(lockManager.address)
 
     // try to change amount
-    await assertRevert(lockManager.decreaseLockAmount(staking.address, owner, DEFAULT_LOCK_AMOUNT + 1))
+    await assertRevert(lockManager.decreaseLockAmount(staking.address, owner, DEFAULT_LOCK_AMOUNT + 1), STAKING_ERRORS.ERROR_NOT_ENOUGH_LOCK)
   })
 
   it('change lock manager', async () => {
     await approveStakeAndLock(user1)
     assert.equal(await staking.canUnlock(owner, user1, 0, { from: user1 }), true, "User 1 can unlock")
     assert.equal(await staking.canUnlock(owner, user1, 0, { from: user2 }), false, "User 2 can not unlock")
-    await assertRevert(staking.canUnlock(owner, user2, 0, { from: user2 })) // it doesn’t exist
+    await assertRevert(staking.canUnlock(owner, user2, 0, { from: user2 }), STAKING_ERRORS.ERROR_LOCK_DOES_NOT_EXIST) // it doesn’t exist
 
     // change manager
     await staking.setLockManager(owner, user2, { from: user1 })
 
-    await assertRevert(staking.canUnlock(owner, user1, 0, { from: user1 })) // it doesn’t exist
+    await assertRevert(staking.canUnlock(owner, user1, 0, { from: user1 }), STAKING_ERRORS.ERROR_LOCK_DOES_NOT_EXIST) // it doesn’t exist
     assert.equal(await staking.canUnlock(owner, user2, 0, { from: user1 }), false, "User 1 can not unlock")
     assert.equal(await staking.canUnlock(owner, user2, 0, { from: user2 }), true, "User 2 can unlock")
   })
