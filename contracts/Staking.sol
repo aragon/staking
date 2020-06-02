@@ -83,7 +83,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
         // checkpoint updated staking balance
-        _modifyStakeBalance(msg.sender, _amount, false);
+        uint256 newStake = _modifyStakeBalance(msg.sender, _amount, false);
 
         // checkpoint total supply
         _modifyTotalStaked(_amount, false);
@@ -91,7 +91,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         // transfer tokens
         require(stakingToken.safeTransfer(msg.sender, _amount), ERROR_TOKEN_TRANSFER);
 
-        emit Unstaked(msg.sender, _amount, totalStakedFor(msg.sender), _data);
+        emit Unstaked(msg.sender, _amount, newStake, _data);
     }
 
     /**
@@ -435,7 +435,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
         // checkpoint updated staking balance
-        _modifyStakeBalance(_accountAddress, _amount, true);
+        uint256 newStake = _modifyStakeBalance(_accountAddress, _amount, true);
 
         // checkpoint total supply
         _modifyTotalStaked(_amount, true);
@@ -443,10 +443,10 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         // pull tokens into Staking contract
         require(stakingToken.safeTransferFrom(_from, this, _amount), ERROR_TOKEN_TRANSFER);
 
-        emit Staked(_accountAddress, _amount, totalStakedFor(_accountAddress), _data);
+        emit Staked(_accountAddress, _amount, newStake, _data);
     }
 
-    function _modifyStakeBalance(address _accountAddress, uint256 _by, bool _increase) internal {
+    function _modifyStakeBalance(address _accountAddress, uint256 _by, bool _increase) internal returns (uint256) {
         uint256 currentStake = totalStakedFor(_accountAddress);
 
         uint256 newStake;
@@ -458,6 +458,8 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
 
         // add new value to account history
         accounts[_accountAddress].stakedHistory.add64(getBlockNumber64(), newStake);
+
+        return newStake;
     }
 
     function _modifyTotalStaked(uint256 _by, bool _increase) internal {
