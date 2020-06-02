@@ -45,6 +45,7 @@ contract TimeLockManager is ILockManager, TimeHelpers {
         _staking.increaseLockAmount(_owner, address(this), _amount);
     }
 
+    // solium-disable-next-line no-empty-blocks
     function receiveLock(uint256, uint256, bytes) external returns (bool) {
         // Do nothing
     }
