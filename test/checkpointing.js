@@ -1,4 +1,5 @@
-const { assertRevert } = require('@aragon/test-helpers/assertThrow')
+const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
+const { bn, MAX_UINT64, MAX_UINT192 } = require('@aragon/contract-helpers-test/numbers')
 
 const CheckpointingMock = artifacts.require('CheckpointingMock')
 
@@ -112,17 +113,17 @@ contract('Checkpointing', () => {
     await assertRevert(checkpointing.add(time - 1, value))
   })
 
-  const UINT64_OVERFLOW = (new web3.BigNumber(2)).pow(new web3.BigNumber(64))
-  const UINT192_OVERFLOW = (new web3.BigNumber(2)).pow(new web3.BigNumber(192))
+  const UINT64_OVERFLOW = MAX_UINT64.add(bn(1))
+  const UINT192_OVERFLOW = MAX_UINT192.add(bn(1))
 
   it('fails if set value is too high', async () => {
-    await checkpointing.add(1, UINT192_OVERFLOW.sub(new web3.BigNumber(1)).toString()) // can set just below limit
+    await checkpointing.add(1, MAX_UINT192.toString()) // can set just below limit
 
     await assertRevert(checkpointing.add(2, UINT192_OVERFLOW.toString()))
   })
 
   it('fails if set time is too high', async () => {
-    await checkpointing.add(UINT64_OVERFLOW.sub(new web3.BigNumber(1)).toString(), 1) // can set just below limit
+    await checkpointing.add(MAX_UINT64.toString(), 1) // can set just below limit
 
     await assertRevert(checkpointing.add(UINT64_OVERFLOW.toString(), 1))
   })
@@ -130,7 +131,7 @@ contract('Checkpointing', () => {
   it('fails if requested time is too high', async () => {
     await checkpointing.add(1, 1)
 
-    assert.equal(await checkpointing.get(UINT64_OVERFLOW.sub(new web3.BigNumber(1)).toString()), 1) // can request just below limit
+    assert.equal(await checkpointing.get(MAX_UINT64.toString()), 1) // can request just below limit
 
     await assertRevert(checkpointing.get(UINT64_OVERFLOW.toString()))
   })

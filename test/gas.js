@@ -1,22 +1,17 @@
+const { MAX_UINT64 } = require('@aragon/contract-helpers-test/numbers')
+
 const getEvent = (receipt, event, arg) => { return receipt.logs.filter(l => l.event == event)[0].args[arg] }
 
-const Staking = artifacts.require('StakingMock');
-const StandardTokenMock = artifacts.require('StandardTokenMock');
-const LockManagerMock = artifacts.require('LockManagerMock');
+const { deploy } = require('./helpers/deploy')(artifacts)
+const { DEFAULT_STAKE_AMOUNT, DEFAULT_LOCK_AMOUNT, EMPTY_DATA, ZERO_ADDRESS, ACTIVATED_LOCK } = require('./helpers/constants')
 
 contract.skip('Staking app, gas measures', accounts => {
   let staking, token, lockManager, stakingAddress, tokenAddress, lockManagerAddress
   let owner, user1, user2
 
-  const MAX_UINT64 = (new web3.BigNumber(2)).pow(new web3.BigNumber(64)).sub(new web3.BigNumber(1))
-  const DEFAULT_STAKE_AMOUNT = 1200
-  const DEFAULT_LOCK_AMOUNT = DEFAULT_STAKE_AMOUNT / 30
-  const ACTIVATED_LOCK = "0x01"
-  const EMPTY_STRING = ''
-
   const approveAndStake = async (amount = DEFAULT_STAKE_AMOUNT, from = owner) => {
     await token.approve(stakingAddress, amount, { from })
-    await staking.stake(amount, EMPTY_STRING, { from })
+    await staking.stake(amount, EMPTY_DATA, { from })
   }
 
   const approveStakeAndLock = async (
@@ -26,7 +21,7 @@ contract.skip('Staking app, gas measures', accounts => {
     from = owner
   ) => {
     await approveAndStake(stakeAmount, from)
-    await staking.lock(lockAmount, manager, ACTIVATED_LOCK, { from })
+    await staking.allowManagerAndLock(lockAmount, manager, lockAmount, ACTIVATED_LOCK, { from })
   }
 
   before(async () => {
@@ -36,16 +31,14 @@ contract.skip('Staking app, gas measures', accounts => {
   })
 
   beforeEach(async () => {
-    const initialAmount = 1000 * DEFAULT_STAKE_AMOUNT
-    const tokenContract = await StandardTokenMock.new(owner, initialAmount)
-    token = tokenContract
-    tokenAddress = tokenContract.address
-    const stakingContract = await Staking.new(tokenAddress)
-    staking = stakingContract
-    stakingAddress = stakingContract.address
-    const lockManagerContract = await LockManagerMock.new()
-    lockManager = lockManagerContract
-    lockManagerAddress = lockManagerContract.address
+    const deployment = await deploy(owner)
+    token = deployment.token
+    staking = deployment.staking
+    lockManager = deployment.lockManager
+
+    stakingAddress = staking.address
+    tokenAddress = token.address
+    lockManagerAddress = lockManager.address
   })
 
   // increases 1185 gas for each lock

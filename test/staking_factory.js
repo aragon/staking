@@ -1,10 +1,10 @@
-const { assertRevert } = require('@aragon/test-helpers/assertThrow')
+const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
+
+const { ZERO_ADDRESS } = require('./helpers/constants')
 
 const Staking = artifacts.require('Staking')
 const StakingFactory = artifacts.require('StakingFactory')
 const StandardTokenMock = artifacts.require('StandardTokenMock')
-
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 contract('StakingFactory', ([_, owner, someone]) => {
   let token, factory, staking
