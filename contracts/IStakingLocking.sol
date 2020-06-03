@@ -20,6 +20,7 @@ interface IStakingLocking {
     function setLockManager(address _account, address _newLockManager) external;
     function transfer(address _to, address _toLockManager, uint256 _amount) external;
     function transferFromLock(address _account, address _to, address _toLockManager, uint256 _amount) external;
+    function transferFromLockAndUnstake(address _account, address _to, uint256 _amount) external;
 
     function getLock(address _account, address _lockManager)
         external

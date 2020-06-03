@@ -83,16 +83,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         // unstaking 0 tokens is not allowed
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
-        // checkpoint updated staking balance
-        uint256 newStake = _modifyStakeBalance(msg.sender, _amount, false);
-
-        // checkpoint total supply
-        _modifyTotalStaked(_amount, false);
-
-        // transfer tokens
-        require(stakingToken.safeTransfer(msg.sender, _amount), ERROR_TOKEN_TRANSFER);
-
-        emit Unstaked(msg.sender, _amount, newStake, _data);
+        _unstakeUnsafe(msg.sender, _amount, _data);
     }
 
     /**
@@ -142,7 +133,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Transfer `_amount` tokens from `_from`'s lock by `msg.sender` to `_to``_toLockManager > 0 ? '\'s lock by ' + _toLockManager : ''`
+     * @notice Transfer `@tokenAmount(stakingToken: address, _allowance)` from `_from`'s lock by `msg.sender` to `_to``_toLockManager > 0 ? '\'s lock by ' + _toLockManager : ''`
      * @param _from Owner of locked tokens
      * @param _to Recipient of the tokens
      * @param _toLockManager Manager of the recipient lock to add the tokens to, if any
@@ -164,6 +155,30 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
 
         _transfer(_from, msg.sender, _to, _toLockManager, _amount);
         _decreaseLockAmountUnsafe(_from, msg.sender, _amount);
+    }
+
+    /**
+     * @notice Transfer `@tokenAmount(stakingToken: address, _allowance)` from `_from`'s lock by `msg.sender` to `_to` (unstaked)
+     * @param _from Owner of locked tokens
+     * @param _to Recipient of the tokens
+     * @param _amount Number of tokens to be transferred
+     */
+    function transferFromLockAndUnstake(
+        address _from,
+        address _to,
+        uint256 _amount
+    )
+        external
+        isInitialized
+    {
+        Account storage account = accounts[_from];
+        Lock storage lock = account.locks[msg.sender];
+        // check that lock is enough, it also means that lock.amount > 0 and therefore hasn't been unlocked
+        require(lock.amount >= _amount, ERROR_NOT_ENOUGH_LOCK);
+
+        _decreaseLockAmountUnsafe(_from, msg.sender, _amount);
+        _transfer(_from, msg.sender, _to, address(0), _amount);
+        _unstakeUnsafe(_to, _amount, new bytes(0));
     }
 
     /**
@@ -446,6 +461,19 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         require(stakingToken.safeTransferFrom(_from, this, _amount), ERROR_TOKEN_DEPOSIT);
 
         emit Staked(_accountAddress, _amount, newStake, _data);
+    }
+
+    function _unstakeUnsafe(address _from, uint256 _amount, bytes _data) internal {
+        // checkpoint updated staking balance
+        uint256 newStake = _modifyStakeBalance(_from, _amount, false);
+
+        // checkpoint total supply
+        _modifyTotalStaked(_amount, false);
+
+        // transfer tokens
+        require(stakingToken.safeTransfer(_from, _amount), ERROR_TOKEN_TRANSFER);
+
+        emit Unstaked(_from, _amount, newStake, _data);
     }
 
     function _modifyStakeBalance(address _accountAddress, uint256 _by, bool _increase) internal returns (uint256) {
