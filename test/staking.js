@@ -3,7 +3,7 @@ const { bn, assertBn } = require('@aragon/contract-helpers-test/numbers')
 
 const { deploy } = require('./helpers/deploy')(artifacts)
 const { DEFAULT_STAKE_AMOUNT, EMPTY_DATA } = require('./helpers/constants')
-const { STAKING_ERRORS, SAFE_MATH_ERRORS } = require('./helpers/errors')
+const { STAKING_ERRORS } = require('./helpers/errors')
 
 const StakingMock = artifacts.require('StakingMock')
 const StandardTokenMock = artifacts.require('StandardTokenMock');
@@ -66,7 +66,7 @@ contract('Staking app', ([owner, other]) => {
     const balance = await getTokenBalance(token, owner)
     const amount = balance + 1
     await token.approve(stakingAddress, amount)
-    await assertRevert(staking.stake(amount, EMPTY_DATA), STAKING_ERRORS.ERROR_TOKEN_TRANSFER)
+    await assertRevert(staking.stake(amount, EMPTY_DATA), STAKING_ERRORS.ERROR_TOKEN_DEPOSIT)
   })
 
   it('stakes for', async () => {
@@ -112,7 +112,7 @@ contract('Staking app', ([owner, other]) => {
 
   it('fails unstaking more than staked', async () => {
     await approveAndStake()
-    await assertRevert(staking.unstake(DEFAULT_STAKE_AMOUNT + 1, EMPTY_DATA), SAFE_MATH_ERRORS.ERROR_SUB_UNDERFLOW)
+    await assertRevert(staking.unstake(DEFAULT_STAKE_AMOUNT + 1, EMPTY_DATA), STAKING_ERRORS.ERROR_NOT_ENOUGH_BALANCE)
   })
 
   context('History', async () => {

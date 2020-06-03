@@ -19,6 +19,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     string private constant ERROR_TOKEN_NOT_CONTRACT = "STAKING_TOKEN_NOT_CONTRACT";
     string private constant ERROR_AMOUNT_ZERO = "STAKING_AMOUNT_ZERO";
     string private constant ERROR_TOKEN_TRANSFER = "STAKING_TOKEN_TRANSFER";
+    string private constant ERROR_TOKEN_DEPOSIT = "STAKING_TOKEN_DEPOSIT";
     string private constant ERROR_TOKEN_NOT_SENDER = "STAKING_TOKEN_NOT_SENDER";
     string private constant ERROR_WRONG_TOKEN = "STAKING_WRONG_TOKEN";
     string private constant ERROR_NOT_ENOUGH_BALANCE = "STAKING_NOT_ENOUGH_BALANCE";
@@ -441,7 +442,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         _modifyTotalStaked(_amount, true);
 
         // pull tokens into Staking contract
-        require(stakingToken.safeTransferFrom(_from, this, _amount), ERROR_TOKEN_TRANSFER);
+        require(stakingToken.safeTransferFrom(_from, this, _amount), ERROR_TOKEN_DEPOSIT);
 
         emit Staked(_accountAddress, _amount, newStake, _data);
     }
@@ -453,7 +454,8 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         if (_increase) {
             newStake = currentStake.add(_by);
         } else {
-            newStake = currentStake.sub(_by);
+            require(currentStake >= _by, ERROR_NOT_ENOUGH_BALANCE);
+            newStake = currentStake - _by;
         }
 
         // add new value to account history
