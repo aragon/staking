@@ -3,6 +3,7 @@ const { bn, assertBn } = require('@aragon/contract-helpers-test/numbers')
 
 const { deploy } = require('./helpers/deploy')(artifacts)
 const { DEFAULT_STAKE_AMOUNT, DEFAULT_LOCK_AMOUNT, EMPTY_DATA } = require('./helpers/constants')
+const { STAKING_ERRORS, TIME_LOCK_MANAGER_ERRORS } = require('./helpers/errors')
 
 const TimeLockManagerMock = artifacts.require('TimeLockManagerMock');
 
@@ -93,7 +94,7 @@ contract('Staking app, Time locking', ([owner]) => {
     await approveStakeAndLock(TIME_UNIT_SECONDS, startTime, endTime)
 
     // tries to unlock
-    await assertRevert(staking.decreaseAndRemoveManager(owner, manager.address))
+    await assertRevert(staking.decreaseAndRemoveManager(owner, manager.address), STAKING_ERRORS.ERROR_CANNOT_UNLOCK)
   })
 
   it('fails trying to lock twice', async () => {
@@ -101,7 +102,7 @@ contract('Staking app, Time locking', ([owner]) => {
     const endTime = startTime.add(bn(DEFAULT_TIME))
     await approveStakeAndLock(TIME_UNIT_SECONDS, startTime, endTime)
 
-    await assertRevert(manager.lock(staking.address, owner, DEFAULT_LOCK_AMOUNT, TIME_UNIT_SECONDS, startTime, endTime))
+    await assertRevert(manager.lock(staking.address, owner, DEFAULT_LOCK_AMOUNT, TIME_UNIT_SECONDS, startTime, endTime), TIME_LOCK_MANAGER_ERRORS.ERROR_ALREADY_LOCKED)
   })
 
 
@@ -113,6 +114,6 @@ contract('Staking app, Time locking', ([owner]) => {
     // allow manager
     await staking.allowNewLockManager(manager.address, DEFAULT_STAKE_AMOUNT, EMPTY_DATA)
     // times are reverted!
-    await assertRevert(manager.lock(staking.address, owner, DEFAULT_LOCK_AMOUNT, TIME_UNIT_SECONDS, endTime, startTime))
+    await assertRevert(manager.lock(staking.address, owner, DEFAULT_LOCK_AMOUNT, TIME_UNIT_SECONDS, endTime, startTime), TIME_LOCK_MANAGER_ERRORS.ERROR_WRONG_INTERVAL)
   })
 })

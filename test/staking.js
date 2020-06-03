@@ -3,6 +3,7 @@ const { bn, assertBn } = require('@aragon/contract-helpers-test/numbers')
 
 const { deploy } = require('./helpers/deploy')(artifacts)
 const { DEFAULT_STAKE_AMOUNT, EMPTY_DATA } = require('./helpers/constants')
+const { STAKING_ERRORS, SAFE_MATH_ERRORS } = require('./helpers/errors')
 
 const StakingMock = artifacts.require('StakingMock')
 const StandardTokenMock = artifacts.require('StandardTokenMock');
@@ -38,7 +39,7 @@ contract('Staking app', ([owner, other]) => {
   })
 
   it('fails deploying if token is not a contract', async() => {
-    await assertRevert(StakingMock.new(owner))
+    await assertRevert(StakingMock.new(owner), STAKING_ERRORS.ERROR_TOKEN_NOT_CONTRACT)
   })
 
   it('stakes', async () => {
@@ -58,14 +59,14 @@ contract('Staking app', ([owner, other]) => {
 
   it('fails staking 0 amount', async () => {
     await token.approve(stakingAddress, 1)
-    await assertRevert(staking.stake(0, EMPTY_DATA))
+    await assertRevert(staking.stake(0, EMPTY_DATA), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
   })
 
   it('fails staking more than balance', async () => {
     const balance = await getTokenBalance(token, owner)
     const amount = balance + 1
     await token.approve(stakingAddress, amount)
-    await assertRevert(staking.stake(amount, EMPTY_DATA))
+    await assertRevert(staking.stake(amount, EMPTY_DATA), STAKING_ERRORS.ERROR_TOKEN_TRANSFER)
   })
 
   it('stakes for', async () => {
@@ -106,12 +107,12 @@ contract('Staking app', ([owner, other]) => {
 
   it('fails unstaking 0 amount', async () => {
     await approveAndStake()
-    await assertRevert(staking.unstake(0, EMPTY_DATA))
+    await assertRevert(staking.unstake(0, EMPTY_DATA), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
   })
 
   it('fails unstaking more than staked', async () => {
     await approveAndStake()
-    await assertRevert(staking.unstake(DEFAULT_STAKE_AMOUNT + 1, EMPTY_DATA))
+    await assertRevert(staking.unstake(DEFAULT_STAKE_AMOUNT + 1, EMPTY_DATA), SAFE_MATH_ERRORS.ERROR_SUB_UNDERFLOW)
   })
 
   context('History', async () => {
@@ -167,7 +168,7 @@ contract('Staking app', ([owner, other]) => {
       await badStaking.stake(DEFAULT_STAKE_AMOUNT, EMPTY_DATA, { from: owner })
 
       // unstake half of them, fails on token transfer
-      await assertRevert(badStaking.unstake(DEFAULT_STAKE_AMOUNT / 2, EMPTY_DATA))
+      await assertRevert(badStaking.unstake(DEFAULT_STAKE_AMOUNT / 2, EMPTY_DATA), STAKING_ERRORS.ERROR_TOKEN_TRANSFER)
     })
   })
 })
