@@ -24,7 +24,7 @@ contract('Staking app, Time locking', ([owner]) => {
   const approveStakeAndLock = async(unit, start, end, lockAmount = DEFAULT_LOCK_AMOUNT, stakeAmount = DEFAULT_STAKE_AMOUNT) => {
     await approveAndStake(stakeAmount)
     // allow manager
-    await staking.allowNewLockManager(manager.address, lockAmount, EMPTY_DATA)
+    await staking.allowManager(manager.address, lockAmount, EMPTY_DATA)
     // lock amount
     await manager.lock(staking.address, owner, lockAmount, unit, start, end)
   }
@@ -94,7 +94,7 @@ contract('Staking app, Time locking', ([owner]) => {
     await approveStakeAndLock(TIME_UNIT_SECONDS, startTime, endTime)
 
     // tries to unlock
-    await assertRevert(staking.decreaseAndRemoveManager(owner, manager.address), STAKING_ERRORS.ERROR_CANNOT_UNLOCK)
+    await assertRevert(staking.unlockAndRemoveManager(owner, manager.address), STAKING_ERRORS.ERROR_CANNOT_UNLOCK)
   })
 
   it('fails trying to lock twice', async () => {
@@ -112,7 +112,7 @@ contract('Staking app, Time locking', ([owner]) => {
 
     await approveAndStake(DEFAULT_STAKE_AMOUNT)
     // allow manager
-    await staking.allowNewLockManager(manager.address, DEFAULT_STAKE_AMOUNT, EMPTY_DATA)
+    await staking.allowManager(manager.address, DEFAULT_STAKE_AMOUNT, EMPTY_DATA)
     // times are reverted!
     await assertRevert(manager.lock(staking.address, owner, DEFAULT_LOCK_AMOUNT, TIME_UNIT_SECONDS, endTime, startTime), TIME_LOCK_MANAGER_ERRORS.ERROR_WRONG_INTERVAL)
   })

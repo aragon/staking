@@ -13,28 +13,20 @@ contract LockManagerMock is ILockManager {
         emit LogLockCallback(_amount, _allowance, _data);
     }
 
-    function transferFromLock(
-        Staking _staking,
-        address _from,
-        address _to,
-        address _toManager,
-        uint256 _amount
-    )
-        external
-    {
-        _staking.transferFromLock(_from, _to, _toManager, _amount);
+    function slash(Staking _staking, address _from, address _to, uint256 _amount) external {
+        _staking.slash(_from, _to, _amount);
     }
 
-    function transferFromLockAndUnstake(Staking _staking, address _from, address _to, address, uint256 _amount) external {
-        _staking.transferFromLockAndUnstake(_from, _to, _amount);
+    function slashAndUnstake(Staking _staking, address _from, address _to, uint256 _amount) external {
+        _staking.slashAndUnstake(_from, _to, _amount);
     }
 
-    function decreaseLockAmount(Staking _staking, address _account, uint256 _newAmount) external {
-        _staking.decreaseLockAmount(_account, address(this), _newAmount);
+    function unlock(Staking _staking, address _account, uint256 _newAmount) external {
+        _staking.unlock(_account, address(this), _newAmount);
     }
 
-    function decreaseAndRemoveManager(Staking _staking, address _account) external {
-        _staking.decreaseAndRemoveManager(_account, address(this));
+    function unlockAndRemoveManager(Staking _staking, address _account) external {
+        _staking.unlockAndRemoveManager(_account, address(this));
     }
 
     function setLockManager(Staking _staking, address _account, ILockManager _newManager) external {
@@ -49,7 +41,7 @@ contract LockManagerMock is ILockManager {
         result = _result;
     }
 
-    function unlock(Staking _staking, address _account, address _manager) public {
-        _staking.decreaseAndRemoveManager(_account, _manager);
+    function unlockAndRemoveManager(Staking _staking, address _account, address _manager) public {
+        _staking.unlockAndRemoveManager(_account, _manager);
     }
 }
