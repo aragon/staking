@@ -133,7 +133,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Transfer `@tokenAmount(stakingToken: address, _allowance)` from `_from`'s lock by `msg.sender` to `_to``_toLockManager > 0 ? '\'s lock by ' + _toLockManager : ''`
+     * @notice Transfer `@tokenAmount(stakingToken: address, _amount)` from `_from`'s lock by `msg.sender` to `_to``_toLockManager > 0 ? '\'s lock by ' + _toLockManager : ''`
      * @param _from Owner of locked tokens
      * @param _to Recipient of the tokens
      * @param _toLockManager Manager of the recipient lock to add the tokens to, if any
@@ -158,7 +158,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Transfer `@tokenAmount(stakingToken: address, _allowance)` from `_from`'s lock by `msg.sender` to `_to` (unstaked)
+     * @notice Transfer `@tokenAmount(stakingToken: address, _amount)` from `_from`'s lock by `msg.sender` to `_to` (unstaked)
      * @param _from Owner of locked tokens
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
