@@ -18,8 +18,8 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
 
     string private constant ERROR_TOKEN_NOT_CONTRACT = "STAKING_TOKEN_NOT_CONTRACT";
     string private constant ERROR_AMOUNT_ZERO = "STAKING_AMOUNT_ZERO";
-    string private constant ERROR_TOKEN_TRANSFER = "STAKING_TOKEN_TRANSFER";
-    string private constant ERROR_TOKEN_DEPOSIT = "STAKING_TOKEN_DEPOSIT";
+    string private constant ERROR_TOKEN_TRANSFER = "STAKING_TOKEN_TRANSFER_FAIL";
+    string private constant ERROR_TOKEN_DEPOSIT = "STAKING_TOKEN_DEPOSIT_FAIL";
     string private constant ERROR_TOKEN_NOT_SENDER = "STAKING_TOKEN_NOT_SENDER";
     string private constant ERROR_WRONG_TOKEN = "STAKING_WRONG_TOKEN";
     string private constant ERROR_NOT_ENOUGH_BALANCE = "STAKING_NOT_ENOUGH_BALANCE";
