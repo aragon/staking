@@ -76,7 +76,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
 
     /**
      * @notice Unstakes `_amount` tokens, returning them to the user
-     * @param _amount Number of tokens staked
+     * @param _amount Number of tokens to unstake
      * @param _data Used in Unstaked event, to add signalling information in more complex staking applications
      */
     function unstake(uint256 _amount, bytes _data) external isInitialized {
@@ -97,9 +97,10 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
 
     /**
      * @notice Allow `_lockManager` to lock up to `@tokenAmount(stakingToken: address, _allowance)` of `msg.sender`
-     *         It creates a new inactive lock, so the lock for this manager cannot exist before.
+     *         It creates a new lock, so the lock for this manager cannot exist before.
      * @param _lockManager The manager entity for this particular lock
-     * @param _allowance Amount of allowed tokens increase
+     * @param _allowance Amount of tokens that the manager can lock
+     * @param _data Data to parametrize logic for the lock to be enforced by the manager
      */
     function allowNewLockManager(address _lockManager, uint256 _allowance, bytes _data) external isInitialized {
         _allowNewLockManager(_lockManager, _allowance, _data);
