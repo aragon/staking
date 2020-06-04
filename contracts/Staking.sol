@@ -125,10 +125,17 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @param _amount Number of tokens to be transferred
      */
     function transfer(address _to, uint256 _amount) external isInitialized {
-        // have enough unlocked funds
-        require(_amount <= _unlockedBalanceOf(msg.sender), ERROR_NOT_ENOUGH_BALANCE);
-
         _transfer(msg.sender, _to, _amount);
+    }
+
+    /**
+     * @notice Transfer `_amount` tokens to `_to`’s external balance (i.e. unstaked)
+     * @param _to Recipient of the tokens
+     * @param _amount Number of tokens to be transferred
+     */
+    function transferAndUnstake(address _to, uint256 _amount) external isInitialized {
+        _transfer(msg.sender, _to, _amount);
+        _unstakeUnsafe(_to, _amount, new bytes(0));
     }
 
     /**
@@ -150,8 +157,8 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         // check that lock is enough, it also means that lock.amount > 0 and therefore hasn't been unlocked
         require(lock.amount >= _amount, ERROR_NOT_ENOUGH_LOCK);
 
-        _transfer(_from, _to, _amount);
         _unlockUnsafe(_from, msg.sender, _amount);
+        _transfer(_from, _to, _amount);
     }
 
     /**
@@ -197,8 +204,8 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         // No need to check that _transferAmount is positive, as _transfer will fail
         // No need to check that have enough locked funds, as _unlockUnsafe will fail
 
-        _transfer(_from, _to, _transferAmount);
         _unlockUnsafe(_from, msg.sender, _decreaseAmount.add(_transferAmount));
+        _transfer(_from, _to, _transferAmount);
     }
 
     /**
@@ -561,6 +568,9 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     function _transfer(address _from, address _to, uint256 _amount) internal {
         // transferring 0 staked tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
+
+        // have enough unlocked funds
+        require(_amount <= _unlockedBalanceOf(_from), ERROR_NOT_ENOUGH_BALANCE);
 
         // update stakes
         _modifyStakeBalance(_from, _amount, false);

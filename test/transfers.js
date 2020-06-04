@@ -31,26 +31,46 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
   })
 
   context('Transfers', async () => {
+
     context('From stake', async () => {
-      it('transfers', async () => {
-        //const initialTotalStake = await staking.totalStaked()
-        await approveAndStake()
-        await staking.transfer(user1, DEFAULT_STAKE_AMOUNT / 2)
 
-        assert.equal((await staking.unlockedBalanceOf(owner)).toString(), DEFAULT_STAKE_AMOUNT / 2, "Owner balance should match")
-        assert.equal((await staking.unlockedBalanceOf(user1)).toString(), DEFAULT_STAKE_AMOUNT / 2, "User 1 balance should match")
-        // total stake remains the same
-        assert.equal((await staking.totalStaked()).toString(), DEFAULT_STAKE_AMOUNT, "Total stake should match")
+      const transfersFromStake = (transferType) => {
+        it('transfers', async () => {
+          //const initialTotalStake = await staking.totalStaked()
+          const transferAmount = DEFAULT_STAKE_AMOUNT / 2
+          await approveAndStake()
+          await staking[transferType](user1, transferAmount)
+
+          assert.equal((await staking.unlockedBalanceOf(owner)).toString(), DEFAULT_STAKE_AMOUNT - transferAmount, "Owner balance should match")
+
+          const userStakedBalance = transferType == 'transfer' ? transferAmount : 0
+          assert.equal((await staking.unlockedBalanceOf(user1)).toString(), userStakedBalance, "User 1 unlocked balance should match")
+
+          const userExternalBalance = transferType == 'transfer' ? 0 : transferAmount
+          assert.equal((await token.balanceOf(user1)).toString(), userExternalBalance, "User 1 external balance should match")
+
+          // total stake
+          const totalStaked = transferType == 'transfer' ? DEFAULT_STAKE_AMOUNT : DEFAULT_STAKE_AMOUNT - transferAmount
+          assert.equal((await staking.totalStaked()).toString(), totalStaked, "Total stake should match")
+        })
+
+        it('fails transferring zero tokens', async () => {
+          await approveAndStake()
+          await assertRevert(staking[transferType](user1, 0), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
+        })
+
+        it('fails transferring more than unlocked balance', async () => {
+          await approveAndStake(DEFAULT_STAKE_AMOUNT)
+          await assertRevert(staking[transferType](user1, DEFAULT_STAKE_AMOUNT + 1), STAKING_ERRORS.ERROR_NOT_ENOUGH_BALANCE)
+        })
+      }
+
+      context('within Staking app', () => {
+        transfersFromStake('transfer')
       })
 
-      it('fails transferring zero tokens', async () => {
-        await approveAndStake()
-        await assertRevert(staking.transfer(user1, 0), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
-      })
-
-      it('fails transferring more than unlocked balance', async () => {
-        await approveAndStake(DEFAULT_STAKE_AMOUNT)
-        await assertRevert(staking.transfer(user1, DEFAULT_STAKE_AMOUNT + 1), STAKING_ERRORS.ERROR_NOT_ENOUGH_BALANCE)
+      context('to external balance (unstaked)', () => {
+        transfersFromStake('transferAndUnstake')
       })
     })
 
