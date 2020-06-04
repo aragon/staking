@@ -1,0 +1,17 @@
+The Staking app complies with [interface ERC900](https://eips.ethereum.org/EIPS/eip-900) with the following added features:
+
+- Anti-sybil protection
+- Slashing mechanism
+
+The main motivation is to be used in conjunction with [Agreements](https://github.com/aragon/aragon-apps/tree/master/apps/agreement) in the context of Aragon Network, but it has been designed to be as generic as possible, in order to allow for other use cases too.
+
+## Table of Contents
+
+1. [Anti-sybil protection](./1-anti-sybil)
+2. [Slashing mechanism](./2-slashing)
+3. [Entry points](./3-entry-points)
+4. [Data structures](./4-data-structures)
+5. [External interface](./5-external-interface)
+6. [Deployment](./6-deployment)
+7. [Testing guide](./7-testing-guide)
+
