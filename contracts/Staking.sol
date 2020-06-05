@@ -290,7 +290,9 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
 
         uint256 amount = lock.amount;
         // update total
-        account.totalLocked = account.totalLocked.sub(amount);
+        if (amount > 0) {
+            account.totalLocked = account.totalLocked.sub(amount);
+        }
 
         emit Unlocked(_accountAddress, _lockManager, amount);
 
@@ -612,7 +614,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         uint256 amount = _amount == 0 ? lock.amount : _amount;
 
         if (msg.sender == _lockManager ||
-            (msg.sender == _accountAddress && ILockManager(_lockManager).canUnlock(_accountAddress, amount))) {
+            (msg.sender == _accountAddress && (amount == 0 || ILockManager(_lockManager).canUnlock(_accountAddress, amount)))) {
             return true;
         }
 
