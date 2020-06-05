@@ -265,6 +265,11 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await assertRevert(staking.canUnlock(owner, user1, 0)) // no reason: it’s trying to call an EOA
   })
 
+  it('can unlock if amount is zero', async () => {
+    await staking.allowManager(user1, DEFAULT_LOCK_AMOUNT, EMPTY_DATA, { from: owner })
+    assert.isTrue(await staking.canUnlock(owner, user1, 0), { from: owner })
+  })
+
   it('fails to unlock if it cannot unlock, EOA manager', async () => {
     await approveStakeAndLock(user1)
 
@@ -326,6 +331,17 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     // recipient
     assert.equal((await staking.unlockedBalanceOf(user2)).toString(), transferAmount.toString(), "Unlocked balance should match")
     assert.equal((await staking.getTotalLockedOf(user2)).toString(), '0', "total locked doesn’t match")
+  })
+
+  it('fails to transfer (slash) and unlocks in one transaction if unlock amount is zero', async () => {
+    const totalLock = 120
+    const transferAmount = 40
+    const decreaseAmount = 0
+
+    await approveStakeAndLock(user1, totalLock)
+
+    // unlock and transfer
+    await assertRevert(staking.slashAndUnlock(owner, user2, decreaseAmount, transferAmount, { from: user1 }), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
   })
 
   it('fails to transfer (slash) and unlock in one transaction if not owner nor manager', async () => {
