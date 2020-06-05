@@ -340,7 +340,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     /**
      * @notice Get total amount of locked tokens for `_accountAddress`
      * @param _accountAddress Owner of locks
-     * @return Total amount of locked tokens
+     * @return Total amount of locked tokens for the requested account
      */
     function getTotalLockedOf(address _accountAddress) external view isInitialized returns (uint256) {
         return _getTotalLockedOf(_accountAddress);
@@ -351,7 +351,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @param _accountAddress Owner of lock
      * @param _lockManager Manager of the lock for the given account
      * @return Amount of locked tokens
-     * @return Lock's data
+     * @return Amount of tokens that lock manager is allowed to lock
      */
     function getLock(address _accountAddress, address _lockManager)
         external
@@ -367,6 +367,12 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         _allowance = lock.allowance;
     }
 
+    /**
+     * @notice Get staked and locked balances of `_accountAddress`
+     * @param _accountAddress Account being requested
+     * @return Amount of staked tokens
+     * @return Amount of total locked tokens
+     */
     function getBalancesOf(address _accountAddress) external view returns (uint256 staked, uint256 locked) {
         staked = totalStakedFor(_accountAddress);
         locked = _getTotalLockedOf(_accountAddress);
@@ -404,6 +410,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @notice Check if `_accountAddress`'s by `_lockManager` can be unlocked
      * @param _accountAddress Owner of lock
      * @param _lockManager Manager of the lock for the given account
+     * @param _amount Amount of tokens to be potentially unlocked. If zero, it means the whole locked amount
      * @return Whether given lock of given account can be unlocked
      */
     function canUnlock(address _accountAddress, address _lockManager, uint256 _amount) external view isInitialized returns (bool) {
