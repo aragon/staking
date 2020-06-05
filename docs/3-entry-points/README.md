@@ -163,7 +163,7 @@ Get the total amount of tokens staked by all users
 
 ## Locking
 
-### allowNewLockManager
+### allowManager
 
 Allow `_lockManager` to lock up to `_allowance` tokens of `msg.sender`
 It creates a new lock, so the lock for this manager cannot exist before.
@@ -221,7 +221,7 @@ Transfer `_amount` tokens to `_to``_toLockManager != 0 ? '\'s lock ' + _toLockMa
 - **State transitions:**
 
 
-### transferFromLock
+### slash
 
 Transfer `_amount` tokens from `_from`'s lock by `msg.sender` to `_to``_toLockManager > 0 ? '\'s lock by ' + _toLockManager : ''`
 
@@ -236,7 +236,7 @@ Transfer `_amount` tokens from `_from`'s lock by `msg.sender` to `_to``_toLockMa
 - **State transitions:**
 
 
-### decreaseAndTransferFromLock
+### slashAndUnlock
 
 Transfer `@tokenAmount(stakingToken: address, _transferAmount)` from `_from`'s lock by `msg.sender` to `_to`, and decrease `@tokenAmount(stakingToken: address, _decreaseAmount)` from that lock
 
@@ -278,7 +278,7 @@ Decrease allowance in `@tokenAmount(stakingToken: address, _allowance)` of lock 
 - **State transitions:**
 
 
-### increaseLockAmount
+### lock
 
 Increase locked amount by `@tokenAmount(stakingToken: address, _amount)` for user `_accountAddress` by lock manager `_lockManager`
 
@@ -292,7 +292,7 @@ Increase locked amount by `@tokenAmount(stakingToken: address, _amount)` for use
 - **State transitions:**
 
 
-### decreaseLockAmount
+### unlock
 
 Decrease locked amount by `@tokenAmount(stakingToken: address, _amount)` for user `_accountAddress` by lock manager `_lockManager`
 
@@ -306,7 +306,7 @@ Decrease locked amount by `@tokenAmount(stakingToken: address, _amount)` for use
 - **State transitions:**
 
 
-### decreaseAndRemoveManager
+### unlockAndRemoveManager
 
 Unlock `_accountAddress`'s lock by `_lockManager` so locked tokens can be unstaked again
 
