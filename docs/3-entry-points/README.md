@@ -417,62 +417,67 @@ Change the manager of `_accountAddress`'s lock from `msg.sender` to `_newLockMan
 
 Get total amount of locked tokens for `_accountAddress`
 
-- **Actor:** 
+- **Actor:** Any
 - **Inputs:**
-  - **_accountAddress:** ) → uint25
-- **Authentication:** 
-- **Pre-flight checks:**
-- **State transitions:**
+  - **_accountAddress:** Owner of locks
+- **Outputs:**
+  - Total amount of locked tokens for the requested account
+- **Authentication:** Open
 
 
 ### getLock
 
 Get details of `_accountAddress`'s lock by `_lockManager`
 
-- **Actor:** 
+- **Actor:** Any
 - **Inputs:**
-  - **_accountAddress:** 
-  - **_lockManager:** ) → uint256 _amount, uint256 _allowanc
-- **Authentication:** 
-- **Pre-flight checks:**
-- **State transitions:**
+  - **_accountAddress:** Owner of lock
+  - **_lockManager:** Manager of the lock for the given account
+- **Outputs:**
+  - **_amount:** Amount of locked tokens
+  - **_allowance:** Amount of tokens that lock manager is allowed to lock
+- **Authentication:** Open
 
 
 ### getBalancesOf
 
-- **Actor:** 
+Get staked and locked balances of `_accountAddress`
+
+- **Actor:** Any
 - **Inputs:**
-  - **_accountAddress:** ) → uint256 staked, uint256 locke
-- **Authentication:** 
-- **Pre-flight checks:**
-- **State transitions:**
+  - **_accountAddress:** Account being requested
+- **Outputs:**
+  - **staked:** Amount of staked tokens
+  - **locked:** Amount of total locked tokens
+- **Authentication:** Open
 
 
 ### unlockedBalanceOf
 
 Get the staked but unlocked amount of tokens by `_accountAddress`
 
-- **Actor:** 
+- **Actor:** Any
 - **Inputs:**
-  - **_accountAddress:** ) → uint25
-- **Authentication:** 
-- **Pre-flight checks:**
-- **State transitions:**
+  - **_accountAddress:** Owner of the staked but unlocked balance
+- **Outputs:**
+  - Amount of tokens staked but not locked by given account
+- **Authentication:** Open
 
 
 ### canUnlock
 
 Check if `_accountAddress`'s by `_lockManager` can be unlocked
 
-- **Actor:** 
+- **Actor:** Any
 - **Inputs:**
-  - **_accountAddress:** 
-  - **_lockManager:** 
-  - **_amount:** ) → boo
-- **Authentication:** 
+  - **_accountAddress:** Owner of lock
+  - **_lockManager:** Manager of the lock for the given account
+  - **_amount:** Amount of tokens to be potentially unlocked. If zero, it means the whole locked amount
+- **Outputs:**
+  - True if caller is allowed to unlock the requested amount (all the lock if amount requested is zero)
+- **Authentication:** Open
 - **Pre-flight checks:**
-- **State transitions:**
-
+  - It will revert if the lock doesn’t exist or if the requested amount is greater than the lock.
 
 ## MiniMe callback
 
@@ -480,14 +485,18 @@ Check if `_accountAddress`'s by `_lockManager` can be unlocked
 
 MiniMeToken ApproveAndCallFallBack compliance
 
-- **Actor:** 
+- **Actor:** Staking token
 - **Inputs:**
-  - **_from:** 
-  - **_amount:** 
-  - **_token:** 
-  - **_data:** 
-- **Authentication:** 
+  - **_from:** Account approving tokens
+  - **_amount:** Amount of `_token` tokens being approved
+  - **_token:** MiniMeToken that is being approved and that the call comes from
+  - **_data:** Used in Staked event, to add signalling information in more complex staking applications
+- **Authentication:** It must be called by the staking token
 - **Pre-flight checks:**
+  - Check that `_token` parameter, Staking token and caller are all the same
 - **State transitions:**
+  - Transfers tokens from `_from` account to contract
+  - Increments `_from` account’s balance
+  - Increments total balance
 
 
