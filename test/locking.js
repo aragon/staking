@@ -336,7 +336,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await approveStakeAndLock(user1, totalLock)
 
     // unlock and transfer
-    await assertRevert(staking.slashAndUnlock(owner, user2, decreaseAmount, transferAmount, { from: user2 }), SAFE_MATH_ERRORS.ERROR_SUB_UNDERFLOW)
+    await assertRevert(staking.slashAndUnlock(owner, user2, decreaseAmount, transferAmount, { from: user2 }), STAKING_ERRORS.ERROR_NOT_ENOUGH_LOCK)
   })
 
   it('change lock amount', async () => {

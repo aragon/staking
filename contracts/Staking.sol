@@ -189,23 +189,24 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @notice Transfer `@tokenAmount(stakingToken: address, _transferAmount)` from `_from`'s lock by `msg.sender` to `_to`, and decrease `@tokenAmount(stakingToken: address, _decreaseAmount)` from that lock
      * @param _from Owner of locked tokens
      * @param _to Recipient of the tokens
-     * @param _decreaseAmount Number of tokens to be unlocked
-     * @param _transferAmount Number of tokens to be transferred
+     * @param _unlockAmount Number of tokens to be unlocked
+     * @param _slashAmount Number of tokens to be transferred
      */
     function slashAndUnlock(
         address _from,
         address _to,
-        uint256 _decreaseAmount,
-        uint256 _transferAmount
+        uint256 _unlockAmount,
+        uint256 _slashAmount
     )
         external
         isInitialized
     {
-        // No need to check that _transferAmount is positive, as _transfer will fail
+        // No need to check that _slashAmount is positive, as _transfer will fail
         // No need to check that have enough locked funds, as _unlockUnsafe will fail
+        require(_unlockAmount > 0, ERROR_AMOUNT_ZERO);
 
-        _unlockUnsafe(_from, msg.sender, _decreaseAmount.add(_transferAmount));
-        _transfer(_from, _to, _transferAmount);
+        _unlockUnsafe(_from, msg.sender, _unlockAmount.add(_slashAmount));
+        _transfer(_from, _to, _slashAmount);
     }
 
     /**
@@ -234,7 +235,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         Lock storage lock = accounts[_accountAddress].locks[_lockManager];
         uint256 newAllowance = lock.allowance.sub(_allowance);
         require(newAllowance >= lock.amount, ERROR_NOT_ENOUGH_ALLOWANCE);
-        // unlock must be used for this:
+        // unlockAndRemoveManager must be used for this:
         require(newAllowance > 0, ERROR_ALLOWANCE_ZERO);
 
         lock.allowance = newAllowance;
@@ -556,8 +557,11 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         Account storage account = accounts[_accountAddress];
         Lock storage lock = account.locks[_lockManager];
 
+        uint256 lockAmount = lock.amount;
+        require(lockAmount >= _amount, ERROR_NOT_ENOUGH_LOCK);
+
         // update lock amount
-        lock.amount = lock.amount.sub(_amount);
+        lock.amount = lockAmount - _amount;
 
         // update total
         account.totalLocked = account.totalLocked.sub(_amount);
