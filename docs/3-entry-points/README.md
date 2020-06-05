@@ -186,7 +186,7 @@ It creates a new lock, so the lock for this manager cannot exist before.
 
 Lock `_amount` staked tokens and assign `_lockManager` as manager with `_allowance` allowed tokens and `_data` as data, so they can not be unstaked
 
-- **Actor:** Staking user
+- **Actor:** Staking user (owner)
 - **Inputs:**
   - **_amount:** The amount of tokens to be locked
   - **_lockManager:** The manager entity for this particular lock
@@ -209,128 +209,209 @@ Lock `_amount` staked tokens and assign `_lockManager` as manager with `_allowan
 
 ### transfer
 
-Transfer `_amount` tokens to `_to``_toLockManager != 0 ? '\'s lock ' + _toLockManager : ''`
+Transfer `_amount` tokens to `_to`’s staked balance
 
-- **Actor:** 
+- **Actor:** Staking user (owner)
 - **Inputs:**
-  - **_to:** 
-  - **_toLockManager:** 
-  - **_amount:** 
-- **Authentication:** 
+  - **_to:** Recipient of the tokens
+  - **_amount:** Number of tokens to be transferred
+- **Authentication:** Open. Implicitly, sender must be staking owner.
 - **Pre-flight checks:**
+  - Checks that contract has been initialized
+  - Checks that amount input is not zero
+  - Checks that user has enough unlocked tokens available
 - **State transitions:**
+  - Decreases sender balance
+  - Increases recipient balance
 
+### transferAndUnstake
+
+Transfer `_amount` tokens to `_to`’s external balance (i.e. unstaked)
+
+- **Actor:** Staking user (owner)
+- **Inputs:**
+  - **_to:** Recipient of the tokens
+  - **_amount:** Number of tokens to be transferred
+- **Authentication:** Open. Implicitly, sender must be staking owner.
+- **Pre-flight checks:**
+  - Checks that contract has been initialized
+  - Checks that amount input is not zero
+  - Checks that user has enough unlocked tokens available
+- **State transitions:**
+  - Decreases sender balance
+  - Makes a token transfer from Stakig to recipient’s account
+  - Decreases Staking total balance
 
 ### slash
 
-Transfer `_amount` tokens from `_from`'s lock by `msg.sender` to `_to``_toLockManager > 0 ? '\'s lock by ' + _toLockManager : ''`
+Transfer `_amount` tokens from `_from`'s lock by `msg.sender` to `_to`
 
-- **Actor:** 
+- **Actor:** Lock manager
 - **Inputs:**
-  - **_from:** 
-  - **_to:** 
-  - **_toLockManager:** 
-  - **_amount:** 
-- **Authentication:** 
+  - **_from:** Owner of locked tokens
+  - **_to:** Recipient of the tokens
+  - **_amount:** Number of tokens to be transferred
+- **Authentication:** Open. Implicitly, sender must be lock manager.
 - **Pre-flight checks:**
+  - Checks that contract has been initialized
+  - Check that owner’s lock is enough
+  - Checks that amount input is not zero
 - **State transitions:**
+  - Decreases owner’s locked amount for the calle lock manager
+  - Decreases owner’s total locked amount
+  - Decreases owner balance
+  - Increases recipient balance
 
+### slashAndUnstake
+
+Transfer `_amount` tokens from `_from`'s lock by `msg.sender` to `_to`’s external wallet (unstaked)
+
+- **Actor:** Lock manager
+- **Inputs:**
+  - **_from:** Owner of locked tokens
+  - **_to:** Recipient of the tokens
+  - **_amount:** Number of tokens to be transferred
+- **Authentication:** Open. Implicitly, sender must be lock manager
+- **Pre-flight checks:**
+  - Checks that contract has been initialized
+  - Check that owner’s lock is enough
+  - Checks that amount input is not zero
+- **State transitions:**
+  - Decreases owner’s locked amount for the caller lock manager
+  - Decreases owner’s total locked amount
+  - Decreases owner balance
+  - Makes a token transfer from Stakig to recipient’s account
+  - Decreases Staking total balance
 
 ### slashAndUnlock
 
-Transfer `@tokenAmount(stakingToken: address, _transferAmount)` from `_from`'s lock by `msg.sender` to `_to`, and decrease `@tokenAmount(stakingToken: address, _decreaseAmount)` from that lock
+Transfer `_transferAmount` tokens from `_from`'s lock by `msg.sender` to `_to`, and decrease `_decreaseAmount` tokens from that lock
 
-- **Actor:** 
+- **Actor:** Lock manager
 - **Inputs:**
-  - **_from:** 
-  - **_to:** 
-  - **_decreaseAmount:** 
-  - **_transferAmount:** 
-- **Authentication:** 
+  - **_from:** Owner of locked tokens
+  - **_to:** Recipient of the tokens
+  - **_unlockAmount:** Number of tokens to be unlocked
+  - **_slashAmount:** Number of tokens to be transferred
+- **Authentication:** Open. Implicitly, sender must be lock manager
 - **Pre-flight checks:**
+  - Checks that contract has been initialized
+  - Check that owner’s lock is enough
+  - Checks that unlock amount input is not zero
+  - Checks that slash amount input is not zero
 - **State transitions:**
+  - Decreases owner’s locked amount for the caller lock manager by both input amounts
+  - Decreases owner’s total locked amount by both input amounts
+  - Decreases owner balance by slash amount
+  - Increases recipient balance by slash amount
 
 
 ### increaseLockAllowance
 
-Increase allowance in `@tokenAmount(stakingToken: address, _allowance)` of lock manager `_lockManager` for user `msg.sender`
+Increase allowance in `_allowance` tokens of lock manager `_lockManager` for user `msg.sender`
 
-- **Actor:** 
+- **Actor:** Staking user (owner)
 - **Inputs:**
-  - **_lockManager:** 
-  - **_allowance:** 
-- **Authentication:** 
+  - **_lockManager:** The manager entity for this particular lock
+  - **_allowance:** Amount of allowed tokens increase
+- **Authentication:** Open. Implicitly, sender must be staking owner.
 - **Pre-flight checks:**
+  - Checks that contract has been initialized
+  - Checks that lock exists (i.e., it has a previous allowance)
+  - Checks that amount input is not zero
 - **State transitions:**
-
+  - Increases lock allowance for this pair of owner and lock manager
 
 ### decreaseLockAllowance
 
-Decrease allowance in `@tokenAmount(stakingToken: address, _allowance)` of lock manager `_lockManager` for user `_accountAddress`
+Decrease allowance in `_allowance` tokens of lock manager `_lockManager` for user `_accountAddress`
 
-- **Actor:** 
+- **Actor:** Staking user (owner) or lock manager
 - **Inputs:**
-  - **_accountAddress:** 
-  - **_lockManager:** 
-  - **_allowance:** 
-- **Authentication:** 
+  - **_accountAddress:** Owner of locked tokens
+  - **_lockManager:** The manager entity for this particular lock
+  - **_allowance:** Amount of allowed tokens decrease
+- **Authentication:** Only owner or lock manager
 - **Pre-flight checks:**
+  - Checks that contract has been initialized
+  - Checks that amount input is not zero
+  - Checks that lock exists (i.e., it has a previous allowance)
+  - Checks that final allowed amount is not less than currently locked tokens
+  - Checks that final allowed result is not zero (unlockAndRemoveManager must be used for this)
 - **State transitions:**
+  - Decreases lock allowance for this pair of owner and lock manager
 
 
 ### lock
 
-Increase locked amount by `@tokenAmount(stakingToken: address, _amount)` for user `_accountAddress` by lock manager `_lockManager`
+Increase locked amount by `_amount` tokens for user `_accountAddress` by lock manager `_lockManager`
 
-- **Actor:** 
+- **Actor:** Staking user (owner) or lock manager
 - **Inputs:**
-  - **_accountAddress:** 
-  - **_lockManager:** 
-  - **_amount:** 
-- **Authentication:** 
+  - **_accountAddress:** Owner of locked tokens
+  - **_lockManager:** The manager entity for this particular lock
+  - **_amount:** Amount of locked tokens increase
+- **Authentication:** Only owner or lock manager
 - **Pre-flight checks:**
+  - Checks that contract has been initialized
+  - Checks that amount input is not zero
+  - Checks that user has enough unlocked tokens available
+  - Checks that lock has enough allowance
 - **State transitions:**
-
+  - Increases locked tokens for this pair of owner and lock manager
+  - Increases owner’s total locked tokens
 
 ### unlock
 
-Decrease locked amount by `@tokenAmount(stakingToken: address, _amount)` for user `_accountAddress` by lock manager `_lockManager`
+Decrease locked amount by `_amount` tokens for user `_accountAddress` by lock manager `_lockManager`
 
-- **Actor:** 
+- **Actor:** Staking user (owner) or lock manager
 - **Inputs:**
-  - **_accountAddress:** 
-  - **_lockManager:** 
-  - **_amount:** 
-- **Authentication:** 
+  - **_accountAddress:** Owner of locked tokens
+  - **_lockManager:** The manager entity for this particular lock
+  - **_amount:** Amount of locked tokens decrease
+- **Authentication:** Only owner or lock manager
 - **Pre-flight checks:**
+  - Checks that contract has been initialized
+  - Checks that amount input is not zero
+  - Checks that lock exists (i.e., it has a previous allowance)
+  - Checks that user has enough unlocked tokens available
+  - If sender is owner, checks that manager allows to unlock
 - **State transitions:**
+  - Decreases locked tokens for this pair of owner and lock manager
+  - Decreases owner’s total locked tokens
 
 
 ### unlockAndRemoveManager
 
 Unlock `_accountAddress`'s lock by `_lockManager` so locked tokens can be unstaked again
 
-- **Actor:** 
+- **Actor:** Staking user (owner) or lock manager
 - **Inputs:**
-  - **_accountAddress:** 
-  - **_lockManager:** 
-- **Authentication:** 
+  - **_accountAddress:** Owner of locked tokens
+  - **_lockManager:** The manager entity for this particular lock
+- **Authentication:** Only owner or lock manager
 - **Pre-flight checks:**
+  - Checks that contract has been initialized
+  - Checks that lock exists (i.e., it has a previous allowance)
+  - If sender is owner and there were locked tokens, checks that manager allows to unlock
 - **State transitions:**
-
+  - Decreases owner’s total locked amount by currently locked tokens for this lock manager
+  - Deletes lock for this pair of owner and lock manager
 
 ### setLockManager
 
 Change the manager of `_accountAddress`'s lock from `msg.sender` to `_newLockManager`
 
-- **Actor:** 
+- **Actor:** Lock manager
 - **Inputs:**
-  - **_accountAddress:** 
-  - **_newLockManager:** 
-- **Authentication:** 
+  - **_accountAddress:** Owner of lock
+  - **_newLockManager:** New lock manager
+- **Authentication:** Open. Implicitly, sender must be lock manager
 - **Pre-flight checks:**
+  - None: TODO
 - **State transitions:**
-
+  - Assigns lock to new manager
 
 ### getTotalLockedOf
 

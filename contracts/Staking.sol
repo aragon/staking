@@ -301,7 +301,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     /**
      * @notice Change the manager of `_accountAddress`'s lock from `msg.sender` to `_newLockManager`
      * @param _accountAddress Owner of lock
-     * @param _newLockManager New lock's manager
+     * @param _newLockManager New lock manager
      */
     function setLockManager(address _accountAddress, address _newLockManager) external isInitialized {
         accounts[_accountAddress].locks[_newLockManager] = accounts[_accountAddress].locks[msg.sender];
