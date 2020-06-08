@@ -39,7 +39,7 @@ contract StakingMock is Staking, TimeHelpersMock {
         // have enough unlocked funds
         require(_amount <= _unlockedBalanceOf(msg.sender));
 
-        _transfer(msg.sender, address(0), _to, _toLockManager, _amount);
+        _transfer(msg.sender, _to, _amount);
     }
 
     function setBlockNumber(uint64 _mockedBlockNumber) public {

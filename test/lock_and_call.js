@@ -68,27 +68,27 @@ contract('Staking app, Locking and calling', ([owner, user1, user2]) => {
   describe('allows lock manager without locking', () => {
     it('and calls lock manager, with just the signature', async () => {
       const data = CALLBACK_DATA
-      const receipt = await staking.allowNewLockManager(lockManager.address, DEFAULT_STAKE_AMOUNT, data, { from: user1 })
+      const receipt = await staking.allowManager(lockManager.address, DEFAULT_STAKE_AMOUNT, data, { from: user1 })
       checkCallbackLog(receipt, data, 0)
     })
 
     it('and calls lock manager, with added data', async () => {
       const data = CALLBACK_DATA + '0'.repeat(63) + '1'
-      const receipt = await staking.allowNewLockManager(lockManager.address, DEFAULT_STAKE_AMOUNT, data, { from: user1 })
+      const receipt = await staking.allowManager(lockManager.address, DEFAULT_STAKE_AMOUNT, data, { from: user1 })
       checkCallbackLog(receipt, data, 0)
     })
 
     it('but doesn’t call lock manager without proper data', async () => {
       // some random data
       const data = '0x1234'
-      const receipt = await staking.allowNewLockManager(lockManager.address, DEFAULT_STAKE_AMOUNT, data, { from: user1 })
+      const receipt = await staking.allowManager(lockManager.address, DEFAULT_STAKE_AMOUNT, data, { from: user1 })
 
       assert.equal(decodeEvents(receipt.receipt, LockManagerMock.abi, 'LogLockCallback').length, 0, 'There should be no logs')
     })
 
     it('but doesn’t call lock manager with empty data', async () => {
       const data = EMPTY_DATA
-      const receipt = await staking.allowNewLockManager(lockManager.address, DEFAULT_STAKE_AMOUNT, data, { from: user1 })
+      const receipt = await staking.allowManager(lockManager.address, DEFAULT_STAKE_AMOUNT, data, { from: user1 })
 
       assert.equal(decodeEvents(receipt.receipt, LockManagerMock.abi, 'LogLockCallback').length, 0, 'There should be no logs')
     })

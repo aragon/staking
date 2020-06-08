@@ -42,7 +42,7 @@ contract TimeLockManager is ILockManager, TimeHelpers {
         require(_end > _start, ERROR_WRONG_INTERVAL);
         timeIntervals[_owner] = TimeInterval(_unit, _start, _end);
 
-        _staking.increaseLockAmount(_owner, address(this), _amount);
+        _staking.lock(_owner, address(this), _amount);
     }
 
     // solium-disable-next-line no-empty-blocks
