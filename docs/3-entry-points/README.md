@@ -147,7 +147,7 @@ Get the amount of tokens staked by `_accountAddress`
   - The amount of tokens staked by the given account
 - **Authentication:** Open
 - **Pre-flight checks:**
-  - None: TODO
+  - Checks that contract has been initialized
 
 ### totalStaked
 
@@ -158,10 +158,10 @@ Get the total amount of tokens staked by all users
   - The total amount of tokens staked by all users
 - **Authentication:** Open
 - **Pre-flight checks:**
-  - None: TODO
+  - Checks that contract has been initialized
 
 
-## Locking
+## Locking interface
 
 ### allowManager
 
@@ -409,7 +409,8 @@ Change the manager of `_accountAddress`'s lock from `msg.sender` to `_newLockMan
   - **_newLockManager:** New lock manager
 - **Authentication:** Open. Implicitly, sender must be lock manager
 - **Pre-flight checks:**
-  - None: TODO
+  - Checks that contract has been initialized
+  - Checks that lock exists
 - **State transitions:**
   - Assigns lock to new manager
 
