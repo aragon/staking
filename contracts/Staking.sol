@@ -31,6 +31,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     string private constant ERROR_NOT_ENOUGH_LOCK = "STAKING_NOT_ENOUGH_LOCK";
     string private constant ERROR_CANNOT_UNLOCK = "STAKING_CANNOT_UNLOCK";
     string private constant ERROR_CANNOT_CHANGE_ALLOWANCE = "STAKING_CANNOT_CHANGE_ALLOWANCE";
+    string private constant ERROR_LOCKMANAGER_CALL_FAIL = "STAKING_LOCKMANAGER_CALL_FAIL";
 
     struct Lock {
         uint256 amount;
@@ -525,7 +526,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
 
     function _callLockManagerCallback(uint256 _amount, address _lockManager, uint _allowance, bytes _data) internal {
         if (_toBytes4(_data) == ILockManager(_lockManager).receiveLock.selector) {
-            ILockManager(_lockManager).receiveLock(_amount, _allowance, _data);
+            require(ILockManager(_lockManager).receiveLock(_amount, _allowance, _data), ERROR_LOCKMANAGER_CALL_FAIL);
         }
     }
 
