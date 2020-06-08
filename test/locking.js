@@ -397,4 +397,8 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     assert.equal(await staking.canUnlock(owner, user2, 0, { from: user1 }), false, "User 1 can not unlock")
     assert.equal(await staking.canUnlock(owner, user2, 0, { from: user2 }), true, "User 2 can unlock")
   })
+
+  it('fails to change lock manager if it doesn’t exist', async () => {
+    await assertRevert(staking.setLockManager(owner, user2, { from: user1 }), STAKING_ERRORS.ERROR_LOCK_DOES_NOT_EXIST)
+  })
 })

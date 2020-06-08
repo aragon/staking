@@ -304,7 +304,10 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @param _newLockManager New lock manager
      */
     function setLockManager(address _accountAddress, address _newLockManager) external isInitialized {
-        accounts[_accountAddress].locks[_newLockManager] = accounts[_accountAddress].locks[msg.sender];
+        Lock storage lock = accounts[_accountAddress].locks[msg.sender];
+        require(lock.allowance > 0, ERROR_LOCK_DOES_NOT_EXIST);
+
+        accounts[_accountAddress].locks[_newLockManager] = lock;
 
         delete accounts[_accountAddress].locks[msg.sender];
 
