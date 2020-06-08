@@ -387,8 +387,25 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @return Amount of total locked tokens
      */
     function getBalancesOf(address _accountAddress) external view isInitialized returns (uint256 staked, uint256 locked) {
-        staked = totalStakedFor(_accountAddress);
+        staked = _totalStakedFor(_accountAddress);
         locked = _getTotalLockedOf(_accountAddress);
+    }
+
+    /**
+     * @notice Get the amount of tokens staked by `_accountAddress`
+     * @param _accountAddress The owner of the tokens
+     * @return The amount of tokens staked by the given account
+     */
+    function totalStakedFor(address _accountAddress) external view isInitialized returns (uint256) {
+        return _totalStakedFor(_accountAddress);
+    }
+
+    /**
+     * @notice Get the total amount of tokens staked by all users
+     * @return The total amount of tokens staked by all users
+     */
+    function totalStaked() external view isInitialized returns (uint256) {
+        return _totalStaked();
     }
 
     /**
@@ -428,25 +445,6 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      */
     function canUnlock(address _accountAddress, address _lockManager, uint256 _amount) external view isInitialized returns (bool) {
         return _canUnlock(_accountAddress, _lockManager, _amount);
-    }
-
-    /**
-     * @notice Get the amount of tokens staked by `_accountAddress`
-     * @param _accountAddress The owner of the tokens
-     * @return The amount of tokens staked by the given account
-     */
-    function totalStakedFor(address _accountAddress) public view returns (uint256) {
-        // we assume it's not possible to stake in the future
-        return accounts[_accountAddress].stakedHistory.getLatestValue();
-    }
-
-    /**
-     * @notice Get the total amount of tokens staked by all users
-     * @return The total amount of tokens staked by all users
-     */
-    function totalStaked() public view returns (uint256) {
-        // we assume it's not possible to stake in the future
-        return totalStakedHistory.getLatestValue();
     }
 
     /*
@@ -489,7 +487,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     function _modifyStakeBalance(address _accountAddress, uint256 _by, bool _increase) internal returns (uint256) {
-        uint256 currentStake = totalStakedFor(_accountAddress);
+        uint256 currentStake = _totalStakedFor(_accountAddress);
 
         uint256 newStake;
         if (_increase) {
@@ -506,7 +504,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     function _modifyTotalStaked(uint256 _by, bool _increase) internal {
-        uint256 currentStake = totalStaked();
+        uint256 currentStake = _totalStaked();
 
         uint256 newStake;
         if (_increase) {
@@ -590,12 +588,31 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
+     * @notice Get the amount of tokens staked by `_accountAddress`
+     * @param _accountAddress The owner of the tokens
+     * @return The amount of tokens staked by the given account
+     */
+    function _totalStakedFor(address _accountAddress) internal view returns (uint256) {
+        // we assume it's not possible to stake in the future
+        return accounts[_accountAddress].stakedHistory.getLatestValue();
+    }
+
+    /**
+     * @notice Get the total amount of tokens staked by all users
+     * @return The total amount of tokens staked by all users
+     */
+    function _totalStaked() internal view returns (uint256) {
+        // we assume it's not possible to stake in the future
+        return totalStakedHistory.getLatestValue();
+    }
+
+    /**
      * @notice Get the staked but unlocked amount of tokens by `_accountAddress`
      * @param _accountAddress Owner of the staked but unlocked balance
      * @return Amount of tokens staked but not locked by given account
      */
     function _unlockedBalanceOf(address _accountAddress) internal view returns (uint256) {
-        uint256 unlockedTokens = totalStakedFor(_accountAddress).sub(accounts[_accountAddress].totalLocked);
+        uint256 unlockedTokens = _totalStakedFor(_accountAddress).sub(accounts[_accountAddress].totalLocked);
 
         return unlockedTokens;
     }
