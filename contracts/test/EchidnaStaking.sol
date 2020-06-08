@@ -10,7 +10,6 @@ contract EchidnaStaking is Staking {
     using SafeMath for uint256;
 
     constructor() public {
-        initialized();
         stakingToken = ERC20(new NoApproveTokenMock(msg.sender, 10 ** 24));
     }
 
