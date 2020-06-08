@@ -1,6 +1,6 @@
 # Anti-sybil
 
-Staking app uses the [Checkpointing library](TODO) to provide a history of balances within the app. This is important for applications such as token-weighted voting, as one token could potentially be used to vote more than once if it’s transferred to another account after being used to cast a vote. Mimicing the [MiniMe token](https://github.com/Giveth/minime), checkpointing allows to have a snapshot of balances at any given used time, that can be used to tally votes.
+Staking app uses the [Checkpointing library](https://github.com/aragon/aragon-apps/pull/415) to provide a history of balances within the app. This is important for applications such as token-weighted voting, as one token could potentially be used to vote more than once if it’s transferred to another account after being used to cast a vote. Mimicing the [MiniMe token](https://github.com/Giveth/minime), checkpointing allows to have a snapshot of balances at any given used time, that can be used to tally votes.
 
 Any time that there is a balance change in the Staking app, the Checkpointing library stores the timestamp and value in an array for the balance owner. Balance changes are stored in natural time order, meaning that it’s not possible to modify a balance nor add a checkpoint in the past.
 

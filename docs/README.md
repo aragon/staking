@@ -5,6 +5,8 @@ The Staking app complies with [interface ERC900](https://eips.ethereum.org/EIPS/
 
 The main motivation is to be used in conjunction with [Agreements](https://github.com/aragon/aragon-apps/tree/master/apps/agreement) in the context of Aragon Network, but it has been designed to be as generic as possible, in order to allow for other use cases too.
 
+You can read the initial motivation and spec for this [here](https://forum.aragon.org/t/staking-locks-spec-v2/217).
+
 ## Table of Contents
 
 1. [Anti-sybil protection](./1-anti-sybil)
