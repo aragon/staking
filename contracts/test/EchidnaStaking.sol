@@ -19,7 +19,7 @@ contract EchidnaStaking is Staking {
         address _account = msg.sender;
         Account storage account = accounts[_account];
 
-        if (totalStakedFor(_account) < account.totalLocked) {
+        if (_totalStakedFor(_account) < account.totalLocked) {
             return false;
         }
 
@@ -31,7 +31,7 @@ contract EchidnaStaking is Staking {
         address _account = msg.sender;
         Account storage account = accounts[_account];
 
-        if (totalStakedFor(_account) > account.totalLocked) {
+        if (_totalStakedFor(_account) > account.totalLocked) {
             return false;
         }
 
@@ -63,7 +63,7 @@ contract EchidnaStaking is Staking {
 
     // total staked matches less or equal than token balance
     function echidna_total_staked_is_balance() external view returns (bool) {
-        if (totalStaked() <= stakingToken.balanceOf(this)) {
+        if (_totalStaked() <= stakingToken.balanceOf(this)) {
             return true;
         }
 

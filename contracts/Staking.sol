@@ -301,10 +301,13 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     /**
      * @notice Change the manager of `_accountAddress`'s lock from `msg.sender` to `_newLockManager`
      * @param _accountAddress Owner of lock
-     * @param _newLockManager New lock's manager
+     * @param _newLockManager New lock manager
      */
     function setLockManager(address _accountAddress, address _newLockManager) external isInitialized {
-        accounts[_accountAddress].locks[_newLockManager] = accounts[_accountAddress].locks[msg.sender];
+        Lock storage lock = accounts[_accountAddress].locks[msg.sender];
+        require(lock.allowance > 0, ERROR_LOCK_DOES_NOT_EXIST);
+
+        accounts[_accountAddress].locks[_newLockManager] = lock;
 
         delete accounts[_accountAddress].locks[msg.sender];
 
@@ -353,7 +356,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     /**
      * @notice Get total amount of locked tokens for `_accountAddress`
      * @param _accountAddress Owner of locks
-     * @return Total amount of locked tokens
+     * @return Total amount of locked tokens for the requested account
      */
     function getTotalLockedOf(address _accountAddress) external view isInitialized returns (uint256) {
         return _getTotalLockedOf(_accountAddress);
@@ -364,7 +367,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @param _accountAddress Owner of lock
      * @param _lockManager Manager of the lock for the given account
      * @return Amount of locked tokens
-     * @return Lock's data
+     * @return Amount of tokens that lock manager is allowed to lock
      */
     function getLock(address _accountAddress, address _lockManager)
         external
@@ -380,9 +383,32 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         _allowance = lock_.allowance;
     }
 
+    /**
+     * @notice Get staked and locked balances of `_accountAddress`
+     * @param _accountAddress Account being requested
+     * @return Amount of staked tokens
+     * @return Amount of total locked tokens
+     */
     function getBalancesOf(address _accountAddress) external view isInitialized returns (uint256 staked, uint256 locked) {
-        staked = totalStakedFor(_accountAddress);
+        staked = _totalStakedFor(_accountAddress);
         locked = _getTotalLockedOf(_accountAddress);
+    }
+
+    /**
+     * @notice Get the amount of tokens staked by `_accountAddress`
+     * @param _accountAddress The owner of the tokens
+     * @return The amount of tokens staked by the given account
+     */
+    function totalStakedFor(address _accountAddress) external view isInitialized returns (uint256) {
+        return _totalStakedFor(_accountAddress);
+    }
+
+    /**
+     * @notice Get the total amount of tokens staked by all users
+     * @return The total amount of tokens staked by all users
+     */
+    function totalStaked() external view isInitialized returns (uint256) {
+        return _totalStaked();
     }
 
     /**
@@ -417,29 +443,11 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @notice Check if `_accountAddress`'s by `_lockManager` can be unlocked
      * @param _accountAddress Owner of lock
      * @param _lockManager Manager of the lock for the given account
+     * @param _amount Amount of tokens to be potentially unlocked. If zero, it means the whole locked amount
      * @return Whether given lock of given account can be unlocked
      */
     function canUnlock(address _accountAddress, address _lockManager, uint256 _amount) external view isInitialized returns (bool) {
         return _canUnlock(_accountAddress, _lockManager, _amount);
-    }
-
-    /**
-     * @notice Get the amount of tokens staked by `_accountAddress`
-     * @param _accountAddress The owner of the tokens
-     * @return The amount of tokens staked by the given account
-     */
-    function totalStakedFor(address _accountAddress) public view returns (uint256) {
-        // we assume it's not possible to stake in the future
-        return accounts[_accountAddress].stakedHistory.getLatestValue();
-    }
-
-    /**
-     * @notice Get the total amount of tokens staked by all users
-     * @return The total amount of tokens staked by all users
-     */
-    function totalStaked() public view returns (uint256) {
-        // we assume it's not possible to stake in the future
-        return totalStakedHistory.getLatestValue();
     }
 
     /*
@@ -482,7 +490,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     function _modifyStakeBalance(address _accountAddress, uint256 _by, bool _increase) internal returns (uint256) {
-        uint256 currentStake = totalStakedFor(_accountAddress);
+        uint256 currentStake = _totalStakedFor(_accountAddress);
 
         uint256 newStake;
         if (_increase) {
@@ -499,7 +507,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     function _modifyTotalStaked(uint256 _by, bool _increase) internal {
-        uint256 currentStake = totalStaked();
+        uint256 currentStake = _totalStaked();
 
         uint256 newStake;
         if (_increase) {
@@ -583,12 +591,31 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
+     * @notice Get the amount of tokens staked by `_accountAddress`
+     * @param _accountAddress The owner of the tokens
+     * @return The amount of tokens staked by the given account
+     */
+    function _totalStakedFor(address _accountAddress) internal view returns (uint256) {
+        // we assume it's not possible to stake in the future
+        return accounts[_accountAddress].stakedHistory.getLatestValue();
+    }
+
+    /**
+     * @notice Get the total amount of tokens staked by all users
+     * @return The total amount of tokens staked by all users
+     */
+    function _totalStaked() internal view returns (uint256) {
+        // we assume it's not possible to stake in the future
+        return totalStakedHistory.getLatestValue();
+    }
+
+    /**
      * @notice Get the staked but unlocked amount of tokens by `_accountAddress`
      * @param _accountAddress Owner of the staked but unlocked balance
      * @return Amount of tokens staked but not locked by given account
      */
     function _unlockedBalanceOf(address _accountAddress) internal view returns (uint256) {
-        uint256 unlockedTokens = totalStakedFor(_accountAddress).sub(accounts[_accountAddress].totalLocked);
+        uint256 unlockedTokens = _totalStakedFor(_accountAddress).sub(accounts[_accountAddress].totalLocked);
 
         return unlockedTokens;
     }
