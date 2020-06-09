@@ -4,7 +4,7 @@
 
 - **Name:** initialize
 - **Inputs:**
-  - **_stakingToken: ** ERC20 token to be used for staking
+  - **_stakingToken:** ERC20 token to be used for staking
 
 
 ## Staking ERC900 interface
