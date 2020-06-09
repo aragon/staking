@@ -312,11 +312,17 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Get the token used by the contract for staking and locking
-     * @return The token used by the contract for staking and locking
+     * @dev MiniMeToken ApproveAndCallFallBack compliance
+     * @param _from Account approving tokens
+     * @param _amount Amount of `_token` tokens being approved
+     * @param _token MiniMeToken that is being approved and that the call comes from
+     * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
-    function token() external view isInitialized returns (address) {
-        return address(stakingToken);
+    function receiveApproval(address _from, uint256 _amount, address _token, bytes _data) external isInitialized {
+        require(_token == msg.sender, ERROR_TOKEN_NOT_SENDER);
+        require(_token == address(stakingToken), ERROR_WRONG_TOKEN);
+
+        _stakeFor(_from, _from, _amount, _data);
     }
 
     /**
@@ -325,6 +331,14 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      */
     function supportsHistory() external pure returns (bool) {
         return true;
+    }
+
+    /**
+     * @notice Get the token used by the contract for staking and locking
+     * @return The token used by the contract for staking and locking
+     */
+    function token() external view isInitialized returns (address) {
+        return address(stakingToken);
     }
 
     /**
@@ -366,7 +380,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         _allowance = lock_.allowance;
     }
 
-    function getBalancesOf(address _accountAddress) external view returns (uint256 staked, uint256 locked) {
+    function getBalancesOf(address _accountAddress) external view isInitialized returns (uint256 staked, uint256 locked) {
         staked = totalStakedFor(_accountAddress);
         locked = _getTotalLockedOf(_accountAddress);
     }
@@ -407,22 +421,6 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      */
     function canUnlock(address _accountAddress, address _lockManager, uint256 _amount) external view isInitialized returns (bool) {
         return _canUnlock(_accountAddress, _lockManager, _amount);
-    }
-
-    /* Public functions */
-
-    /**
-     * @dev MiniMeToken ApproveAndCallFallBack compliance
-     * @param _from Account approving tokens
-     * @param _amount Amount of `_token` tokens being approved
-     * @param _token MiniMeToken that is being approved and that the call comes from
-     * @param _data Used in Staked event, to add signalling information in more complex staking applications
-     */
-    function receiveApproval(address _from, uint256 _amount, address _token, bytes _data) public {
-        require(_token == msg.sender, ERROR_TOKEN_NOT_SENDER);
-        require(_token == address(stakingToken), ERROR_WRONG_TOKEN);
-
-        _stakeFor(_from, _from, _amount, _data);
     }
 
     /**
