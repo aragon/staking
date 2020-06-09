@@ -1,8 +1,12 @@
 const { sha3 } = require('web3-utils')
+const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
 const { getEventArgument, decodeEvents } = require('@aragon/contract-helpers-test/events')
 
 const { deploy } = require('./helpers/deploy')(artifacts)
 const { DEFAULT_STAKE_AMOUNT, DEFAULT_LOCK_AMOUNT, EMPTY_DATA } = require('./helpers/constants')
+const { STAKING_ERRORS } = require('./helpers/errors')
+
+const BadLockManager = artifacts.require('BadLockManagerMock')
 
 const getDeepEventArgument = (receipt, contractAbi, eventName, argument, index=0) => {
   const logs = decodeEvents(receipt.receipt, contractAbi, eventName)
@@ -93,4 +97,17 @@ contract('Staking app, Locking and calling', ([owner, user1, user2]) => {
       assert.equal(decodeEvents(receipt.receipt, LockManagerMock.abi, 'LogLockCallback').length, 0, 'There should be no logs')
     })
   })
+
+  describe('Bad lock manager', () => {
+    it('fails calling if lock manager doesn’t return true', async () => {
+      const badLockManager = await BadLockManager.new()
+
+      await token.approve(staking.address, DEFAULT_STAKE_AMOUNT, { from: user1 })
+      await staking.stake(DEFAULT_STAKE_AMOUNT, EMPTY_DATA, { from: user1 })
+
+      await assertRevert(staking.allowManagerAndLock(DEFAULT_LOCK_AMOUNT, badLockManager.address, DEFAULT_STAKE_AMOUNT, CALLBACK_DATA, { from: user1 }), STAKING_ERRORS.STAKING_LOCKMANAGER_CALL_FAIL)
+    })
+
+  })
+
 })
