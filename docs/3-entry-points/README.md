@@ -6,7 +6,7 @@ This is used by the Staking Factory when creating a new proxy. See deployment se
 
 - **Actor:** Deployer account
 - **Inputs:**
-  - **_stakingToken: ** ERC20 token to be used for staking
+  - **_stakingToken:** ERC20 token to be used for staking
 - **Authentication:** Open
 - **Pre-flight checks:**
   - Checks that input token is a contract
