@@ -1,8 +1,8 @@
 pragma solidity 0.4.24;
 
-import "./ERCStaking.sol";
-import "./IStakingLocking.sol";
-import "./ILockManager.sol";
+import "./standards/ERC900.sol";
+import "./locking/IStakingLocking.sol";
+import "./locking/ILockManager.sol";
 import "./lib/Checkpointing.sol";
 
 import "@aragon/os/contracts/common/Autopetrified.sol";
@@ -11,7 +11,7 @@ import "@aragon/os/contracts/common/SafeERC20.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 
 
-contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLocking, IsContract {
+contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     using SafeMath for uint256;
     using Checkpointing for Checkpointing.History;
     using SafeERC20 for ERC20;

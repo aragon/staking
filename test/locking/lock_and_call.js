@@ -2,9 +2,9 @@ const { sha3 } = require('web3-utils')
 const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
 const { getEventArgument, decodeEvents } = require('@aragon/contract-helpers-test/events')
 
-const { deploy } = require('./helpers/deploy')(artifacts)
-const { DEFAULT_STAKE_AMOUNT, DEFAULT_LOCK_AMOUNT, EMPTY_DATA } = require('./helpers/constants')
-const { STAKING_ERRORS } = require('./helpers/errors')
+const { deploy } = require('../helpers/deploy')(artifacts)
+const { DEFAULT_STAKE_AMOUNT, DEFAULT_LOCK_AMOUNT, EMPTY_DATA } = require('../helpers/constants')
+const { STAKING_ERRORS } = require('../helpers/errors')
 
 const BadLockManager = artifacts.require('BadLockManagerMock')
 

@@ -1,9 +1,9 @@
 const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
 const { bn, assertBn } = require('@aragon/contract-helpers-test/numbers')
 
-const { deploy } = require('./helpers/deploy')(artifacts)
-const { DEFAULT_STAKE_AMOUNT, DEFAULT_LOCK_AMOUNT, EMPTY_DATA } = require('./helpers/constants')
-const { STAKING_ERRORS, TIME_LOCK_MANAGER_ERRORS } = require('./helpers/errors')
+const { deploy } = require('../helpers/deploy')(artifacts)
+const { DEFAULT_STAKE_AMOUNT, DEFAULT_LOCK_AMOUNT, EMPTY_DATA } = require('../helpers/constants')
+const { STAKING_ERRORS, TIME_LOCK_MANAGER_ERRORS } = require('../helpers/errors')
 
 const TimeLockManagerMock = artifacts.require('TimeLockManagerMock');
 

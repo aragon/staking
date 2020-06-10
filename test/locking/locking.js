@@ -1,9 +1,9 @@
 const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
 const { bn, assertBn, MAX_UINT64 } = require('@aragon/contract-helpers-test/numbers')
 
-const { deploy } = require('./helpers/deploy')(artifacts)
-const { DEFAULT_STAKE_AMOUNT, DEFAULT_LOCK_AMOUNT, EMPTY_DATA, ZERO_ADDRESS } = require('./helpers/constants')
-const { STAKING_ERRORS } = require('./helpers/errors')
+const { deploy } = require('../helpers/deploy')(artifacts)
+const { DEFAULT_STAKE_AMOUNT, DEFAULT_LOCK_AMOUNT, EMPTY_DATA, ZERO_ADDRESS } = require('../helpers/constants')
+const { STAKING_ERRORS } = require('../helpers/errors')
 
 contract('Staking app, Locking', ([owner, user1, user2]) => {
   let staking, token, lockManager

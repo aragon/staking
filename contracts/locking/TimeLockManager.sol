@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
-import "../ILockManager.sol";
-import "../IStakingLocking.sol";
+import "../locking/ILockManager.sol";
+import "../locking/IStakingLocking.sol";
 
 import "@aragon/os/contracts/common/TimeHelpers.sol";
 import "@aragon/os/contracts/evmscript/ScriptHelpers.sol";

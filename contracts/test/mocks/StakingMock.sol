@@ -35,7 +35,7 @@ contract StakingMock is Staking, TimeHelpersMock {
         return gasConsumed;
     }
 
-    function transferGas(address _to, address _toLockManager, uint256 _amount) external measureGas {
+    function transferGas(address _to, address, uint256 _amount) external measureGas {
         // have enough unlocked funds
         require(_amount <= _unlockedBalanceOf(msg.sender));
 
