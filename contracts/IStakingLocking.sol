@@ -31,7 +31,7 @@ interface IStakingLocking {
             uint256 _allowance
         );
     function unlockedBalanceOf(address _account) external view returns (uint256);
-    function getTotalLockedOf(address _accountAddress) external view returns (uint256);
+    function lockedBalanceOf(address _accountAddress) external view returns (uint256);
     function getBalancesOf(address _accountAddress) external view returns (uint256 staked, uint256 locked);
     function canUnlock(address _account, address _lockManager, uint256 _amount) external view returns (bool);
 }
