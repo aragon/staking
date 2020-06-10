@@ -84,7 +84,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         // unstaking 0 tokens is not allowed
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
-        _unstakeUnsafe(msg.sender, _amount, _data);
+        _unstake(msg.sender, _amount, _data);
     }
 
     /**
@@ -136,7 +136,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      */
     function transferAndUnstake(address _to, uint256 _amount) external isInitialized {
         _transfer(msg.sender, _to, _amount);
-        _unstakeUnsafe(_to, _amount, new bytes(0));
+        _unstake(_to, _amount, new bytes(0));
     }
 
     /**
@@ -153,12 +153,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         external
         isInitialized
     {
-        Account storage account = accounts[_from];
-        Lock storage lock_ = account.locks[msg.sender];
-        // check that lock is enough, it also means that lock_.amount > 0 and therefore hasn't been unlocked
-        require(lock_.amount >= _amount, ERROR_NOT_ENOUGH_LOCK);
-
-        _unlockUnsafe(_from, msg.sender, _amount);
+        _unlock(_from, msg.sender, _amount);
         _transfer(_from, _to, _amount);
     }
 
@@ -176,14 +171,9 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         external
         isInitialized
     {
-        Account storage account = accounts[_from];
-        Lock storage lock_ = account.locks[msg.sender];
-        // check that lock is enough, it also means that lock_.amount > 0 and therefore hasn't been unlocked
-        require(lock_.amount >= _amount, ERROR_NOT_ENOUGH_LOCK);
-
-        _unlockUnsafe(_from, msg.sender, _amount);
+        _unlock(_from, msg.sender, _amount);
         _transfer(_from, _to, _amount);
-        _unstakeUnsafe(_to, _amount, new bytes(0));
+        _unstake(_to, _amount, new bytes(0));
     }
 
     /**
@@ -203,10 +193,10 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         isInitialized
     {
         // No need to check that _slashAmount is positive, as _transfer will fail
-        // No need to check that have enough locked funds, as _unlockUnsafe will fail
+        // No need to check that have enough locked funds, as _unlock will fail
         require(_unlockAmount > 0, ERROR_AMOUNT_ZERO);
 
-        _unlockUnsafe(_from, msg.sender, _unlockAmount.add(_slashAmount));
+        _unlock(_from, msg.sender, _unlockAmount.add(_slashAmount));
         _transfer(_from, _to, _slashAmount);
     }
 
@@ -274,7 +264,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         // only manager and owner (if manager allows) can unlock
         require(_canUnlock(_accountAddress, _lockManager, _amount), ERROR_CANNOT_UNLOCK);
 
-        _unlockUnsafe(_accountAddress, _lockManager, _amount);
+        _unlock(_accountAddress, _lockManager, _amount);
     }
 
     /**
@@ -476,7 +466,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         emit Staked(_accountAddress, _amount, newStake, _data);
     }
 
-    function _unstakeUnsafe(address _from, uint256 _amount, bytes _data) internal {
+    function _unstake(address _from, uint256 _amount, bytes _data) internal {
         // checkpoint updated staking balance
         uint256 newStake = _modifyStakeBalance(_from, _amount, false);
 
@@ -560,7 +550,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         emit LockAmountChanged(_accountAddress, _lockManager, _amount, true);
     }
 
-    function _unlockUnsafe(address _accountAddress, address _lockManager, uint256 _amount) internal {
+    function _unlock(address _accountAddress, address _lockManager, uint256 _amount) internal {
         Account storage account = accounts[_accountAddress];
         Lock storage lock_ = account.locks[_lockManager];
 
