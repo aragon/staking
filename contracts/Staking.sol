@@ -109,6 +109,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @notice Lock `@tokenAmount(stakingToken: address, _amount)` and assign `_lockManager` as manager with `@tokenAmount(stakingToken: address, _allowance)` allowance and `_data` as data, so they can not be unstaked
      * @param _amount The amount of tokens to be locked
      * @param _lockManager The manager entity for this particular lock. This entity will have full control over the lock, in particular will be able to unlock it
+     * @param _allowance Amount of tokens that the manager can lock
      * @param _data Data to parametrize logic for the lock to be enforced by the manager
      */
     function allowManagerAndLock(uint256 _amount, address _lockManager, uint256 _allowance, bytes _data) external isInitialized {
@@ -429,7 +430,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Check if `_user`'s by `_lockManager` can be unlocked
+     * @notice Check if `_sender` can unlock `_user`'s `@tokenAmount(stakingToken: address, _amount)` locked by `_lockManager`
      * @param _sender Account that would try to unlock tokens
      * @param _user Owner of lock
      * @param _lockManager Manager of the lock for the given owner
@@ -609,11 +610,12 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Check if `_user`'s by `_lockManager` can be unlocked
+     * @notice Check if `_sender` can unlock `_user`'s `@tokenAmount(stakingToken: address, _amount)` locked by `_lockManager`
      * @dev If calling this from a state modifying function trying to unlock tokens, make sure first parameter is `msg.sender`
      * @param _sender Account that would try to unlock tokens
      * @param _user Owner of lock
      * @param _lockManager Manager of the lock for the given owner
+     * @param _amount Amount of locked tokens to unlock. If zero, the full locked amount
      * @return Whether given lock of given owner can be unlocked by given sender
      */
     function _canUnlockUnsafe(address _sender, address _user, address _lockManager, uint256 _amount) internal view returns (bool) {
