@@ -36,11 +36,11 @@ Stakes `_amount` tokens, transferring them from `msg.sender`
 
 ### stakeFor
 
-Stakes `_amount` tokens, transferring them from caller, and assigns them to `_accountAddress`
+Stakes `_amount` tokens, transferring them from caller, and assigns them to `_user`
 
 - **Actor:** Staking user
 - **Inputs:**
-  - **_accountAddress:** The final staker of the tokens
+  - **_user:** The final staker of the tokens
   - **_amount:** Number of tokens staked
   - **_data:** Used in Staked event, to add signalling information in more complex staking applications
 - **Authentication:** Open
@@ -95,11 +95,11 @@ It returns true, as it supports history of stakes
 
 ### lastStakedFor
 
-Get last time `_accountAddress` modified its staked balance
+Get last time `_user` modified its staked balance
 
 - **Actor:** Any
 - **Inputs:**
-  - **_accountAddress:** Account requesting for
+  - **_user:** Account requesting for
 - **Outputs:**
   - Last block number when account’s balance was modified
 - **Authentication:** Open
@@ -109,11 +109,11 @@ Get last time `_accountAddress` modified its staked balance
 
 ### totalStakedForAt
 
-Get the total amount of tokens staked by `_accountAddress` at block number `_blockNumber`
+Get the total amount of tokens staked by `_user` at block number `_blockNumber`
 
 - **Actor:** Any
 - **Inputs:**
-  - **_accountAddress:** Account requesting for
+  - **_user:** Account requesting for
   - **_blockNumber:** Block number at which we are requesting
 - **Outputs:**
   - The amount of tokens staked by the account at the given block number
@@ -138,11 +138,11 @@ Get the total amount of tokens staked by all users at block number `_blockNumber
 
 ### totalStakedFor
 
-Get the amount of tokens staked by `_accountAddress`
+Get the amount of tokens staked by `_user`
 
 - **Actor:** Any
 - **Inputs:**
-  - **_accountAddress:** Account requesting for
+  - **_user:** Account requesting for
 - **Outputs:**
   - The amount of tokens staked by the given account
 - **Authentication:** Open
@@ -324,11 +324,11 @@ Increase allowance in `_allowance` tokens of lock manager `_lockManager` for use
 
 ### decreaseLockAllowance
 
-Decrease allowance in `_allowance` tokens of lock manager `_lockManager` for user `_accountAddress`
+Decrease allowance in `_allowance` tokens of lock manager `_lockManager` for user `_user`
 
 - **Actor:** Staking user (owner) or lock manager
 - **Inputs:**
-  - **_accountAddress:** Owner of locked tokens
+  - **_user:** Owner of locked tokens
   - **_lockManager:** The manager entity for this particular lock
   - **_allowance:** Amount of allowed tokens decrease
 - **Authentication:** Only owner or lock manager
@@ -344,11 +344,11 @@ Decrease allowance in `_allowance` tokens of lock manager `_lockManager` for use
 
 ### lock
 
-Increase locked amount by `_amount` tokens for user `_accountAddress` by lock manager `_lockManager`
+Increase locked amount by `_amount` tokens for user `_user` by lock manager `_lockManager`
 
 - **Actor:** Staking user (owner) or lock manager
 - **Inputs:**
-  - **_accountAddress:** Owner of locked tokens
+  - **_user:** Owner of locked tokens
   - **_lockManager:** The manager entity for this particular lock
   - **_amount:** Amount of locked tokens increase
 - **Authentication:** Only owner or lock manager
@@ -363,11 +363,11 @@ Increase locked amount by `_amount` tokens for user `_accountAddress` by lock ma
 
 ### unlock
 
-Decrease locked amount by `_amount` tokens for user `_accountAddress` by lock manager `_lockManager`
+Decrease locked amount by `_amount` tokens for user `_user` by lock manager `_lockManager`
 
 - **Actor:** Staking user (owner) or lock manager
 - **Inputs:**
-  - **_accountAddress:** Owner of locked tokens
+  - **_user:** Owner of locked tokens
   - **_lockManager:** The manager entity for this particular lock
   - **_amount:** Amount of locked tokens decrease
 - **Authentication:** Only owner or lock manager
@@ -384,11 +384,11 @@ Decrease locked amount by `_amount` tokens for user `_accountAddress` by lock ma
 
 ### unlockAndRemoveManager
 
-Unlock `_accountAddress`'s lock by `_lockManager` so locked tokens can be unstaked again
+Unlock `_user`'s lock by `_lockManager` so locked tokens can be unstaked again
 
 - **Actor:** Staking user (owner) or lock manager
 - **Inputs:**
-  - **_accountAddress:** Owner of locked tokens
+  - **_user:** Owner of locked tokens
   - **_lockManager:** The manager entity for this particular lock
 - **Authentication:** Only owner or lock manager
 - **Pre-flight checks:**
@@ -401,11 +401,11 @@ Unlock `_accountAddress`'s lock by `_lockManager` so locked tokens can be unstak
 
 ### setLockManager
 
-Change the manager of `_accountAddress`'s lock from `msg.sender` to `_newLockManager`
+Change the manager of `_user`'s lock from `msg.sender` to `_newLockManager`
 
 - **Actor:** Lock manager
 - **Inputs:**
-  - **_accountAddress:** Owner of lock
+  - **_user:** Owner of lock
   - **_newLockManager:** New lock manager
 - **Authentication:** Open. Implicitly, sender must be lock manager
 - **Pre-flight checks:**
@@ -416,11 +416,11 @@ Change the manager of `_accountAddress`'s lock from `msg.sender` to `_newLockMan
 
 ### getTotalLockedOf
 
-Get total amount of locked tokens for `_accountAddress`
+Get total amount of locked tokens for `_user`
 
 - **Actor:** Any
 - **Inputs:**
-  - **_accountAddress:** Owner of locks
+  - **_user:** Owner of locks
 - **Outputs:**
   - Total amount of locked tokens for the requested account
 - **Authentication:** Open
@@ -428,11 +428,11 @@ Get total amount of locked tokens for `_accountAddress`
 
 ### getLock
 
-Get details of `_accountAddress`'s lock by `_lockManager`
+Get details of `_user`'s lock by `_lockManager`
 
 - **Actor:** Any
 - **Inputs:**
-  - **_accountAddress:** Owner of lock
+  - **_user:** Owner of lock
   - **_lockManager:** Manager of the lock for the given account
 - **Outputs:**
   - **_amount:** Amount of locked tokens
@@ -442,11 +442,11 @@ Get details of `_accountAddress`'s lock by `_lockManager`
 
 ### getBalancesOf
 
-Get staked and locked balances of `_accountAddress`
+Get staked and locked balances of `_user`
 
 - **Actor:** Any
 - **Inputs:**
-  - **_accountAddress:** Account being requested
+  - **_user:** Account being requested
 - **Outputs:**
   - **staked:** Amount of staked tokens
   - **locked:** Amount of total locked tokens
@@ -455,11 +455,11 @@ Get staked and locked balances of `_accountAddress`
 
 ### unlockedBalanceOf
 
-Get the staked but unlocked amount of tokens by `_accountAddress`
+Get the staked but unlocked amount of tokens by `_user`
 
 - **Actor:** Any
 - **Inputs:**
-  - **_accountAddress:** Owner of the staked but unlocked balance
+  - **_user:** Owner of the staked but unlocked balance
 - **Outputs:**
   - Amount of tokens staked but not locked by given account
 - **Authentication:** Open
@@ -467,12 +467,12 @@ Get the staked but unlocked amount of tokens by `_accountAddress`
 
 ### canUnlock
 
-Check if `_accountAddress`'s by `_lockManager` can be unlocked
+Check if `_user`'s by `_lockManager` can be unlocked
 
 - **Actor:** Any
 - **Inputs:**
-  - **_accountAddress:** Owner of lock
-  - **_lockManager:** Manager of the lock for the given account
+  - **_user:** Owner of lock
+  - **_lockManager:** Manager of the lock for the given owner
   - **_amount:** Amount of tokens to be potentially unlocked. If zero, it means the whole locked amount
 - **Outputs:**
   - True if caller is allowed to unlock the requested amount (all the lock if amount requested is zero)

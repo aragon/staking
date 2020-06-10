@@ -20,7 +20,7 @@
 
 - **Name:** stakeFor
 - **Inputs:**
-  - **_accountAddress:** The final staker of the tokens
+  - **_user:** The final staker of the tokens
   - **_amount:** Number of tokens staked
   - **_data:** Used in Staked event, to add signalling information in more complex staking applications
 
@@ -47,7 +47,7 @@
 
 - **Name:** lastStakedFor
 - **Inputs:**
-  - **_accountAddress:** Account requesting for
+  - **_user:** Account requesting for
 - **Outputs:**
   - Last block number when account’s balance was modified
 
@@ -55,7 +55,7 @@
 
 - **Name:** totalStakedForAt
 - **Inputs:**
-  - **_accountAddress:** Account requesting for
+  - **_user:** Account requesting for
   - **_blockNumber:** Block number at which we are requesting
 - **Outputs:**
   - The amount of tokens staked by the account at the given block number
@@ -72,7 +72,7 @@
 
 - **Name:** totalStakedFor
 - **Inputs:**
-  - **_accountAddress:** Account requesting for
+  - **_user:** Account requesting for
 - **Outputs:**
   - The amount of tokens staked by the given account
 
@@ -151,7 +151,7 @@
 
 - **Name:** decreaseLockAllowance
 - **Inputs:**
-  - **_accountAddress:** Owner of locked tokens
+  - **_user:** Owner of locked tokens
   - **_lockManager:** The manager entity for this particular lock
   - **_allowance:** Amount of allowed tokens decrease
 
@@ -159,7 +159,7 @@
 
 - **Name:** lock
 - **Inputs:**
-  - **_accountAddress:** Owner of locked tokens
+  - **_user:** Owner of locked tokens
   - **_lockManager:** The manager entity for this particular lock
   - **_amount:** Amount of locked tokens increase
 
@@ -167,7 +167,7 @@
 
 - **Name:** unlock
 - **Inputs:**
-  - **_accountAddress:** Owner of locked tokens
+  - **_user:** Owner of locked tokens
   - **_lockManager:** The manager entity for this particular lock
   - **_amount:** Amount of locked tokens decrease
 
@@ -175,21 +175,21 @@
 
 - **Name:** unlockAndRemoveManager
 - **Inputs:**
-  - **_accountAddress:** Owner of locked tokens
+  - **_user:** Owner of locked tokens
   - **_lockManager:** The manager entity for this particular lock
 
 ### Set lock manager
 
 - **Name:** setLockManager
 - **Inputs:**
-  - **_accountAddress:** Owner of lock
+  - **_user:** Owner of lock
   - **_newLockManager:** New lock manager
 
 ### Get total locked of
 
 - **Name:** getTotalLockedOf
 - **Inputs:**
-  - **_accountAddress:** Owner of locks
+  - **_user:** Owner of locks
 - **Outputs:**
   - Total amount of locked tokens for the requested account
 
@@ -198,7 +198,7 @@
 
 - **Name:** getLock
 - **Inputs:**
-  - **_accountAddress:** Owner of lock
+  - **_user:** Owner of lock
   - **_lockManager:** Manager of the lock for the given account
 - **Outputs:**
   - **_amount:** Amount of locked tokens
@@ -209,7 +209,7 @@
 
 - **Name:** getBalancesOf
 - **Inputs:**
-  - **_accountAddress:** Account being requested
+  - **_user:** Account being requested
 - **Outputs:**
   - **staked:** Amount of staked tokens
   - **locked:** Amount of total locked tokens
@@ -219,7 +219,7 @@
 
 - **Name:** unlockedBalanceOf
 - **Inputs:**
-  - **_accountAddress:** Owner of the staked but unlocked balance
+  - **_user:** Owner of the staked but unlocked balance
 - **Outputs:**
   - Amount of tokens staked but not locked by given account
 
@@ -228,7 +228,7 @@
 
 - **Name:** canUnlock
 - **Inputs:**
-  - **_accountAddress:** Owner of lock
+  - **_user:** Owner of lock
   - **_lockManager:** Manager of the lock for the given account
   - **_amount:** Amount of tokens to be potentially unlocked. If zero, it means the whole locked amount
 - **Outputs:**
