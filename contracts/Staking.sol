@@ -486,8 +486,8 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         if (_increase) {
             newStake = currentStake.add(_by);
         } else {
-            require(currentStake >= _by, ERROR_NOT_ENOUGH_BALANCE);
-            newStake = currentStake - _by;
+            require(_by <= _unlockedBalanceOf(_accountAddress), ERROR_NOT_ENOUGH_BALANCE);
+            newStake = currentStake.sub(_by);
         }
 
         // add new value to account history
@@ -569,9 +569,6 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     function _transfer(address _from, address _to, uint256 _amount) internal {
         // transferring 0 staked tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
-
-        // have enough unlocked funds
-        require(_amount <= _unlockedBalanceOf(_from), ERROR_NOT_ENOUGH_BALANCE);
 
         // update stakes
         _modifyStakeBalance(_from, _amount, false);

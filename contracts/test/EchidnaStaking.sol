@@ -69,5 +69,21 @@ contract EchidnaStaking is Staking {
         return false;
     }
 
+    function echidna_staked_ge_unlocked() external view returns (bool) {
+        if (_unlockedBalanceOf(msg.sender) > _totalStakedFor(msg.sender)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    function echidna_staked_ge_locked() external view returns (bool) {
+        if (_lockedBalanceOf(msg.sender) > _totalStakedFor(msg.sender)) {
+            return false;
+        }
+
+        return true;
+    }
+
     // sum of all account stakes should be equal to total staked and to staking token balance of staking contract, but it's hard to compute as accounts is a mapping
 }

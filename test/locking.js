@@ -66,6 +66,12 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await assertRevert(staking.allowManagerAndLock(DEFAULT_STAKE_AMOUNT, user1, DEFAULT_STAKE_AMOUNT, "0x02"), STAKING_ERRORS.ERROR_LOCK_ALREADY_EXISTS)
   })
 
+  it('fails unstaking locked tokens', async () => {
+    await approveStakeAndLock(user1)
+
+    await assertRevert(staking.unstake(DEFAULT_STAKE_AMOUNT, EMPTY_DATA), STAKING_ERRORS.ERROR_NOT_ENOUGH_BALANCE)
+  })
+
   it('creates a new allowance', async () => {
     await staking.allowManager(user1, DEFAULT_LOCK_AMOUNT, EMPTY_DATA)
 

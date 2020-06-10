@@ -59,9 +59,14 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
           await assertRevert(staking[transferType](user1, 0), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
         })
 
-        it('fails transferring more than unlocked balance', async () => {
+        it('fails transferring more than staked balance', async () => {
           await approveAndStake(DEFAULT_STAKE_AMOUNT)
           await assertRevert(staking[transferType](user1, DEFAULT_STAKE_AMOUNT + 1), STAKING_ERRORS.ERROR_NOT_ENOUGH_BALANCE)
+        })
+
+        it('fails transferring more than unlocked balance', async () => {
+          await approveStakeAndLock(lockManager.address)
+          await assertRevert(staking[transferType](user1, DEFAULT_STAKE_AMOUNT), STAKING_ERRORS.ERROR_NOT_ENOUGH_BALANCE)
         })
       }
 
