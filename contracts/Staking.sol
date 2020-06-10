@@ -612,8 +612,21 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
 
         uint256 amount = _amount == 0 ? lock_.amount : _amount;
 
-        if (msg.sender == _lockManager ||
-            (msg.sender == _accountAddress && (amount == 0 || ILockManager(_lockManager).canUnlock(_accountAddress, amount)))) {
+        if (msg.sender == _lockManager) {
+            return true;
+        }
+
+        // here we know sender is not lock manager, so it must be owner
+        if (msg.sender != _accountAddress) {
+            return false;
+        }
+
+        // here we know sender is owner
+        if (amount == 0) {
+            return true;
+        }
+
+        if (ILockManager(_lockManager).canUnlock(_accountAddress, amount)) {
             return true;
         }
 
