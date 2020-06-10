@@ -1,5 +1,5 @@
 const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
-const { bn, assertBn } = require('@aragon/contract-helpers-test/numbers')
+const { bn, assertBn, MAX_UINT64 } = require('@aragon/contract-helpers-test/numbers')
 
 const { deploy } = require('./helpers/deploy')(artifacts)
 const { DEFAULT_STAKE_AMOUNT, EMPTY_DATA } = require('./helpers/constants')
@@ -145,6 +145,14 @@ contract('Staking app', ([owner, other]) => {
       await approveAndStake(DEFAULT_STAKE_AMOUNT, other)
       assertBn(await staking.totalStakedAt(beforeBlockNumber), bn(0), "Staked for at before should match")
       assertBn(await staking.totalStakedAt(lastStaked), bn(DEFAULT_STAKE_AMOUNT * 2), "Staked for at after staking should match")
+    })
+
+    it('fails to call totalStakedForAt with block number greater than max uint64', async () => {
+      await assertRevert(staking.totalStakedForAt(owner, MAX_UINT64.add(bn(1))), STAKING_ERRORS.ERROR_BLOCKNUMBER_TOO_BIG)
+    })
+
+    it('fails to call totalStakedAt with block number greater than max uint64', async () => {
+      await assertRevert(staking.totalStakedAt(MAX_UINT64.add(bn(1))), STAKING_ERRORS.ERROR_BLOCKNUMBER_TOO_BIG)
     })
   })
 
