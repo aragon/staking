@@ -48,13 +48,15 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     mapping (address => Account) internal accounts;
     Checkpointing.History internal totalStakedHistory;
 
-    function initialize(ERC20 _stakingToken) external onlyInit {
+    /**
+     * @notice Initialize Staking app with token `_stakingToken`
+     * @param _stakingToken ERC20 token used for staking
+     */
+    function initialize(ERC20 _stakingToken) external {
         require(isContract(_stakingToken), ERROR_TOKEN_NOT_CONTRACT);
         initialized();
         stakingToken = _stakingToken;
     }
-
-    /* External functions */
 
     /**
      * @notice Stakes `_amount` tokens, transferring them from `msg.sender`
@@ -283,7 +285,8 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         // update total
         account.totalLocked = account.totalLocked.sub(amount);
 
-        emit Unlocked(_accountAddress, _lockManager, amount);
+        emit LockAmountChanged(_accountAddress, _lockManager, amount, false);
+        emit LockManagerRemoved(_accountAddress, _lockManager);
 
         delete account.locks[_lockManager];
     }
@@ -294,10 +297,10 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @param _newLockManager New lock manager
      */
     function setLockManager(address _accountAddress, address _newLockManager) external isInitialized {
-        Lock storage lock = accounts[_accountAddress].locks[msg.sender];
-        require(lock.allowance > 0, ERROR_LOCK_DOES_NOT_EXIST);
+        Lock storage lock_ = accounts[_accountAddress].locks[msg.sender];
+        require(lock_.allowance > 0, ERROR_LOCK_DOES_NOT_EXIST);
 
-        accounts[_accountAddress].locks[_newLockManager] = lock;
+        accounts[_accountAddress].locks[_newLockManager] = lock_;
 
         delete accounts[_accountAddress].locks[msg.sender];
 
@@ -440,16 +443,6 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         return _canUnlock(_accountAddress, _lockManager, _amount);
     }
 
-    /*
-    function multicall(bytes[] _calls) public {
-        for(uint i = 0; i < _calls.length; i++) {
-            require(address(this).delegatecall(_calls[i]), ERROR_MULTICALL_DELEGATECALL);
-        }
-    }
-    */
-
-    /* Internal functions */
-
     function _stakeFor(address _from, address _accountAddress, uint256 _amount, bytes _data) internal {
         // staking 0 tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
@@ -461,7 +454,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         _modifyTotalStaked(_amount, true);
 
         // pull tokens into Staking contract
-        require(stakingToken.safeTransferFrom(_from, this, _amount), ERROR_TOKEN_DEPOSIT);
+        require(stakingToken.safeTransferFrom(_from, address(this), _amount), ERROR_TOKEN_DEPOSIT);
 
         emit Staked(_accountAddress, _amount, newStake, _data);
     }
@@ -520,7 +513,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         _increaseLockAllowance(_lockManager, lock_, _allowance);
     }
 
-    function _callLockManagerCallback(uint256 _amount, address _lockManager, uint _allowance, bytes _data) internal {
+    function _callLockManagerCallback(uint256 _amount, address _lockManager, uint256 _allowance, bytes _data) internal {
         if (_toBytes4(_data) == ILockManager(_lockManager).receiveLock.selector) {
             require(ILockManager(_lockManager).receiveLock(_amount, _allowance, _data), ERROR_LOCKMANAGER_CALL_FAIL);
         }
@@ -602,9 +595,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @return Amount of tokens staked but not locked by given account
      */
     function _unlockedBalanceOf(address _accountAddress) internal view returns (uint256) {
-        uint256 unlockedTokens = _totalStakedFor(_accountAddress).sub(accounts[_accountAddress].totalLocked);
-
-        return unlockedTokens;
+        return _totalStakedFor(_accountAddress).sub(_lockedBalanceOf(_accountAddress));
     }
 
     function _lockedBalanceOf(address _accountAddress) internal view returns (uint256) {

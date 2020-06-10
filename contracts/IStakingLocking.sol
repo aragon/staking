@@ -6,6 +6,7 @@ interface IStakingLocking {
     event Unlocked(address indexed account, address indexed lockManager, uint256 amount);
     event LockAmountChanged(address indexed account, address indexed lockManager, uint256 amount, bool increase);
     event LockAllowanceChanged(address indexed account, address indexed lockManager, uint256 allowance, bool increase);
+    event LockManagerRemoved(address indexed account, address lockManager);
     event LockManagerChanged(address indexed account, address indexed oldLockManager, address newLockManager);
     event StakeTransferred(address indexed from, address to, uint256 amount);
 
