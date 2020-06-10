@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "./ERCStaking.sol";
 import "./IStakingLocking.sol";
 import "./ILockManager.sol";
-import "./Checkpointing.sol";
+import "./lib/Checkpointing.sol";
 
 import "@aragon/os/contracts/common/Autopetrified.sol";
 import "@aragon/os/contracts/common/IsContract.sol";
@@ -15,6 +15,8 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     using SafeMath for uint256;
     using Checkpointing for Checkpointing.History;
     using SafeERC20 for ERC20;
+
+    uint256 private constant MAX_UINT64 = uint256(uint64(-1));
 
     string private constant ERROR_TOKEN_NOT_CONTRACT = "STAKING_TOKEN_NOT_CONTRACT";
     string private constant ERROR_AMOUNT_ZERO = "STAKING_AMOUNT_ZERO";
@@ -32,6 +34,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     string private constant ERROR_CANNOT_UNLOCK = "STAKING_CANNOT_UNLOCK";
     string private constant ERROR_CANNOT_CHANGE_ALLOWANCE = "STAKING_CANNOT_CHANGE_ALLOWANCE";
     string private constant ERROR_LOCKMANAGER_CALL_FAIL = "STAKING_LOCKMANAGER_CALL_FAIL";
+    string private constant ERROR_BLOCKNUMBER_TOO_BIG = "STAKING_BLOCKNUMBER_TOO_BIG";
 
     struct Lock {
         uint256 amount;
@@ -332,7 +335,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @return Last block number when account's balance was modified
      */
     function lastStakedFor(address _user) external view isInitialized returns (uint256) {
-        return accounts[_user].stakedHistory.lastUpdated();
+        return accounts[_user].stakedHistory.lastUpdate();
     }
 
     /**
@@ -400,7 +403,9 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @return The amount of tokens staked by the account at the given block number
      */
     function totalStakedForAt(address _user, uint256 _blockNumber) external view isInitialized returns (uint256) {
-        return accounts[_user].stakedHistory.get(_blockNumber);
+        require(_blockNumber <= MAX_UINT64, ERROR_BLOCKNUMBER_TOO_BIG);
+
+        return accounts[_user].stakedHistory.get(uint64(_blockNumber));
     }
 
     /**
@@ -409,7 +414,9 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @return The amount of tokens staked at the given block number
      */
     function totalStakedAt(uint256 _blockNumber) external view isInitialized returns (uint256) {
-        return totalStakedHistory.get(_blockNumber);
+        require(_blockNumber <= MAX_UINT64, ERROR_BLOCKNUMBER_TOO_BIG);
+
+        return totalStakedHistory.get(uint64(_blockNumber));
     }
 
     /**
@@ -473,7 +480,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         }
 
         // add new value to account history
-        accounts[_user].stakedHistory.add64(getBlockNumber64(), newStake);
+        accounts[_user].stakedHistory.add(getBlockNumber64(), newStake);
 
         return newStake;
     }
@@ -489,7 +496,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         }
 
         // add new value to total history
-        totalStakedHistory.add64(getBlockNumber64(), newStake);
+        totalStakedHistory.add(getBlockNumber64(), newStake);
     }
 
     function _allowManager(address _lockManager, uint256 _allowance, bytes _data) internal {
@@ -575,7 +582,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      */
     function _totalStakedFor(address _user) internal view returns (uint256) {
         // we assume it's not possible to stake in the future
-        return accounts[_user].stakedHistory.getLatestValue();
+        return accounts[_user].stakedHistory.getLast();
     }
 
     /**
@@ -584,7 +591,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      */
     function _totalStaked() internal view returns (uint256) {
         // we assume it's not possible to stake in the future
-        return totalStakedHistory.getLatestValue();
+        return totalStakedHistory.getLast();
     }
 
     /**
