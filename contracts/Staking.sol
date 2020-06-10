@@ -59,7 +59,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Stakes `_amount` tokens, transferring them from `msg.sender`
+     * @notice Stakes `@tokenAmount(stakingToken: address, _amount)`, transferring them from `msg.sender`
      * @param _amount Number of tokens staked
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
@@ -68,7 +68,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Stakes `_amount` tokens, transferring them from caller, and assigns them to `_user`
+     * @notice Stakes `@tokenAmount(stakingToken: address, _amount)`, transferring them from caller, and assigns them to `_user`
      * @param _user The final user of the tokens
      * @param _amount Number of tokens staked
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
@@ -78,7 +78,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Unstakes `_amount` tokens, returning them to the user
+     * @notice Unstakes `@tokenAmount(stakingToken: address, _amount)`, returning them to the user
      * @param _amount Number of tokens to unstake
      * @param _data Used in Unstaked event, to add signalling information in more complex staking applications
      */
@@ -103,7 +103,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Lock `_amount` staked tokens and assign `_lockManager` as manager with `@tokenAmount(stakingToken: address, _allowance)` allowance and `_data` as data, so they can not be unstaked
+     * @notice Lock `@tokenAmount(stakingToken: address, _amount)` and assign `_lockManager` as manager with `@tokenAmount(stakingToken: address, _allowance)` allowance and `_data` as data, so they can not be unstaked
      * @param _amount The amount of tokens to be locked
      * @param _lockManager The manager entity for this particular lock. This entity will have full control over the lock, in particular will be able to unlock it
      * @param _data Data to parametrize logic for the lock to be enforced by the manager
@@ -117,7 +117,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Transfer `_amount` tokens to `_to`’s staked balance
+     * @notice Transfer `@tokenAmount(stakingToken: address, _amount)` to `_to`’s staked balance
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
      */
@@ -126,7 +126,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Transfer `_amount` tokens to `_to`’s external balance (i.e. unstaked)
+     * @notice Transfer `@tokenAmount(stakingToken: address, _amount)` to `_to`’s external balance (i.e. unstaked)
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
      */
