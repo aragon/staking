@@ -548,6 +548,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         require(lockAmount >= _amount, ERROR_NOT_ENOUGH_LOCK);
 
         // update lock amount
+        // No need for SafeMath: checked just above
         lock_.amount = lockAmount - _amount;
 
         // update total
