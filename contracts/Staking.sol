@@ -111,12 +111,6 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     function allowManagerAndLock(uint256 _amount, address _lockManager, uint256 _allowance, bytes _data) external isInitialized {
         _allowManager(_lockManager, _allowance, _data);
 
-        // locking 0 tokens is invalid
-        require(_amount > 0, ERROR_AMOUNT_ZERO);
-
-        // check enough unlocked tokens are available
-        require(_amount <= _unlockedBalanceOf(msg.sender), ERROR_NOT_ENOUGH_BALANCE);
-
         _lockUnsafe(msg.sender, _lockManager, _amount);
 
         _callLockManagerCallback(_amount, _lockManager, _allowance, _data);
@@ -243,11 +237,6 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @param _amount Amount of locked tokens increase
      */
     function lock(address _accountAddress, address _lockManager, uint256 _amount) external isInitialized {
-        require(_amount > 0, ERROR_AMOUNT_ZERO);
-
-        // check enough unlocked tokens are available
-        require(_amount <= _unlockedBalanceOf(_accountAddress), ERROR_NOT_ENOUGH_BALANCE);
-
         // we are locking funds from owner account, so only owner or manager are allowed
         require(msg.sender == _accountAddress || msg.sender == _lockManager, ERROR_SENDER_NOT_ALLOWED);
 
@@ -527,12 +516,20 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         emit LockAllowanceChanged(msg.sender, _lockManager, _allowance, true);
     }
 
+    /**
+     * @dev Assumes that sender is either owner or lock manager
+     */
     function _lockUnsafe(address _accountAddress, address _lockManager, uint256 _amount) internal {
+        require(_amount > 0, ERROR_AMOUNT_ZERO);
+
+        // check enough unlocked tokens are available
+        require(_amount <= _unlockedBalanceOf(_accountAddress), ERROR_NOT_ENOUGH_BALANCE);
+
         Account storage account = accounts[_accountAddress];
         Lock storage lock_ = account.locks[_lockManager];
 
         uint256 newAmount = lock_.amount.add(_amount);
-        // check allowance is enough, it also means that lock hasn't been unlocked
+        // check allowance is enough, it also means that lock exists, as newAmount is greater than zero
         require(newAmount <= lock_.allowance, ERROR_NOT_ENOUGH_ALLOWANCE);
 
         lock_.amount = newAmount;
