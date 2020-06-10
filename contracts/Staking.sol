@@ -256,7 +256,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
         // only manager and owner (if manager allows) can unlock
-        require(_canUnlock(_user, _lockManager, _amount), ERROR_CANNOT_UNLOCK);
+        require(_canUnlockUnsafe(msg.sender, _user, _lockManager, _amount), ERROR_CANNOT_UNLOCK);
 
         _unlock(_user, _lockManager, _amount);
     }
@@ -268,7 +268,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      */
     function unlockAndRemoveManager(address _user, address _lockManager) external isInitialized {
         // only manager and owner (if manager allows) can unlock
-        require(_canUnlock(_user, _lockManager, 0), ERROR_CANNOT_UNLOCK);
+        require(_canUnlockUnsafe(msg.sender, _user, _lockManager, 0), ERROR_CANNOT_UNLOCK);
 
         Account storage account = accounts[_user];
         Lock storage lock_ = account.locks[_lockManager];
@@ -430,13 +430,14 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
 
     /**
      * @notice Check if `_user`'s by `_lockManager` can be unlocked
+     * @param _sender Account that would try to unlock tokens
      * @param _user Owner of lock
-     * @param _lockManager Manager of the lock for the given account
+     * @param _lockManager Manager of the lock for the given owner
      * @param _amount Amount of tokens to be potentially unlocked. If zero, it means the whole locked amount
-     * @return Whether given lock of given account can be unlocked
+     * @return Whether given lock of given owner can be unlocked by given sender
      */
-    function canUnlock(address _user, address _lockManager, uint256 _amount) external view isInitialized returns (bool) {
-        return _canUnlock(_user, _lockManager, _amount);
+    function canUnlock(address _sender, address _user, address _lockManager, uint256 _amount) external view isInitialized returns (bool) {
+        return _canUnlockUnsafe(_sender, _user, _lockManager, _amount);
     }
 
     function _stakeFor(address _from, address _user, uint256 _amount, bytes _data) internal {
@@ -609,23 +610,25 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
 
     /**
      * @notice Check if `_user`'s by `_lockManager` can be unlocked
+     * @dev If calling this from a state modifying function trying to unlock tokens, make sure first parameter is `msg.sender`
+     * @param _sender Account that would try to unlock tokens
      * @param _user Owner of lock
-     * @param _lockManager Manager of the lock for the given account
-     * @return Whether given lock of given account can be unlocked
+     * @param _lockManager Manager of the lock for the given owner
+     * @return Whether given lock of given owner can be unlocked by given sender
      */
-    function _canUnlock(address _user, address _lockManager, uint256 _amount) internal view returns (bool) {
+    function _canUnlockUnsafe(address _sender, address _user, address _lockManager, uint256 _amount) internal view returns (bool) {
         Lock storage lock_ = accounts[_user].locks[_lockManager];
         require(lock_.allowance > 0, ERROR_LOCK_DOES_NOT_EXIST);
         require(lock_.amount >= _amount, ERROR_NOT_ENOUGH_LOCK);
 
         uint256 amount = _amount == 0 ? lock_.amount : _amount;
 
-        if (msg.sender == _lockManager) {
+        if (_sender == _lockManager) {
             return true;
         }
 
         // here we know sender is not lock manager, so it must be owner
-        if (msg.sender != _user) {
+        if (_sender != _user) {
             return false;
         }
 

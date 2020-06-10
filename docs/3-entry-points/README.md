@@ -467,10 +467,11 @@ Get the staked but unlocked amount of tokens by `_user`
 
 ### canUnlock
 
-Check if `_user`'s by `_lockManager` can be unlocked
+Check if `_user`'s by `_lockManager` can be unlocked by `_sender`
 
 - **Actor:** Any
 - **Inputs:**
+  - **_sender:** Account that would try to unlock tokens
   - **_user:** Owner of lock
   - **_lockManager:** Manager of the lock for the given owner
   - **_amount:** Amount of tokens to be potentially unlocked. If zero, it means the whole locked amount

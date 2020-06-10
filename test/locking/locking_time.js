@@ -54,12 +54,12 @@ contract('Staking app, Time locking', ([owner]) => {
     assert.equal(end.toString(), endTime.toString(), "interval end should match")
 
     // can not unlock
-    assert.equal(await staking.canUnlock(owner, manager.address, 0), false, "Shouldn't be able to unlock")
+    assert.equal(await staking.canUnlock(owner, owner, manager.address, 0), false, "Shouldn't be able to unlock")
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Unlocked balance should match")
 
     await manager.setTimestamp(endTime.add(bn(1)))
     // can unlock
-    assert.equal(await staking.canUnlock(owner, manager.address, 0), true, "Should be able to unlock")
+    assert.equal(await staking.canUnlock(owner, owner, manager.address, 0), true, "Should be able to unlock")
     assertBn(await staking.unlockedBalanceOf(owner), bn(DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT), "Unlocked balance should match")
   })
 
@@ -80,12 +80,12 @@ contract('Staking app, Time locking', ([owner]) => {
     assert.equal(end.toString(), endBlock.toString(), "interval end should match")
 
     // can not unlock
-    assert.equal(await staking.canUnlock(owner, manager.address, 0), false, "Shouldn't be able to unlock")
+    assert.equal(await staking.canUnlock(owner, owner, manager.address, 0), false, "Shouldn't be able to unlock")
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Unlocked balance should match")
 
     await manager.setBlockNumber(endBlock.add(bn(1)))
     // can unlock
-    assert.equal(await staking.canUnlock(owner, manager.address, 0), true, "Should be able to unlock")
+    assert.equal(await staking.canUnlock(owner, owner, manager.address, 0), true, "Should be able to unlock")
   })
 
   it('fails to unlock if can not unlock', async () => {
