@@ -24,7 +24,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     string private constant ERROR_WRONG_TOKEN = "STAKING_WRONG_TOKEN";
     string private constant ERROR_NOT_ENOUGH_BALANCE = "STAKING_NOT_ENOUGH_BALANCE";
     string private constant ERROR_NOT_ENOUGH_ALLOWANCE = "STAKING_NOT_ENOUGH_ALLOWANCE";
-    string private constant ERROR_NOT_ALLOWED = "STAKING_NOT_ALLOWED";
+    string private constant ERROR_SENDER_NOT_ALLOWED = "STAKING_SENDER_NOT_ALLOWED";
     string private constant ERROR_ALLOWANCE_ZERO = "STAKING_ALLOWANCE_ZERO";
     string private constant ERROR_LOCK_ALREADY_EXISTS = "STAKING_LOCK_ALREADY_EXISTS";
     string private constant ERROR_LOCK_DOES_NOT_EXIST = "STAKING_LOCK_DOES_NOT_EXIST";
@@ -249,7 +249,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         require(_amount <= _unlockedBalanceOf(_accountAddress), ERROR_NOT_ENOUGH_BALANCE);
 
         // we are locking funds from owner account, so only owner or manager are allowed
-        require(msg.sender == _accountAddress || msg.sender == _lockManager, ERROR_NOT_ALLOWED);
+        require(msg.sender == _accountAddress || msg.sender == _lockManager, ERROR_SENDER_NOT_ALLOWED);
 
         _lockUnsafe(_accountAddress, _lockManager, _amount);
     }

@@ -203,7 +203,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await approveStakeAndLock(user1)
 
     await approveAndStake()
-    await assertRevert(staking.lock(owner, user1, 1, { from: user2 }), STAKING_ERRORS.ERROR_NOT_ALLOWED)
+    await assertRevert(staking.lock(owner, user1, 1, { from: user2 }), STAKING_ERRORS.ERROR_SENDER_NOT_ALLOWED)
   })
 
   it('unlocks with only 1 lock, EOA manager', async () => {
