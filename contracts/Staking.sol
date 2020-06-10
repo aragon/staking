@@ -1,9 +1,9 @@
 pragma solidity 0.4.24;
 
-import "./ERCStaking.sol";
-import "./IStakingLocking.sol";
-import "./ILockManager.sol";
-import "./Checkpointing.sol";
+import "./standards/ERC900.sol";
+import "./locking/IStakingLocking.sol";
+import "./locking/ILockManager.sol";
+import "./lib/Checkpointing.sol";
 
 import "@aragon/os/contracts/common/Autopetrified.sol";
 import "@aragon/os/contracts/common/IsContract.sol";
@@ -11,10 +11,12 @@ import "@aragon/os/contracts/common/SafeERC20.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 
 
-contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLocking, IsContract {
+contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     using SafeMath for uint256;
     using Checkpointing for Checkpointing.History;
     using SafeERC20 for ERC20;
+
+    uint256 private constant MAX_UINT64 = uint256(uint64(-1));
 
     string private constant ERROR_TOKEN_NOT_CONTRACT = "STAKING_TOKEN_NOT_CONTRACT";
     string private constant ERROR_AMOUNT_ZERO = "STAKING_AMOUNT_ZERO";
@@ -24,7 +26,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     string private constant ERROR_WRONG_TOKEN = "STAKING_WRONG_TOKEN";
     string private constant ERROR_NOT_ENOUGH_BALANCE = "STAKING_NOT_ENOUGH_BALANCE";
     string private constant ERROR_NOT_ENOUGH_ALLOWANCE = "STAKING_NOT_ENOUGH_ALLOWANCE";
-    string private constant ERROR_NOT_ALLOWED = "STAKING_NOT_ALLOWED";
+    string private constant ERROR_SENDER_NOT_ALLOWED = "STAKING_SENDER_NOT_ALLOWED";
     string private constant ERROR_ALLOWANCE_ZERO = "STAKING_ALLOWANCE_ZERO";
     string private constant ERROR_LOCK_ALREADY_EXISTS = "STAKING_LOCK_ALREADY_EXISTS";
     string private constant ERROR_LOCK_DOES_NOT_EXIST = "STAKING_LOCK_DOES_NOT_EXIST";
@@ -32,6 +34,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     string private constant ERROR_CANNOT_UNLOCK = "STAKING_CANNOT_UNLOCK";
     string private constant ERROR_CANNOT_CHANGE_ALLOWANCE = "STAKING_CANNOT_CHANGE_ALLOWANCE";
     string private constant ERROR_LOCKMANAGER_CALL_FAIL = "STAKING_LOCKMANAGER_CALL_FAIL";
+    string private constant ERROR_BLOCKNUMBER_TOO_BIG = "STAKING_BLOCKNUMBER_TOO_BIG";
 
     struct Lock {
         uint256 amount;
@@ -48,16 +51,18 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     mapping (address => Account) internal accounts;
     Checkpointing.History internal totalStakedHistory;
 
-    function initialize(ERC20 _stakingToken) external onlyInit {
+    /**
+     * @notice Initialize Staking app with token `_stakingToken`
+     * @param _stakingToken ERC20 token used for staking
+     */
+    function initialize(ERC20 _stakingToken) external {
         require(isContract(_stakingToken), ERROR_TOKEN_NOT_CONTRACT);
         initialized();
         stakingToken = _stakingToken;
     }
 
-    /* External functions */
-
     /**
-     * @notice Stakes `_amount` tokens, transferring them from `msg.sender`
+     * @notice Stakes `@tokenAmount(stakingToken: address, _amount)`, transferring them from `msg.sender`
      * @param _amount Number of tokens staked
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
@@ -66,17 +71,17 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Stakes `_amount` tokens, transferring them from caller, and assigns them to `_accountAddress`
-     * @param _accountAddress The final staker of the tokens
+     * @notice Stakes `@tokenAmount(stakingToken: address, _amount)`, transferring them from caller, and assigns them to `_user`
+     * @param _user The final user of the tokens
      * @param _amount Number of tokens staked
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
-    function stakeFor(address _accountAddress, uint256 _amount, bytes _data) external isInitialized {
-        _stakeFor(msg.sender, _accountAddress, _amount, _data);
+    function stakeFor(address _user, uint256 _amount, bytes _data) external isInitialized {
+        _stakeFor(msg.sender, _user, _amount, _data);
     }
 
     /**
-     * @notice Unstakes `_amount` tokens, returning them to the user
+     * @notice Unstakes `@tokenAmount(stakingToken: address, _amount)`, returning them to the user
      * @param _amount Number of tokens to unstake
      * @param _data Used in Unstaked event, to add signalling information in more complex staking applications
      */
@@ -101,19 +106,14 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Lock `_amount` staked tokens and assign `_lockManager` as manager with `@tokenAmount(stakingToken: address, _allowance)` allowance and `_data` as data, so they can not be unstaked
+     * @notice Lock `@tokenAmount(stakingToken: address, _amount)` and assign `_lockManager` as manager with `@tokenAmount(stakingToken: address, _allowance)` allowance and `_data` as data, so they can not be unstaked
      * @param _amount The amount of tokens to be locked
      * @param _lockManager The manager entity for this particular lock. This entity will have full control over the lock, in particular will be able to unlock it
+     * @param _allowance Amount of tokens that the manager can lock
      * @param _data Data to parametrize logic for the lock to be enforced by the manager
      */
     function allowManagerAndLock(uint256 _amount, address _lockManager, uint256 _allowance, bytes _data) external isInitialized {
         _allowManager(_lockManager, _allowance, _data);
-
-        // locking 0 tokens is invalid
-        require(_amount > 0, ERROR_AMOUNT_ZERO);
-
-        // check enough unlocked tokens are available
-        require(_amount <= _unlockedBalanceOf(msg.sender), ERROR_NOT_ENOUGH_BALANCE);
 
         _lockUnsafe(msg.sender, _lockManager, _amount);
 
@@ -121,7 +121,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Transfer `_amount` tokens to `_to`’s staked balance
+     * @notice Transfer `@tokenAmount(stakingToken: address, _amount)` to `_to`’s staked balance
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
      */
@@ -130,7 +130,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Transfer `_amount` tokens to `_to`’s external balance (i.e. unstaked)
+     * @notice Transfer `@tokenAmount(stakingToken: address, _amount)` to `_to`’s external balance (i.e. unstaked)
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
      */
@@ -213,17 +213,17 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Decrease allowance in `@tokenAmount(stakingToken: address, _allowance)` of lock manager `_lockManager` for user `_accountAddress`
-     * @param _accountAddress Owner of locked tokens
+     * @notice Decrease allowance in `@tokenAmount(stakingToken: address, _allowance)` of lock manager `_lockManager` for user `_user`
+     * @param _user Owner of locked tokens
      * @param _lockManager The manager entity for this particular lock
      * @param _allowance Amount of allowed tokens decrease
      */
-    function decreaseLockAllowance(address _accountAddress, address _lockManager, uint256 _allowance) external isInitialized {
+    function decreaseLockAllowance(address _user, address _lockManager, uint256 _allowance) external isInitialized {
         // only owner and manager can decrease allowance
-        require(msg.sender == _accountAddress || msg.sender == _lockManager, ERROR_CANNOT_CHANGE_ALLOWANCE);
+        require(msg.sender == _user || msg.sender == _lockManager, ERROR_CANNOT_CHANGE_ALLOWANCE);
         require(_allowance > 0, ERROR_AMOUNT_ZERO);
 
-        Lock storage lock_ = accounts[_accountAddress].locks[_lockManager];
+        Lock storage lock_ = accounts[_user].locks[_lockManager];
         uint256 newAllowance = lock_.allowance.sub(_allowance);
         require(newAllowance >= lock_.amount, ERROR_NOT_ENOUGH_ALLOWANCE);
         // unlockAndRemoveManager must be used for this:
@@ -231,77 +231,73 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
 
         lock_.allowance = newAllowance;
 
-        emit LockAllowanceChanged(_accountAddress, _lockManager, _allowance, false);
+        emit LockAllowanceChanged(_user, _lockManager, _allowance, false);
     }
 
     /**
-     * @notice Increase locked amount by `@tokenAmount(stakingToken: address, _amount)` for user `_accountAddress` by lock manager `_lockManager`
-     * @param _accountAddress Owner of locked tokens
+     * @notice Increase locked amount by `@tokenAmount(stakingToken: address, _amount)` for user `_user` by lock manager `_lockManager`
+     * @param _user Owner of locked tokens
      * @param _lockManager The manager entity for this particular lock
      * @param _amount Amount of locked tokens increase
      */
-    function lock(address _accountAddress, address _lockManager, uint256 _amount) external isInitialized {
-        require(_amount > 0, ERROR_AMOUNT_ZERO);
-
-        // check enough unlocked tokens are available
-        require(_amount <= _unlockedBalanceOf(_accountAddress), ERROR_NOT_ENOUGH_BALANCE);
-
+    function lock(address _user, address _lockManager, uint256 _amount) external isInitialized {
         // we are locking funds from owner account, so only owner or manager are allowed
-        require(msg.sender == _accountAddress || msg.sender == _lockManager, ERROR_NOT_ALLOWED);
+        require(msg.sender == _user || msg.sender == _lockManager, ERROR_SENDER_NOT_ALLOWED);
 
-        _lockUnsafe(_accountAddress, _lockManager, _amount);
+        _lockUnsafe(_user, _lockManager, _amount);
     }
 
     /**
-     * @notice Decrease locked amount by `@tokenAmount(stakingToken: address, _amount)` for user `_accountAddress` by lock manager `_lockManager`
-     * @param _accountAddress Owner of locked tokens
+     * @notice Decrease locked amount by `@tokenAmount(stakingToken: address, _amount)` for user `_user` by lock manager `_lockManager`
+     * @param _user Owner of locked tokens
      * @param _lockManager The manager entity for this particular lock
      * @param _amount Amount of locked tokens decrease
      */
-    function unlock(address _accountAddress, address _lockManager, uint256 _amount) external isInitialized {
+    function unlock(address _user, address _lockManager, uint256 _amount) external isInitialized {
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
         // only manager and owner (if manager allows) can unlock
-        require(_canUnlock(_accountAddress, _lockManager, _amount), ERROR_CANNOT_UNLOCK);
+        require(_canUnlockUnsafe(msg.sender, _user, _lockManager, _amount), ERROR_CANNOT_UNLOCK);
 
-        _unlock(_accountAddress, _lockManager, _amount);
+        _unlock(_user, _lockManager, _amount);
     }
 
     /**
-     * @notice Unlock `_accountAddress`'s lock by `_lockManager` so locked tokens can be unstaked again
-     * @param _accountAddress Owner of locked tokens
+     * @notice Unlock `_user`'s lock by `_lockManager` so locked tokens can be unstaked again
+     * @param _user Owner of locked tokens
      * @param _lockManager Manager of the lock for the given account
      */
-    function unlockAndRemoveManager(address _accountAddress, address _lockManager) external isInitialized {
+    function unlockAndRemoveManager(address _user, address _lockManager) external isInitialized {
         // only manager and owner (if manager allows) can unlock
-        require(_canUnlock(_accountAddress, _lockManager, 0), ERROR_CANNOT_UNLOCK);
+        require(_canUnlockUnsafe(msg.sender, _user, _lockManager, 0), ERROR_CANNOT_UNLOCK);
 
-        Account storage account = accounts[_accountAddress];
+        Account storage account = accounts[_user];
         Lock storage lock_ = account.locks[_lockManager];
 
         uint256 amount = lock_.amount;
         // update total
         account.totalLocked = account.totalLocked.sub(amount);
 
-        emit Unlocked(_accountAddress, _lockManager, amount);
+        emit LockAmountChanged(_user, _lockManager, amount, false);
+        emit LockManagerRemoved(_user, _lockManager);
 
         delete account.locks[_lockManager];
     }
 
     /**
-     * @notice Change the manager of `_accountAddress`'s lock from `msg.sender` to `_newLockManager`
-     * @param _accountAddress Owner of lock
+     * @notice Change the manager of `_user`'s lock from `msg.sender` to `_newLockManager`
+     * @param _user Owner of lock
      * @param _newLockManager New lock manager
      */
-    function setLockManager(address _accountAddress, address _newLockManager) external isInitialized {
-        Lock storage lock = accounts[_accountAddress].locks[msg.sender];
-        require(lock.allowance > 0, ERROR_LOCK_DOES_NOT_EXIST);
+    function setLockManager(address _user, address _newLockManager) external isInitialized {
+        Lock storage lock_ = accounts[_user].locks[msg.sender];
+        require(lock_.allowance > 0, ERROR_LOCK_DOES_NOT_EXIST);
 
-        accounts[_accountAddress].locks[_newLockManager] = lock;
+        accounts[_user].locks[_newLockManager] = lock_;
 
-        delete accounts[_accountAddress].locks[msg.sender];
+        delete accounts[_user].locks[msg.sender];
 
-        emit LockManagerChanged(_accountAddress, msg.sender, _newLockManager);
+        emit LockManagerTransferred(_user, msg.sender, _newLockManager);
     }
 
     /**
@@ -335,31 +331,31 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Get last time `_accountAddress` modified its staked balance
-     * @param _accountAddress Account requesting for
+     * @notice Get last time `_user` modified its staked balance
+     * @param _user Account requesting for
      * @return Last block number when account's balance was modified
      */
-    function lastStakedFor(address _accountAddress) external view isInitialized returns (uint256) {
-        return accounts[_accountAddress].stakedHistory.lastUpdated();
+    function lastStakedFor(address _user) external view isInitialized returns (uint256) {
+        return accounts[_user].stakedHistory.lastUpdate();
     }
 
     /**
-     * @notice Get total amount of locked tokens for `_accountAddress`
-     * @param _accountAddress Owner of locks
+     * @notice Get total amount of locked tokens for `_user`
+     * @param _user Owner of locks
      * @return Total amount of locked tokens for the requested account
      */
-    function getTotalLockedOf(address _accountAddress) external view isInitialized returns (uint256) {
-        return _getTotalLockedOf(_accountAddress);
+    function lockedBalanceOf(address _user) external view isInitialized returns (uint256) {
+        return _lockedBalanceOf(_user);
     }
 
     /**
-     * @notice Get details of `_accountAddress`'s lock by `_lockManager`
-     * @param _accountAddress Owner of lock
+     * @notice Get details of `_user`'s lock by `_lockManager`
+     * @param _user Owner of lock
      * @param _lockManager Manager of the lock for the given account
      * @return Amount of locked tokens
      * @return Amount of tokens that lock manager is allowed to lock
      */
-    function getLock(address _accountAddress, address _lockManager)
+    function getLock(address _user, address _lockManager)
         external
         view
         isInitialized
@@ -368,29 +364,29 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
             uint256 _allowance
         )
     {
-        Lock storage lock_ = accounts[_accountAddress].locks[_lockManager];
+        Lock storage lock_ = accounts[_user].locks[_lockManager];
         _amount = lock_.amount;
         _allowance = lock_.allowance;
     }
 
     /**
-     * @notice Get staked and locked balances of `_accountAddress`
-     * @param _accountAddress Account being requested
+     * @notice Get staked and locked balances of `_user`
+     * @param _user Account being requested
      * @return Amount of staked tokens
      * @return Amount of total locked tokens
      */
-    function getBalancesOf(address _accountAddress) external view isInitialized returns (uint256 staked, uint256 locked) {
-        staked = _totalStakedFor(_accountAddress);
-        locked = _getTotalLockedOf(_accountAddress);
+    function getBalancesOf(address _user) external view isInitialized returns (uint256 staked, uint256 locked) {
+        staked = _totalStakedFor(_user);
+        locked = _lockedBalanceOf(_user);
     }
 
     /**
-     * @notice Get the amount of tokens staked by `_accountAddress`
-     * @param _accountAddress The owner of the tokens
+     * @notice Get the amount of tokens staked by `_user`
+     * @param _user The owner of the tokens
      * @return The amount of tokens staked by the given account
      */
-    function totalStakedFor(address _accountAddress) external view isInitialized returns (uint256) {
-        return _totalStakedFor(_accountAddress);
+    function totalStakedFor(address _user) external view isInitialized returns (uint256) {
+        return _totalStakedFor(_user);
     }
 
     /**
@@ -402,13 +398,15 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Get the total amount of tokens staked by `_accountAddress` at block number `_blockNumber`
-     * @param _accountAddress Account requesting for
+     * @notice Get the total amount of tokens staked by `_user` at block number `_blockNumber`
+     * @param _user Account requesting for
      * @param _blockNumber Block number at which we are requesting
      * @return The amount of tokens staked by the account at the given block number
      */
-    function totalStakedForAt(address _accountAddress, uint256 _blockNumber) external view isInitialized returns (uint256) {
-        return accounts[_accountAddress].stakedHistory.get(_blockNumber);
+    function totalStakedForAt(address _user, uint256 _blockNumber) external view isInitialized returns (uint256) {
+        require(_blockNumber <= MAX_UINT64, ERROR_BLOCKNUMBER_TOO_BIG);
+
+        return accounts[_user].stakedHistory.get(uint64(_blockNumber));
     }
 
     /**
@@ -417,53 +415,46 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      * @return The amount of tokens staked at the given block number
      */
     function totalStakedAt(uint256 _blockNumber) external view isInitialized returns (uint256) {
-        return totalStakedHistory.get(_blockNumber);
+        require(_blockNumber <= MAX_UINT64, ERROR_BLOCKNUMBER_TOO_BIG);
+
+        return totalStakedHistory.get(uint64(_blockNumber));
     }
 
     /**
-     * @notice Get the staked but unlocked amount of tokens by `_accountAddress`
-     * @param _accountAddress Owner of the staked but unlocked balance
+     * @notice Get the staked but unlocked amount of tokens by `_user`
+     * @param _user Owner of the staked but unlocked balance
      * @return Amount of tokens staked but not locked by given account
      */
-    function unlockedBalanceOf(address _accountAddress) external view isInitialized returns (uint256) {
-        return _unlockedBalanceOf(_accountAddress);
+    function unlockedBalanceOf(address _user) external view isInitialized returns (uint256) {
+        return _unlockedBalanceOf(_user);
     }
 
     /**
-     * @notice Check if `_accountAddress`'s by `_lockManager` can be unlocked
-     * @param _accountAddress Owner of lock
-     * @param _lockManager Manager of the lock for the given account
+     * @notice Check if `_sender` can unlock `_user`'s `@tokenAmount(stakingToken: address, _amount)` locked by `_lockManager`
+     * @param _sender Account that would try to unlock tokens
+     * @param _user Owner of lock
+     * @param _lockManager Manager of the lock for the given owner
      * @param _amount Amount of tokens to be potentially unlocked. If zero, it means the whole locked amount
-     * @return Whether given lock of given account can be unlocked
+     * @return Whether given lock of given owner can be unlocked by given sender
      */
-    function canUnlock(address _accountAddress, address _lockManager, uint256 _amount) external view isInitialized returns (bool) {
-        return _canUnlock(_accountAddress, _lockManager, _amount);
+    function canUnlock(address _sender, address _user, address _lockManager, uint256 _amount) external view isInitialized returns (bool) {
+        return _canUnlockUnsafe(_sender, _user, _lockManager, _amount);
     }
 
-    /*
-    function multicall(bytes[] _calls) public {
-        for(uint i = 0; i < _calls.length; i++) {
-            require(address(this).delegatecall(_calls[i]), ERROR_MULTICALL_DELEGATECALL);
-        }
-    }
-    */
-
-    /* Internal functions */
-
-    function _stakeFor(address _from, address _accountAddress, uint256 _amount, bytes _data) internal {
+    function _stakeFor(address _from, address _user, uint256 _amount, bytes _data) internal {
         // staking 0 tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
         // checkpoint updated staking balance
-        uint256 newStake = _modifyStakeBalance(_accountAddress, _amount, true);
+        uint256 newStake = _modifyStakeBalance(_user, _amount, true);
 
         // checkpoint total supply
         _modifyTotalStaked(_amount, true);
 
         // pull tokens into Staking contract
-        require(stakingToken.safeTransferFrom(_from, this, _amount), ERROR_TOKEN_DEPOSIT);
+        require(stakingToken.safeTransferFrom(_from, address(this), _amount), ERROR_TOKEN_DEPOSIT);
 
-        emit Staked(_accountAddress, _amount, newStake, _data);
+        emit Staked(_user, _amount, newStake, _data);
     }
 
     function _unstake(address _from, uint256 _amount, bytes _data) internal {
@@ -479,19 +470,19 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         emit Unstaked(_from, _amount, newStake, _data);
     }
 
-    function _modifyStakeBalance(address _accountAddress, uint256 _by, bool _increase) internal returns (uint256) {
-        uint256 currentStake = _totalStakedFor(_accountAddress);
+    function _modifyStakeBalance(address _user, uint256 _by, bool _increase) internal returns (uint256) {
+        uint256 currentStake = _totalStakedFor(_user);
 
         uint256 newStake;
         if (_increase) {
             newStake = currentStake.add(_by);
         } else {
-            require(currentStake >= _by, ERROR_NOT_ENOUGH_BALANCE);
-            newStake = currentStake - _by;
+            require(_by <= _unlockedBalanceOf(_user), ERROR_NOT_ENOUGH_BALANCE);
+            newStake = currentStake.sub(_by);
         }
 
         // add new value to account history
-        accounts[_accountAddress].stakedHistory.add64(getBlockNumber64(), newStake);
+        accounts[_user].stakedHistory.add(getBlockNumber64(), newStake);
 
         return newStake;
     }
@@ -507,7 +498,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         }
 
         // add new value to total history
-        totalStakedHistory.add64(getBlockNumber64(), newStake);
+        totalStakedHistory.add(getBlockNumber64(), newStake);
     }
 
     function _allowManager(address _lockManager, uint256 _allowance, bytes _data) internal {
@@ -520,7 +511,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         _increaseLockAllowance(_lockManager, lock_, _allowance);
     }
 
-    function _callLockManagerCallback(uint256 _amount, address _lockManager, uint _allowance, bytes _data) internal {
+    function _callLockManagerCallback(uint256 _amount, address _lockManager, uint256 _allowance, bytes _data) internal {
         if (_toBytes4(_data) == ILockManager(_lockManager).receiveLock.selector) {
             require(ILockManager(_lockManager).receiveLock(_amount, _allowance, _data), ERROR_LOCKMANAGER_CALL_FAIL);
         }
@@ -534,12 +525,20 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         emit LockAllowanceChanged(msg.sender, _lockManager, _allowance, true);
     }
 
-    function _lockUnsafe(address _accountAddress, address _lockManager, uint256 _amount) internal {
-        Account storage account = accounts[_accountAddress];
+    /**
+     * @dev Assumes that sender is either owner or lock manager
+     */
+    function _lockUnsafe(address _user, address _lockManager, uint256 _amount) internal {
+        require(_amount > 0, ERROR_AMOUNT_ZERO);
+
+        // check enough unlocked tokens are available
+        require(_amount <= _unlockedBalanceOf(_user), ERROR_NOT_ENOUGH_BALANCE);
+
+        Account storage account = accounts[_user];
         Lock storage lock_ = account.locks[_lockManager];
 
         uint256 newAmount = lock_.amount.add(_amount);
-        // check allowance is enough, it also means that lock hasn't been unlocked
+        // check allowance is enough, it also means that lock exists, as newAmount is greater than zero
         require(newAmount <= lock_.allowance, ERROR_NOT_ENOUGH_ALLOWANCE);
 
         lock_.amount = newAmount;
@@ -547,31 +546,29 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
         // update total
         account.totalLocked = account.totalLocked.add(_amount);
 
-        emit LockAmountChanged(_accountAddress, _lockManager, _amount, true);
+        emit LockAmountChanged(_user, _lockManager, _amount, true);
     }
 
-    function _unlock(address _accountAddress, address _lockManager, uint256 _amount) internal {
-        Account storage account = accounts[_accountAddress];
+    function _unlock(address _user, address _lockManager, uint256 _amount) internal {
+        Account storage account = accounts[_user];
         Lock storage lock_ = account.locks[_lockManager];
 
         uint256 lockAmount = lock_.amount;
         require(lockAmount >= _amount, ERROR_NOT_ENOUGH_LOCK);
 
         // update lock amount
+        // No need for SafeMath: checked just above
         lock_.amount = lockAmount - _amount;
 
         // update total
         account.totalLocked = account.totalLocked.sub(_amount);
 
-        emit LockAmountChanged(_accountAddress, _lockManager, _amount, false);
+        emit LockAmountChanged(_user, _lockManager, _amount, false);
     }
 
     function _transfer(address _from, address _to, uint256 _amount) internal {
         // transferring 0 staked tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
-
-        // have enough unlocked funds
-        require(_amount <= _unlockedBalanceOf(_from), ERROR_NOT_ENOUGH_BALANCE);
 
         // update stakes
         _modifyStakeBalance(_from, _amount, false);
@@ -581,13 +578,13 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
     }
 
     /**
-     * @notice Get the amount of tokens staked by `_accountAddress`
-     * @param _accountAddress The owner of the tokens
+     * @notice Get the amount of tokens staked by `_user`
+     * @param _user The owner of the tokens
      * @return The amount of tokens staked by the given account
      */
-    function _totalStakedFor(address _accountAddress) internal view returns (uint256) {
+    function _totalStakedFor(address _user) internal view returns (uint256) {
         // we assume it's not possible to stake in the future
-        return accounts[_accountAddress].stakedHistory.getLatestValue();
+        return accounts[_user].stakedHistory.getLast();
     }
 
     /**
@@ -596,39 +593,53 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
      */
     function _totalStaked() internal view returns (uint256) {
         // we assume it's not possible to stake in the future
-        return totalStakedHistory.getLatestValue();
+        return totalStakedHistory.getLast();
     }
 
     /**
-     * @notice Get the staked but unlocked amount of tokens by `_accountAddress`
-     * @param _accountAddress Owner of the staked but unlocked balance
+     * @notice Get the staked but unlocked amount of tokens by `_user`
+     * @param _user Owner of the staked but unlocked balance
      * @return Amount of tokens staked but not locked by given account
      */
-    function _unlockedBalanceOf(address _accountAddress) internal view returns (uint256) {
-        uint256 unlockedTokens = _totalStakedFor(_accountAddress).sub(accounts[_accountAddress].totalLocked);
-
-        return unlockedTokens;
+    function _unlockedBalanceOf(address _user) internal view returns (uint256) {
+        return _totalStakedFor(_user).sub(_lockedBalanceOf(_user));
     }
 
-    function _getTotalLockedOf(address _accountAddress) internal view returns (uint256) {
-        return accounts[_accountAddress].totalLocked;
+    function _lockedBalanceOf(address _user) internal view returns (uint256) {
+        return accounts[_user].totalLocked;
     }
 
     /**
-     * @notice Check if `_accountAddress`'s by `_lockManager` can be unlocked
-     * @param _accountAddress Owner of lock
-     * @param _lockManager Manager of the lock for the given account
-     * @return Whether given lock of given account can be unlocked
+     * @notice Check if `_sender` can unlock `_user`'s `@tokenAmount(stakingToken: address, _amount)` locked by `_lockManager`
+     * @dev If calling this from a state modifying function trying to unlock tokens, make sure first parameter is `msg.sender`
+     * @param _sender Account that would try to unlock tokens
+     * @param _user Owner of lock
+     * @param _lockManager Manager of the lock for the given owner
+     * @param _amount Amount of locked tokens to unlock. If zero, the full locked amount
+     * @return Whether given lock of given owner can be unlocked by given sender
      */
-    function _canUnlock(address _accountAddress, address _lockManager, uint256 _amount) internal view returns (bool) {
-        Lock storage lock_ = accounts[_accountAddress].locks[_lockManager];
+    function _canUnlockUnsafe(address _sender, address _user, address _lockManager, uint256 _amount) internal view returns (bool) {
+        Lock storage lock_ = accounts[_user].locks[_lockManager];
         require(lock_.allowance > 0, ERROR_LOCK_DOES_NOT_EXIST);
         require(lock_.amount >= _amount, ERROR_NOT_ENOUGH_LOCK);
 
         uint256 amount = _amount == 0 ? lock_.amount : _amount;
 
-        if (msg.sender == _lockManager ||
-            (msg.sender == _accountAddress && (amount == 0 || ILockManager(_lockManager).canUnlock(_accountAddress, amount)))) {
+        if (_sender == _lockManager) {
+            return true;
+        }
+
+        // here we know sender is not lock manager, so it must be owner
+        if (_sender != _user) {
+            return false;
+        }
+
+        // here we know sender is owner
+        if (amount == 0) {
+            return true;
+        }
+
+        if (ILockManager(_lockManager).canUnlock(_user, amount)) {
             return true;
         }
 

@@ -6,7 +6,8 @@ interface IStakingLocking {
     event Unlocked(address indexed account, address indexed lockManager, uint256 amount);
     event LockAmountChanged(address indexed account, address indexed lockManager, uint256 amount, bool increase);
     event LockAllowanceChanged(address indexed account, address indexed lockManager, uint256 allowance, bool increase);
-    event LockManagerChanged(address indexed account, address indexed oldLockManager, address newLockManager);
+    event LockManagerRemoved(address indexed account, address lockManager);
+    event LockManagerTransferred(address indexed account, address indexed oldLockManager, address newLockManager);
     event StakeTransferred(address indexed from, address to, uint256 amount);
 
 
@@ -31,7 +32,7 @@ interface IStakingLocking {
             uint256 _allowance
         );
     function unlockedBalanceOf(address _account) external view returns (uint256);
-    function getTotalLockedOf(address _accountAddress) external view returns (uint256);
-    function getBalancesOf(address _accountAddress) external view returns (uint256 staked, uint256 locked);
-    function canUnlock(address _account, address _lockManager, uint256 _amount) external view returns (bool);
+    function lockedBalanceOf(address _user) external view returns (uint256);
+    function getBalancesOf(address _user) external view returns (uint256 staked, uint256 locked);
+    function canUnlock(address _sender, address _account, address _lockManager, uint256 _amount) external view returns (bool);
 }

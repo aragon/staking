@@ -1,9 +1,9 @@
 const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
 const { bn, assertBn, MAX_UINT64 } = require('@aragon/contract-helpers-test/numbers')
 
-const { deploy } = require('./helpers/deploy')(artifacts)
-const { DEFAULT_STAKE_AMOUNT, DEFAULT_LOCK_AMOUNT, EMPTY_DATA, ZERO_ADDRESS } = require('./helpers/constants')
-const { STAKING_ERRORS } = require('./helpers/errors')
+const { deploy } = require('../helpers/deploy')(artifacts)
+const { DEFAULT_STAKE_AMOUNT, DEFAULT_LOCK_AMOUNT, EMPTY_DATA, ZERO_ADDRESS } = require('../helpers/constants')
+const { STAKING_ERRORS } = require('../helpers/errors')
 
 contract('Staking app, Locking', ([owner, user1, user2]) => {
   let staking, token, lockManager
@@ -64,6 +64,12 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
 
     await approveAndStake()
     await assertRevert(staking.allowManagerAndLock(DEFAULT_STAKE_AMOUNT, user1, DEFAULT_STAKE_AMOUNT, "0x02"), STAKING_ERRORS.ERROR_LOCK_ALREADY_EXISTS)
+  })
+
+  it('fails unstaking locked tokens', async () => {
+    await approveStakeAndLock(user1)
+
+    await assertRevert(staking.unstake(DEFAULT_STAKE_AMOUNT, EMPTY_DATA), STAKING_ERRORS.ERROR_NOT_ENOUGH_BALANCE)
   })
 
   it('creates a new allowance', async () => {
@@ -197,7 +203,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await approveStakeAndLock(user1)
 
     await approveAndStake()
-    await assertRevert(staking.lock(owner, user1, 1, { from: user2 }), STAKING_ERRORS.ERROR_NOT_ALLOWED)
+    await assertRevert(staking.lock(owner, user1, 1, { from: user2 }), STAKING_ERRORS.ERROR_SENDER_NOT_ALLOWED)
   })
 
   it('unlocks with only 1 lock, EOA manager', async () => {
@@ -207,7 +213,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await staking.unlockAndRemoveManager(owner, user1, { from: user1 })
 
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT, "Unlocked balance should match")
-    assert.equal((await staking.getTotalLockedOf(owner)).toString(), '0', "total locked doesn’t match")
+    assert.equal((await staking.lockedBalanceOf(owner)).toString(), '0', "total locked doesn’t match")
   })
 
   it('unlocks with more than 1 lock, EOA manager', async () => {
@@ -215,13 +221,13 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     // lock again
     await staking.allowManagerAndLock(DEFAULT_LOCK_AMOUNT, user2, DEFAULT_LOCK_AMOUNT, EMPTY_DATA)
 
-    const previousTotalLocked = await staking.getTotalLockedOf(owner)
+    const previousTotalLocked = await staking.lockedBalanceOf(owner)
 
     // unlock
     await staking.unlockAndRemoveManager(owner, user1, { from: user1 })
 
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Unlocked balance should match")
-    assert.equal((await staking.getTotalLockedOf(owner)).toString(), (previousTotalLocked.sub(bn(DEFAULT_LOCK_AMOUNT))).toString(), "total locked doesn’t match")
+    assert.equal((await staking.lockedBalanceOf(owner)).toString(), (previousTotalLocked.sub(bn(DEFAULT_LOCK_AMOUNT))).toString(), "total locked doesn’t match")
   })
 
   it('unlocks completely, contract manager, called by owner', async () => {
@@ -232,7 +238,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await staking.unlockAndRemoveManager(owner, lockManager.address, { from: owner })
 
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT, "Unlocked balance should match")
-    assert.equal((await staking.getTotalLockedOf(owner)).toString(), '0', "total locked doesn’t match")
+    assert.equal((await staking.lockedBalanceOf(owner)).toString(), '0', "total locked doesn’t match")
   })
 
   it('unlocks completely, contract manager, called by manager', async () => {
@@ -243,7 +249,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await lockManager.unlockAndRemoveManager(staking.address, owner, lockManager.address)
 
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT, "Unlocked balance should match")
-    assert.equal((await staking.getTotalLockedOf(owner)).toString(), '0', "total locked doesn’t match")
+    assert.equal((await staking.lockedBalanceOf(owner)).toString(), '0', "total locked doesn’t match")
   })
 
   it('unlocks completely, contract manager, called by manager, even if condition is not satisfied', async () => {
@@ -255,19 +261,19 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await lockManager.unlockAndRemoveManager(staking.address, owner, lockManager.address)
 
     assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT, "Unlocked balance should match")
-    assert.equal((await staking.getTotalLockedOf(owner)).toString(), '0', "total locked doesn’t match")
+    assert.equal((await staking.lockedBalanceOf(owner)).toString(), '0', "total locked doesn’t match")
   })
 
   it('fails calling canUnlock, EOA manager', async () => {
     await approveStakeAndLock(user1)
 
     // call canUnlock
-    await assertRevert(staking.canUnlock(owner, user1, 0)) // no reason: it’s trying to call an EOA
+    await assertRevert(staking.canUnlock(owner, owner, user1, 0)) // no reason: it’s trying to call an EOA
   })
 
   it('can unlock if amount is zero', async () => {
     await staking.allowManager(user1, DEFAULT_LOCK_AMOUNT, EMPTY_DATA, { from: owner })
-    assert.isTrue(await staking.canUnlock(owner, user1, 0), { from: owner })
+    assert.isTrue(await staking.canUnlock(owner, owner, user1, 0))
   })
 
   it('fails to unlock if it cannot unlock, EOA manager', async () => {
@@ -304,13 +310,13 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await staking.slashAndUnlock(owner, user2, totalLock - transferAmount, transferAmount, { from: user1 })
 
     //assert.equal((await staking.unlockedBalanceOf(owner)).toString(), (totalLock - transferAmount).toString(), "Unlocked balance should match")
-    assert.equal((await staking.getTotalLockedOf(owner)).toString(), '0', "total locked doesn’t match")
+    assert.equal((await staking.lockedBalanceOf(owner)).toString(), '0', "total locked doesn’t match")
     // lock manager
     assert.equal((await staking.unlockedBalanceOf(user1)).toString(), '0', "Unlocked balance should match")
-    assert.equal((await staking.getTotalLockedOf(user1)).toString(), '0', "total locked doesn’t match")
+    assert.equal((await staking.lockedBalanceOf(user1)).toString(), '0', "total locked doesn’t match")
     // recipient
     assert.equal((await staking.unlockedBalanceOf(user2)).toString(), transferAmount.toString(), "Unlocked balance should match")
-    assert.equal((await staking.getTotalLockedOf(user2)).toString(), '0', "total locked doesn’t match")
+    assert.equal((await staking.lockedBalanceOf(user2)).toString(), '0', "total locked doesn’t match")
   })
 
   it('transfers (slash) and unlocks in one transaction', async () => {
@@ -324,13 +330,13 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await staking.slashAndUnlock(owner, user2, decreaseAmount, transferAmount, { from: user1 })
 
     assert.equal((await staking.unlockedBalanceOf(owner)).toString(), decreaseAmount.toString(), "Unlocked balance should match")
-    assert.equal((await staking.getTotalLockedOf(owner)).toString(), totalLock - decreaseAmount - transferAmount, "total locked doesn’t match")
+    assert.equal((await staking.lockedBalanceOf(owner)).toString(), totalLock - decreaseAmount - transferAmount, "total locked doesn’t match")
     // lock manager
     assert.equal((await staking.unlockedBalanceOf(user1)).toString(), '0', "Unlocked balance should match")
-    assert.equal((await staking.getTotalLockedOf(user1)).toString(), '0', "total locked doesn’t match")
+    assert.equal((await staking.lockedBalanceOf(user1)).toString(), '0', "total locked doesn’t match")
     // recipient
     assert.equal((await staking.unlockedBalanceOf(user2)).toString(), transferAmount.toString(), "Unlocked balance should match")
-    assert.equal((await staking.getTotalLockedOf(user2)).toString(), '0', "total locked doesn’t match")
+    assert.equal((await staking.lockedBalanceOf(user2)).toString(), '0', "total locked doesn’t match")
   })
 
   it('fails to transfer (slash) and unlocks in one transaction if unlock amount is zero', async () => {
@@ -386,16 +392,16 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
 
   it('change lock manager', async () => {
     await approveStakeAndLock(user1)
-    assert.equal(await staking.canUnlock(owner, user1, 0, { from: user1 }), true, "User 1 can unlock")
-    assert.equal(await staking.canUnlock(owner, user1, 0, { from: user2 }), false, "User 2 can not unlock")
-    await assertRevert(staking.canUnlock(owner, user2, 0, { from: user2 }), STAKING_ERRORS.ERROR_LOCK_DOES_NOT_EXIST) // it doesn’t exist
+    assert.equal(await staking.canUnlock(user1, owner, user1, 0), true, "User 1 can unlock")
+    assert.equal(await staking.canUnlock(user2, owner, user1, 0), false, "User 2 can not unlock")
+    await assertRevert(staking.canUnlock(user2, owner, user2, 0), STAKING_ERRORS.ERROR_LOCK_DOES_NOT_EXIST) // it doesn’t exist
 
     // change manager
     await staking.setLockManager(owner, user2, { from: user1 })
 
-    await assertRevert(staking.canUnlock(owner, user1, 0, { from: user1 }), STAKING_ERRORS.ERROR_LOCK_DOES_NOT_EXIST) // it doesn’t exist
-    assert.equal(await staking.canUnlock(owner, user2, 0, { from: user1 }), false, "User 1 can not unlock")
-    assert.equal(await staking.canUnlock(owner, user2, 0, { from: user2 }), true, "User 2 can unlock")
+    await assertRevert(staking.canUnlock(user1, owner, user1, 0), STAKING_ERRORS.ERROR_LOCK_DOES_NOT_EXIST) // it doesn’t exist
+    assert.equal(await staking.canUnlock(user1, owner, user2, 0), false, "User 1 can not unlock")
+    assert.equal(await staking.canUnlock(user2, owner, user2, 0), true, "User 2 can unlock")
   })
 
   it('fails to change lock manager if it doesn’t exist', async () => {

@@ -9,7 +9,7 @@ You can run some fuzzing tests with [Echidna](https://github.com/crytic/echidna)
 ```
 mkdir -p flattened_contracts
 npx truffle-flattener contracts/test/EchidnaStaking.sol > flattened_contracts/EchidnaStaking.sol
-docker run -v `pwd`:/src trailofbits/eth-security-toolbox
+docker run -ti -v `pwd`:/src trailofbits/eth-security-toolbox
 ```
 
 And then inside the container:

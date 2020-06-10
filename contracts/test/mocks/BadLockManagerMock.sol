@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "../../ILockManager.sol";
+import "../../locking/ILockManager.sol";
 import "../../Staking.sol";
 
 
