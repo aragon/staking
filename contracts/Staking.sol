@@ -304,7 +304,7 @@ contract Staking is Autopetrified, ERCStaking, ERCStakingHistory, IStakingLockin
 
         delete accounts[_accountAddress].locks[msg.sender];
 
-        emit LockManagerChanged(_accountAddress, msg.sender, _newLockManager);
+        emit LockManagerTransferred(_accountAddress, msg.sender, _newLockManager);
     }
 
     /**
