@@ -2,6 +2,7 @@ const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
 const { bn, assertBn, MAX_UINT64 } = require('@aragon/contract-helpers-test/numbers')
 
 const { deploy } = require('./helpers/deploy')(artifacts)
+const { approveAndStake } = require('./helpers/helpers')(artifacts)
 const { DEFAULT_STAKE_AMOUNT, EMPTY_DATA } = require('./helpers/constants')
 const { STAKING_ERRORS } = require('./helpers/errors')
 
@@ -14,15 +15,8 @@ const getTokenBalance = async (token, account) =>  await token.balanceOf(account
 contract('Staking app', ([owner, other]) => {
   let staking, token, stakingAddress, tokenAddress
 
-  const approveAndStake = async (amount = DEFAULT_STAKE_AMOUNT, from = owner) => {
-    // allow Staking app to move owner tokens
-    await token.approve(stakingAddress, amount, { from })
-    // stake tokens
-    await staking.stake(amount, EMPTY_DATA, { from })
-  }
-
   beforeEach(async () => {
-    const initialAmount = 1000 * DEFAULT_STAKE_AMOUNT
+    const initialAmount = DEFAULT_STAKE_AMOUNT.mul(bn(1000))
     const tokenContract = await StandardTokenMock.new(owner, initialAmount)
     token = tokenContract
     tokenAddress = tokenContract.address
@@ -46,7 +40,7 @@ contract('Staking app', ([owner, other]) => {
     const initialOwnerBalance = await getTokenBalance(token, owner)
     const initialStakingBalance = await getTokenBalance(token, stakingAddress)
 
-    await approveAndStake()
+    await approveAndStake({ staking, from: owner })
 
     const finalOwnerBalance = await getTokenBalance(token, owner)
     const finalStakingBalance = await getTokenBalance(token, stakingAddress)
@@ -93,10 +87,10 @@ contract('Staking app', ([owner, other]) => {
     const initialOwnerBalance = await getTokenBalance(token, owner)
     const initialStakingBalance = await getTokenBalance(token, stakingAddress)
 
-    await approveAndStake()
+    await approveAndStake({ staking, from: owner })
 
     // unstake half of them
-    await staking.unstake(DEFAULT_STAKE_AMOUNT / 2, EMPTY_DATA)
+    await staking.unstake(DEFAULT_STAKE_AMOUNT.div(bn(2)), EMPTY_DATA)
 
     const finalOwnerBalance = await getTokenBalance(token, owner)
     const finalStakingBalance = await getTokenBalance(token, stakingAddress)
@@ -106,13 +100,13 @@ contract('Staking app', ([owner, other]) => {
   })
 
   it('fails unstaking 0 amount', async () => {
-    await approveAndStake()
+    await approveAndStake({ staking, from: owner })
     await assertRevert(staking.unstake(0, EMPTY_DATA), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
   })
 
   it('fails unstaking more than staked', async () => {
-    await approveAndStake()
-    await assertRevert(staking.unstake(DEFAULT_STAKE_AMOUNT + 1, EMPTY_DATA), STAKING_ERRORS.ERROR_NOT_ENOUGH_BALANCE)
+    await approveAndStake({ staking, from: owner })
+    await assertRevert(staking.unstake(DEFAULT_STAKE_AMOUNT.add(bn(1)), EMPTY_DATA), STAKING_ERRORS.ERROR_NOT_ENOUGH_BALANCE)
   })
 
   context('History', async () => {
@@ -124,7 +118,7 @@ contract('Staking app', ([owner, other]) => {
       const blockNumber = await staking.getBlockNumberPublic()
       const lastStaked = blockNumber.add(bn(5))
       await staking.setBlockNumber(lastStaked)
-      await approveAndStake()
+      await approveAndStake({ staking, from: owner })
       assertBn(await staking.lastStakedFor(owner), lastStaked, "Last staked for should match")
     })
 
@@ -132,7 +126,7 @@ contract('Staking app', ([owner, other]) => {
       const beforeBlockNumber = await staking.getBlockNumberPublic()
       const lastStaked = beforeBlockNumber.add(bn(5))
       await staking.setBlockNumber(lastStaked)
-      await approveAndStake()
+      await approveAndStake({ staking, from: owner })
       assertBn(await staking.totalStakedForAt(owner, beforeBlockNumber), bn(0), "Staked for at before staking should match")
       assertBn(await staking.totalStakedForAt(owner, lastStaked), bn(DEFAULT_STAKE_AMOUNT), "Staked for after staking should match")
     })
@@ -141,8 +135,8 @@ contract('Staking app', ([owner, other]) => {
       const beforeBlockNumber = await staking.getBlockNumberPublic()
       const lastStaked = beforeBlockNumber.add(bn(5))
       await staking.setBlockNumber(lastStaked)
-      await approveAndStake(DEFAULT_STAKE_AMOUNT, owner)
-      await approveAndStake(DEFAULT_STAKE_AMOUNT, other)
+      await approveAndStake({ staking, from: owner })
+      await approveAndStake({ staking, from: other })
       assertBn(await staking.totalStakedAt(beforeBlockNumber), bn(0), "Staked for at before should match")
       assertBn(await staking.totalStakedAt(lastStaked), bn(DEFAULT_STAKE_AMOUNT * 2), "Staked for at after staking should match")
     })
@@ -159,7 +153,7 @@ contract('Staking app', ([owner, other]) => {
   context('Bad Token', async () => {
     let badStaking, badStakingAddress, badToken, badTokenAddress
     beforeEach(async () => {
-      const initialAmount = 1000 * DEFAULT_STAKE_AMOUNT
+      const initialAmount = DEFAULT_STAKE_AMOUNT.mul(bn(1000))
       const tokenContract = await BadTokenMock.new(owner, initialAmount)
       badToken = tokenContract
       badTokenAddress = tokenContract.address
