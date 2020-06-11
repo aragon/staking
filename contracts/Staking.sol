@@ -153,7 +153,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
         external
         isInitialized
     {
-        _unlock(_from, msg.sender, _amount);
+        _unlockUnsafe(_from, msg.sender, _amount);
         _transfer(_from, _to, _amount);
     }
 
@@ -171,7 +171,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
         external
         isInitialized
     {
-        _unlock(_from, msg.sender, _amount);
+        _unlockUnsafe(_from, msg.sender, _amount);
         _transfer(_from, _to, _amount);
         _unstake(_to, _amount, new bytes(0));
     }
@@ -193,10 +193,10 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
         isInitialized
     {
         // No need to check that _slashAmount is positive, as _transfer will fail
-        // No need to check that have enough locked funds, as _unlock will fail
+        // No need to check that have enough locked funds, as _unlockUnsafe will fail
         require(_unlockAmount > 0, ERROR_AMOUNT_ZERO);
 
-        _unlock(_from, msg.sender, _unlockAmount.add(_slashAmount));
+        _unlockUnsafe(_from, msg.sender, _unlockAmount.add(_slashAmount));
         _transfer(_from, _to, _slashAmount);
     }
 
@@ -259,7 +259,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
         // only manager and owner (if manager allows) can unlock
         require(_canUnlockUnsafe(msg.sender, _user, _lockManager, _amount), ERROR_CANNOT_UNLOCK);
 
-        _unlock(_user, _lockManager, _amount);
+        _unlockUnsafe(_user, _lockManager, _amount);
     }
 
     /**
@@ -549,7 +549,10 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
         emit LockAmountChanged(_user, _lockManager, _amount, true);
     }
 
-    function _unlock(address _user, address _lockManager, uint256 _amount) internal {
+    /**
+     * @dev Assumes `canUnlock` passes
+     */
+    function _unlockUnsafe(address _user, address _lockManager, uint256 _amount) internal {
         Account storage account = accounts[_user];
         Lock storage lock_ = account.locks[_lockManager];
 
