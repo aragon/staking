@@ -58,7 +58,7 @@ contract('Staking app', ([owner, other]) => {
 
   it('fails staking more than balance', async () => {
     const balance = await getTokenBalance(token, owner)
-    const amount = balance + 1
+    const amount = balance.add(bn(1))
     await token.approve(stakingAddress, amount)
     await assertRevert(staking.stake(amount, EMPTY_DATA), STAKING_ERRORS.ERROR_TOKEN_DEPOSIT)
   })
@@ -94,9 +94,9 @@ contract('Staking app', ([owner, other]) => {
 
     const finalOwnerBalance = await getTokenBalance(token, owner)
     const finalStakingBalance = await getTokenBalance(token, stakingAddress)
-    assertBn(finalOwnerBalance, initialOwnerBalance.sub(bn(DEFAULT_STAKE_AMOUNT / 2)), "owner balance should match")
-    assertBn(finalStakingBalance, initialStakingBalance.add(bn(DEFAULT_STAKE_AMOUNT / 2)), "Staking app balance should match")
-    assertBn(await staking.totalStakedFor(owner), bn(DEFAULT_STAKE_AMOUNT / 2), "staked value should match")
+    assertBn(finalOwnerBalance, initialOwnerBalance.sub(bn(DEFAULT_STAKE_AMOUNT.div(bn(2)))), "owner balance should match")
+    assertBn(finalStakingBalance, initialStakingBalance.add(bn(DEFAULT_STAKE_AMOUNT.div(bn(2)))), "Staking app balance should match")
+    assertBn(await staking.totalStakedFor(owner), bn(DEFAULT_STAKE_AMOUNT.div(bn(2))), "staked value should match")
   })
 
   it('fails unstaking 0 amount', async () => {
@@ -138,7 +138,7 @@ contract('Staking app', ([owner, other]) => {
       await approveAndStake({ staking, from: owner })
       await approveAndStake({ staking, from: other })
       assertBn(await staking.totalStakedAt(beforeBlockNumber), bn(0), "Staked for at before should match")
-      assertBn(await staking.totalStakedAt(lastStaked), bn(DEFAULT_STAKE_AMOUNT * 2), "Staked for at after staking should match")
+      assertBn(await staking.totalStakedAt(lastStaked), bn(DEFAULT_STAKE_AMOUNT.mul(bn(2))), "Staked for at after staking should match")
     })
 
     it('fails to call totalStakedForAt with block number greater than max uint64', async () => {
@@ -170,7 +170,7 @@ contract('Staking app', ([owner, other]) => {
       await badStaking.stake(DEFAULT_STAKE_AMOUNT, EMPTY_DATA, { from: owner })
 
       // unstake half of them, fails on token transfer
-      await assertRevert(badStaking.unstake(DEFAULT_STAKE_AMOUNT / 2, EMPTY_DATA), STAKING_ERRORS.ERROR_TOKEN_TRANSFER)
+      await assertRevert(badStaking.unstake(DEFAULT_STAKE_AMOUNT.div(bn(2)), EMPTY_DATA), STAKING_ERRORS.ERROR_TOKEN_TRANSFER)
     })
   })
 })

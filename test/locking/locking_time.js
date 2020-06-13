@@ -40,8 +40,8 @@ contract('Staking app, Time locking', ([owner]) => {
 
     // check lock values
     const { _amount, _allowance } = await staking.getLock(owner, manager.address)
-    assert.equal(_amount, DEFAULT_LOCK_AMOUNT, "locked amount should match")
-    assert.equal(_allowance, DEFAULT_LOCK_AMOUNT, "locked allowance should match")
+    assertBn(_amount, DEFAULT_LOCK_AMOUNT, "locked amount should match")
+    assertBn(_allowance, DEFAULT_LOCK_AMOUNT, "locked allowance should match")
 
     // check time values
     const { unit, start, end } = await manager.getTimeInterval(owner)
@@ -51,12 +51,12 @@ contract('Staking app, Time locking', ([owner]) => {
 
     // can not unlock
     assert.equal(await staking.canUnlock(owner, owner, manager.address, 0), false, "Shouldn't be able to unlock")
-    assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Unlocked balance should match")
+    assertBn(await staking.unlockedBalanceOf(owner), DEFAULT_STAKE_AMOUNT.sub(DEFAULT_LOCK_AMOUNT), "Unlocked balance should match")
 
     await manager.setTimestamp(endTime.add(bn(1)))
     // can unlock
     assert.equal(await staking.canUnlock(owner, owner, manager.address, 0), true, "Should be able to unlock")
-    assertBn(await staking.unlockedBalanceOf(owner), bn(DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT), "Unlocked balance should match")
+    assertBn(await staking.unlockedBalanceOf(owner), DEFAULT_STAKE_AMOUNT.sub(DEFAULT_LOCK_AMOUNT), "Unlocked balance should match")
   })
 
   it('locks using blocks', async () => {
@@ -66,8 +66,8 @@ contract('Staking app, Time locking', ([owner]) => {
 
     // check lock values
     const { _amount, _allowance } = await staking.getLock(owner, manager.address)
-    assert.equal(_amount, DEFAULT_LOCK_AMOUNT, "locked amount should match")
-    assert.equal(_allowance, DEFAULT_LOCK_AMOUNT, "locked allowance should match")
+    assertBn(_amount, DEFAULT_LOCK_AMOUNT, "locked amount should match")
+    assertBn(_allowance, DEFAULT_LOCK_AMOUNT, "locked allowance should match")
 
     // check time values
     const { unit, start, end } = await manager.getTimeInterval(owner)
@@ -77,7 +77,7 @@ contract('Staking app, Time locking', ([owner]) => {
 
     // can not unlock
     assert.equal(await staking.canUnlock(owner, owner, manager.address, 0), false, "Shouldn't be able to unlock")
-    assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Unlocked balance should match")
+    assertBn(await staking.unlockedBalanceOf(owner), DEFAULT_STAKE_AMOUNT.sub(DEFAULT_LOCK_AMOUNT), "Unlocked balance should match")
 
     await manager.setBlockNumber(endBlock.add(bn(1)))
     // can unlock
