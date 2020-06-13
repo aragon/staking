@@ -159,7 +159,7 @@ contract('Staking app, Locking funds flows', ([_, owner, user1, user2, user3]) =
     })
   })
 
-  describe.only('different origin and destiny', () => {
+  describe('different origin and destiny', () => {
     context('when user hasn’t staked', () => {
       it('check invariants', async () => {
         await checkInvariants({ staking, users, managers })
