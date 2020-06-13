@@ -3,6 +3,7 @@ const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
 const { getEventArgument, decodeEvents } = require('@aragon/contract-helpers-test/events')
 
 const { deploy } = require('../helpers/deploy')(artifacts)
+const { approveStakeAndLock } = require('../helpers/helpers')(artifacts)
 const { DEFAULT_STAKE_AMOUNT, DEFAULT_LOCK_AMOUNT, EMPTY_DATA } = require('../helpers/constants')
 const { STAKING_ERRORS } = require('../helpers/errors')
 
@@ -35,13 +36,6 @@ contract('Staking app, Locking and calling', ([owner, user1, user2]) => {
   const allowsLockManager = (LockManager) => {
     let lockManager
 
-    const approveStakeAndLock = async (data) => {
-      await token.approve(staking.address, DEFAULT_STAKE_AMOUNT, { from: user1 })
-      await staking.stake(DEFAULT_STAKE_AMOUNT, EMPTY_DATA, { from: user1 })
-      const receipt = await staking.allowManagerAndLock(DEFAULT_LOCK_AMOUNT, lockManager.address, DEFAULT_STAKE_AMOUNT, data, { from: user1 })
-
-      return receipt
-    }
 
     beforeEach('deploy lock manager', async () => {
       lockManager = await LockManager.new()
@@ -50,26 +44,26 @@ contract('Staking app, Locking and calling', ([owner, user1, user2]) => {
     describe('allows lock manager and locks', () => {
       it('and calls lock manager, with just the signature', async () => {
         const data = CALLBACK_DATA
-        const receipt = await approveStakeAndLock(data)
+        const receipt = await approveStakeAndLock({ staking, manager: lockManager.address, allowanceAmount: DEFAULT_STAKE_AMOUNT, data, from: user1 })
         checkCallbackLog(receipt, data)
       })
 
       it('and calls lock manager, with added data', async () => {
         const data = CALLBACK_DATA + '0'.repeat(63) + '1'
-        const receipt = await approveStakeAndLock(data)
+        const receipt = await approveStakeAndLock({ staking, manager: lockManager.address, allowanceAmount: DEFAULT_STAKE_AMOUNT, data, from: user1 })
         checkCallbackLog(receipt, data)
       })
 
       it('but doesn’t call lock manager without proper data', async () => {
         // some random data
         const data = '0x1234'
-        const receipt = await approveStakeAndLock(data)
+        const receipt = await approveStakeAndLock({ staking, manager: lockManager.address, allowanceAmount: DEFAULT_STAKE_AMOUNT, data, from: user1 })
 
         assert.equal(decodeEvents(receipt.receipt, LockManager.abi, 'LogLockCallback').length, 0, 'There should be no logs')
       })
 
       it('but doesn’t call lock manager with empty data', async () => {
-        const receipt = await approveStakeAndLock(EMPTY_DATA)
+        const receipt = await approveStakeAndLock({ staking, manager: lockManager.address, allowanceAmount: DEFAULT_STAKE_AMOUNT, data: EMPTY_DATA, from: user1 })
 
         assert.equal(decodeEvents(receipt.receipt, LockManager.abi, 'LogLockCallback').length, 0, 'There should be no logs')
       })

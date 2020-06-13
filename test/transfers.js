@@ -1,27 +1,13 @@
 const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
-const { MAX_UINT64 } = require('@aragon/contract-helpers-test/numbers')
+const { assertBn, bn, MAX_UINT64 } = require('@aragon/contract-helpers-test/numbers')
 
 const { deploy } = require('./helpers/deploy')(artifacts)
+const { approveAndStake, approveStakeAndLock } = require('./helpers/helpers')(artifacts)
 const { DEFAULT_STAKE_AMOUNT, DEFAULT_LOCK_AMOUNT, EMPTY_DATA, ZERO_ADDRESS } = require('./helpers/constants')
 const { STAKING_ERRORS } = require('./helpers/errors')
 
 contract('Staking app, Transferring', ([owner, user1, user2]) => {
   let staking, token, lockManager
-
-  const approveAndStake = async (amount = DEFAULT_STAKE_AMOUNT, from = owner) => {
-    await token.approve(staking.address, amount, { from })
-    await staking.stake(amount, EMPTY_DATA, { from })
-  }
-
-  const approveStakeAndLock = async (
-    manager,
-    lockAmount = DEFAULT_LOCK_AMOUNT,
-    stakeAmount = DEFAULT_STAKE_AMOUNT,
-    from = owner
-  ) => {
-    await approveAndStake(stakeAmount, from)
-    await staking.allowManagerAndLock(lockAmount, manager, lockAmount, EMPTY_DATA, { from })
-  }
 
   beforeEach(async () => {
     const deployment = await deploy(owner)
@@ -37,35 +23,35 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
       const transfersFromStake = (transferType) => {
         it('transfers', async () => {
           //const initialTotalStake = await staking.totalStaked()
-          const transferAmount = DEFAULT_STAKE_AMOUNT / 2
-          await approveAndStake()
+          const transferAmount = DEFAULT_STAKE_AMOUNT.div(bn(2))
+          await approveAndStake({ staking, from: owner })
           await staking[transferType](user1, transferAmount)
 
-          assert.equal((await staking.unlockedBalanceOf(owner)).toString(), DEFAULT_STAKE_AMOUNT - transferAmount, "Owner balance should match")
+          assertBn(await staking.unlockedBalanceOf(owner), DEFAULT_STAKE_AMOUNT.sub(transferAmount), "Owner balance should match")
 
-          const userStakedBalance = transferType == 'transfer' ? transferAmount : 0
-          assert.equal((await staking.unlockedBalanceOf(user1)).toString(), userStakedBalance, "User 1 unlocked balance should match")
+          const userStakedBalance = transferType == 'transfer' ? transferAmount : bn(0)
+          assertBn(await staking.unlockedBalanceOf(user1), userStakedBalance, "User 1 unlocked balance should match")
 
-          const userExternalBalance = transferType == 'transfer' ? 0 : transferAmount
-          assert.equal((await token.balanceOf(user1)).toString(), userExternalBalance, "User 1 external balance should match")
+          const userExternalBalance = transferType == 'transfer' ? bn(0) : transferAmount
+          assertBn(await token.balanceOf(user1), userExternalBalance, "User 1 external balance should match")
 
           // total stake
-          const totalStaked = transferType == 'transfer' ? DEFAULT_STAKE_AMOUNT : DEFAULT_STAKE_AMOUNT - transferAmount
-          assert.equal((await staking.totalStaked()).toString(), totalStaked, "Total stake should match")
+          const totalStaked = transferType == 'transfer' ? DEFAULT_STAKE_AMOUNT : DEFAULT_STAKE_AMOUNT.sub(transferAmount)
+          assertBn(await staking.totalStaked(), totalStaked, "Total stake should match")
         })
 
         it('fails transferring zero tokens', async () => {
-          await approveAndStake()
+          await approveAndStake({ staking, from: owner })
           await assertRevert(staking[transferType](user1, 0), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
         })
 
         it('fails transferring more than staked balance', async () => {
-          await approveAndStake(DEFAULT_STAKE_AMOUNT)
-          await assertRevert(staking[transferType](user1, DEFAULT_STAKE_AMOUNT + 1), STAKING_ERRORS.ERROR_NOT_ENOUGH_BALANCE)
+          await approveAndStake({ staking, amount: DEFAULT_STAKE_AMOUNT, from: owner })
+          await assertRevert(staking[transferType](user1, DEFAULT_STAKE_AMOUNT.add(bn(1))), STAKING_ERRORS.ERROR_NOT_ENOUGH_BALANCE)
         })
 
         it('fails transferring more than unlocked balance', async () => {
-          await approveStakeAndLock(lockManager.address)
+          await approveStakeAndLock({ staking, manager: lockManager.address, from: owner })
           await assertRevert(staking[transferType](user1, DEFAULT_STAKE_AMOUNT), STAKING_ERRORS.ERROR_NOT_ENOUGH_BALANCE)
         })
       }
@@ -81,63 +67,63 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
 
     const transfersFromLock = (transferType) => {
       it('transfers', async () => {
-        await approveStakeAndLock(lockManager.address)
-        const transferAmount = DEFAULT_LOCK_AMOUNT / 2
+        await approveStakeAndLock({ staking, manager: lockManager.address, from: owner })
+        const transferAmount = DEFAULT_LOCK_AMOUNT.div(bn(2))
         await lockManager[transferType](staking.address, owner, user1, transferAmount)
 
-        assert.equal((await staking.unlockedBalanceOf(owner)).toString(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Owner balance should match")
-        const userUnlockedBalance = transferType == 'slash' ? transferAmount : 0
-        assert.equal((await staking.unlockedBalanceOf(user1)).toString(), userUnlockedBalance, "User 1 unlocked balance should match")
+        assertBn(await staking.unlockedBalanceOf(owner), DEFAULT_STAKE_AMOUNT.sub(DEFAULT_LOCK_AMOUNT), "Owner balance should match")
+        const userUnlockedBalance = transferType == 'slash' ? transferAmount : bn(0)
+        assertBn(await staking.unlockedBalanceOf(user1), userUnlockedBalance, "User 1 unlocked balance should match")
 
-        const userExternalBalance = transferType == 'slash' ? 0 : transferAmount
-        assert.equal((await token.balanceOf(user1)).toString(), userExternalBalance, "User 1 external balance should match")
+        const userExternalBalance = transferType == 'slash' ? bn(0) : transferAmount
+        assertBn(await token.balanceOf(user1), userExternalBalance, "User 1 external balance should match")
 
         // total stake
-        const totalStaked = transferType == 'slash' ? DEFAULT_STAKE_AMOUNT : DEFAULT_STAKE_AMOUNT - transferAmount
-        assert.equal((await staking.totalStaked()).toString(), totalStaked, "Total stake should match")
+        const totalStaked = transferType == 'slash' ? DEFAULT_STAKE_AMOUNT : DEFAULT_STAKE_AMOUNT.sub(transferAmount)
+        assertBn(await staking.totalStaked(), totalStaked, "Total stake should match")
 
         // check lock values
         const { _amount: amount, _data: data }  = await staking.getLock(owner, lockManager.address)
-        assert.equal(amount, DEFAULT_LOCK_AMOUNT - transferAmount, "locked amount should match")
+        assertBn(amount, DEFAULT_LOCK_AMOUNT.sub(transferAmount), "locked amount should match")
       })
 
       it('transfers the whole lock amount', async () => {
-        await approveStakeAndLock(lockManager.address)
+        await approveStakeAndLock({ staking, manager: lockManager.address, from: owner })
         await lockManager[transferType](staking.address, owner, user1, DEFAULT_LOCK_AMOUNT)
 
-        assert.equal((await staking.unlockedBalanceOf(owner)).toString(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Owner balance should match")
-        const userUnlockedBalance = transferType == 'slash' ? DEFAULT_LOCK_AMOUNT : 0
-        assert.equal((await staking.unlockedBalanceOf(user1)).toString(), userUnlockedBalance, "User 1 unlocked balance should match")
+        assertBn(await staking.unlockedBalanceOf(owner), DEFAULT_STAKE_AMOUNT.sub(DEFAULT_LOCK_AMOUNT), "Owner balance should match")
+        const userUnlockedBalance = transferType == 'slash' ? DEFAULT_LOCK_AMOUNT : bn(0)
+        assertBn(await staking.unlockedBalanceOf(user1), userUnlockedBalance, "User 1 unlocked balance should match")
 
-        const userExternalBalance = transferType == 'slash' ? 0 : DEFAULT_LOCK_AMOUNT
-        assert.equal((await token.balanceOf(user1)).toString(), userExternalBalance, "User 1 external balance should match")
+        const userExternalBalance = transferType == 'slash' ? bn(0) : DEFAULT_LOCK_AMOUNT
+        assertBn(await token.balanceOf(user1), userExternalBalance, "User 1 external balance should match")
 
         // total stake
-        const totalStaked = transferType == 'slash' ? DEFAULT_STAKE_AMOUNT : DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT
-        assert.equal((await staking.totalStaked()).toString(), totalStaked, "Total stake should match")
+        const totalStaked = transferType == 'slash' ? DEFAULT_STAKE_AMOUNT : DEFAULT_STAKE_AMOUNT.sub(DEFAULT_LOCK_AMOUNT)
+        assertBn(await staking.totalStaked(), totalStaked, "Total stake should match")
 
         // check lock values
         const { _amount: amount, _data: data }  = await staking.getLock(owner, lockManager.address)
-        assert.equal(amount, 0, "locked amount should match")
+        assertBn(amount, bn(0), "locked amount should match")
       })
 
       it('fails transferring zero tokens', async () => {
-        await approveStakeAndLock(lockManager.address)
+        await approveStakeAndLock({ staking, manager: lockManager.address, from: owner })
         await assertRevert(lockManager[transferType](staking.address, owner, user1, 0), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
       })
 
       it('fails transferring more than locked balance', async () => {
-        await approveStakeAndLock(lockManager.address)
-        await assertRevert(lockManager[transferType](staking.address, owner, user1, DEFAULT_LOCK_AMOUNT + 1), STAKING_ERRORS.ERROR_NOT_ENOUGH_LOCK)
+        await approveStakeAndLock({ staking, manager: lockManager.address, from: owner })
+        await assertRevert(lockManager[transferType](staking.address, owner, user1, DEFAULT_LOCK_AMOUNT.add(bn(1))), STAKING_ERRORS.ERROR_NOT_ENOUGH_LOCK)
       })
 
       it('fails if sender is not manager', async () => {
-        await approveStakeAndLock(user1)
+        await approveStakeAndLock({ staking, manager: user1, from: owner })
         await assertRevert(lockManager[transferType](staking.address, owner, user1, DEFAULT_LOCK_AMOUNT), STAKING_ERRORS.ERROR_NOT_ENOUGH_LOCK)
       })
 
       it('fails transferring from unlocked lock', async () => {
-        await approveStakeAndLock(lockManager.address)
+        await approveStakeAndLock({ staking, manager: lockManager.address, from: owner })
         // unlock
         await lockManager.unlockAndRemoveManager(staking.address, owner)
         await assertRevert(lockManager[transferType](staking.address, owner, user2, DEFAULT_LOCK_AMOUNT, { from: user1 }), STAKING_ERRORS.ERROR_NOT_ENOUGH_LOCK)

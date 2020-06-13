@@ -1,5 +1,25 @@
 # Entry points
 
+Funds flows with the same origin and destiny:
+
+| From   | To     | Name    |
+|--------|--------|---------|
+| Wallet | Stake  | stake   |
+| Stake  | Wallet | unstake |
+| Stake  | Lock   | lock    |
+| Lock   | Stake  | unlock  |
+
+Funds flows with different origin and destiny:
+
+
+| From   | To     | Name               |
+|--------|--------|--------------------|
+| Wallet | Stake  | stakeFor           |
+| Stake  | Stake  | transfer           |
+| Stake  | Wallet | transferAndUnstake |
+| Lock   | Stake  | slash              |
+| Lock   | Wallet | slashAndUnstake    |
+
 ### initialize
 
 This is used by the Staking Factory when creating a new proxy. See deployment section for more details.

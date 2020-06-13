@@ -2,6 +2,7 @@ const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
 const { bn, assertBn } = require('@aragon/contract-helpers-test/numbers')
 
 const { deploy } = require('../helpers/deploy')(artifacts)
+const { approveAndStake } = require('../helpers/helpers')(artifacts)
 const { DEFAULT_STAKE_AMOUNT, DEFAULT_LOCK_AMOUNT, EMPTY_DATA } = require('../helpers/constants')
 const { STAKING_ERRORS, TIME_LOCK_MANAGER_ERRORS } = require('../helpers/errors')
 
@@ -16,13 +17,8 @@ contract('Staking app, Time locking', ([owner]) => {
   const DEFAULT_TIME = 1000
   const DEFAULT_BLOCKS = 10
 
-  const approveAndStake = async(amount = DEFAULT_STAKE_AMOUNT) => {
-    await token.approve(staking.address, amount)
-    await staking.stake(amount, EMPTY_DATA)
-  }
-
   const approveStakeAndLock = async(unit, start, end, lockAmount = DEFAULT_LOCK_AMOUNT, stakeAmount = DEFAULT_STAKE_AMOUNT) => {
-    await approveAndStake(stakeAmount)
+    await approveAndStake({ staking, amount: stakeAmount, from: owner })
     // allow manager
     await staking.allowManager(manager.address, lockAmount, EMPTY_DATA)
     // lock amount
@@ -44,8 +40,8 @@ contract('Staking app, Time locking', ([owner]) => {
 
     // check lock values
     const { _amount, _allowance } = await staking.getLock(owner, manager.address)
-    assert.equal(_amount, DEFAULT_LOCK_AMOUNT, "locked amount should match")
-    assert.equal(_allowance, DEFAULT_LOCK_AMOUNT, "locked allowance should match")
+    assertBn(_amount, DEFAULT_LOCK_AMOUNT, "locked amount should match")
+    assertBn(_allowance, DEFAULT_LOCK_AMOUNT, "locked allowance should match")
 
     // check time values
     const { unit, start, end } = await manager.getTimeInterval(owner)
@@ -55,12 +51,12 @@ contract('Staking app, Time locking', ([owner]) => {
 
     // can not unlock
     assert.equal(await staking.canUnlock(owner, owner, manager.address, 0), false, "Shouldn't be able to unlock")
-    assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Unlocked balance should match")
+    assertBn(await staking.unlockedBalanceOf(owner), DEFAULT_STAKE_AMOUNT.sub(DEFAULT_LOCK_AMOUNT), "Unlocked balance should match")
 
     await manager.setTimestamp(endTime.add(bn(1)))
     // can unlock
     assert.equal(await staking.canUnlock(owner, owner, manager.address, 0), true, "Should be able to unlock")
-    assertBn(await staking.unlockedBalanceOf(owner), bn(DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT), "Unlocked balance should match")
+    assertBn(await staking.unlockedBalanceOf(owner), DEFAULT_STAKE_AMOUNT.sub(DEFAULT_LOCK_AMOUNT), "Unlocked balance should match")
   })
 
   it('locks using blocks', async () => {
@@ -70,8 +66,8 @@ contract('Staking app, Time locking', ([owner]) => {
 
     // check lock values
     const { _amount, _allowance } = await staking.getLock(owner, manager.address)
-    assert.equal(_amount, DEFAULT_LOCK_AMOUNT, "locked amount should match")
-    assert.equal(_allowance, DEFAULT_LOCK_AMOUNT, "locked allowance should match")
+    assertBn(_amount, DEFAULT_LOCK_AMOUNT, "locked amount should match")
+    assertBn(_allowance, DEFAULT_LOCK_AMOUNT, "locked allowance should match")
 
     // check time values
     const { unit, start, end } = await manager.getTimeInterval(owner)
@@ -81,7 +77,7 @@ contract('Staking app, Time locking', ([owner]) => {
 
     // can not unlock
     assert.equal(await staking.canUnlock(owner, owner, manager.address, 0), false, "Shouldn't be able to unlock")
-    assert.equal((await staking.unlockedBalanceOf(owner)).valueOf(), DEFAULT_STAKE_AMOUNT - DEFAULT_LOCK_AMOUNT, "Unlocked balance should match")
+    assertBn(await staking.unlockedBalanceOf(owner), DEFAULT_STAKE_AMOUNT.sub(DEFAULT_LOCK_AMOUNT), "Unlocked balance should match")
 
     await manager.setBlockNumber(endBlock.add(bn(1)))
     // can unlock
@@ -110,7 +106,7 @@ contract('Staking app, Time locking', ([owner]) => {
     const startTime = await manager.getTimestampExt()
     const endTime = startTime.add(bn(DEFAULT_TIME))
 
-    await approveAndStake(DEFAULT_STAKE_AMOUNT)
+    await ({ staking, amount: DEFAULT_STAKE_AMOUNT, from: owner })
     // allow manager
     await staking.allowManager(manager.address, DEFAULT_STAKE_AMOUNT, EMPTY_DATA)
     // times are reverted!

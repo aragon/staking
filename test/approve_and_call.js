@@ -1,4 +1,5 @@
 const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
+const { bn, assertBn } = require('@aragon/contract-helpers-test/numbers')
 
 const { DEFAULT_STAKE_AMOUNT, EMPTY_DATA, ZERO_ADDRESS } = require('./helpers/constants')
 const { STAKING_ERRORS } = require('./helpers/errors')
@@ -6,14 +7,11 @@ const { STAKING_ERRORS } = require('./helpers/errors')
 const StakingMock = artifacts.require('StakingMock')
 const MiniMeToken = artifacts.require('MiniMeToken')
 
-const fromBn = n => parseInt(n.valueOf(), 10)
-const getTokenBalance = async (token, account) =>  fromBn(await token.balanceOf(account))
-
 contract('Staking app, Approve and call fallback', ([owner, user]) => {
   let staking, token, stakingAddress, tokenAddress
 
   beforeEach(async () => {
-    const initialAmount = 1000 * DEFAULT_STAKE_AMOUNT
+    const initialAmount = DEFAULT_STAKE_AMOUNT.mul(bn(1000))
     const tokenContract = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'Test Token', 18, 'TT', true)
     token = tokenContract
     tokenAddress = tokenContract.address
@@ -24,18 +22,18 @@ contract('Staking app, Approve and call fallback', ([owner, user]) => {
   })
 
   it('stakes through approveAndCall', async () => {
-    const initialUserBalance = await getTokenBalance(token, user)
-    const initialStakingBalance = await getTokenBalance(token, stakingAddress)
+    const initialUserBalance = await token.balanceOf(user)
+    const initialStakingBalance = await token.balanceOf(stakingAddress)
 
     await token.approveAndCall(stakingAddress, DEFAULT_STAKE_AMOUNT, EMPTY_DATA, { from: user })
 
-    const finalUserBalance = await getTokenBalance(token, user)
-    const finalStakingBalance = await getTokenBalance(token, stakingAddress)
-    assert.equal(finalUserBalance, initialUserBalance - DEFAULT_STAKE_AMOUNT, "user balance should match")
-    assert.equal(finalStakingBalance, initialStakingBalance + DEFAULT_STAKE_AMOUNT, "Staking app balance should match")
-    assert.equal((await staking.totalStakedFor(user)).valueOf(), DEFAULT_STAKE_AMOUNT, "staked value should match")
+    const finalUserBalance = await token.balanceOf(user)
+    const finalStakingBalance = await token.balanceOf(stakingAddress)
+    assertBn(finalUserBalance, initialUserBalance.sub(DEFAULT_STAKE_AMOUNT), "user balance should match")
+    assertBn(finalStakingBalance, initialStakingBalance.add(DEFAULT_STAKE_AMOUNT), "Staking app balance should match")
+    assertBn(await staking.totalStakedFor(user), DEFAULT_STAKE_AMOUNT, "staked value should match")
     // total stake
-    assert.equal((await staking.totalStaked()).toString(), DEFAULT_STAKE_AMOUNT, "Total stake should match")
+    assertBn(await staking.totalStaked(), DEFAULT_STAKE_AMOUNT, "Total stake should match")
   })
 
   it('fails staking 0 amount through approveAndCall', async () => {
