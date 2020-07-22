@@ -28,7 +28,7 @@ contract TimeLockManager is ILockManager, TimeHelpers {
 
     mapping (address => TimeInterval) internal timeIntervals;
 
-    event LogLockCallback(uint256 amount, uint256 allowance, bytes data);
+    event LogLockCallback(address owner, uint256 amount, uint256 allowance, bytes data);
 
     /**
      * @notice Set a locked amount, along with a time interval, either in blocks or seconds during which the funds are locked.
@@ -49,12 +49,13 @@ contract TimeLockManager is ILockManager, TimeHelpers {
 
     /**
      * @notice Callback called from Staking when a new lock manager instance of this contract is allowed
+     * @param _owner Owner of the lock
      * @param _amount The amount of tokens to be locked
      * @param _allowance Amount of tokens that the manager can lock
      * @param _data Data to parametrize logic for the lock to be enforced by the manager
      */
-    function receiveLock(uint256 _amount, uint256 _allowance, bytes _data) external returns (bool) {
-        emit LogLockCallback(_amount, _allowance, _data);
+    function receiveLock(address _owner, uint256 _amount, uint256 _allowance, bytes _data) external returns (bool) {
+        emit LogLockCallback(_owner, _amount, _allowance, _data);
         return true;
     }
 

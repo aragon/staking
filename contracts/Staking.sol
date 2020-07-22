@@ -514,7 +514,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     function _callLockManagerCallback(uint256 _amount, address _lockManager, uint256 _allowance, bytes _data) internal {
         (bytes4 signature, bytes memory extraData) = _splitData(_data);
         if (signature == ILockManager(_lockManager).receiveLock.selector) {
-            require(ILockManager(_lockManager).receiveLock(_amount, _allowance, extraData), ERROR_LOCKMANAGER_CALL_FAIL);
+            require(ILockManager(_lockManager).receiveLock(msg.sender, _amount, _allowance, extraData), ERROR_LOCKMANAGER_CALL_FAIL);
         }
     }
 

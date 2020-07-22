@@ -5,7 +5,7 @@ import "../../Staking.sol";
 
 
 contract BadLockManagerMock is ILockManager {
-    function receiveLock(uint256, uint256, bytes) external returns (bool) {
+    function receiveLock(address, uint256, uint256, bytes) external returns (bool) {
         return false;
     }
 

@@ -19,7 +19,7 @@ const getDeepEventArgument = (receipt, contractAbi, eventName, argument, index=0
 contract('Staking app, Locking and calling', ([owner, user1, user2]) => {
   let staking, token
 
-  const RECEIVE_LOCK_SIGNATURE = sha3('receiveLock(uint256,uint256,bytes)').slice(0, 10)
+  const RECEIVE_LOCK_SIGNATURE = sha3('receiveLock(address,uint256,uint256,bytes)').slice(0, 10)
 
   beforeEach(async () => {
     const deployment = await deploy(user1)
@@ -27,7 +27,8 @@ contract('Staking app, Locking and calling', ([owner, user1, user2]) => {
     staking = deployment.staking
   })
 
-  const checkCallbackLog = (receipt, data, lockAmount = DEFAULT_LOCK_AMOUNT) => {
+  const checkCallbackLog = (receipt, data, lockAmount = DEFAULT_LOCK_AMOUNT, owner = user1) => {
+    assert.equal(getDeepEventArgument(receipt, LockManagerMock.abi, 'LogLockCallback', 'owner').toLowerCase(), owner.toLowerCase(), 'Owner in callback should match')
     assert.equal(getDeepEventArgument(receipt, LockManagerMock.abi, 'LogLockCallback', 'amount'), lockAmount, 'Amount in callback should match')
     assert.equal(getDeepEventArgument(receipt, LockManagerMock.abi, 'LogLockCallback', 'allowance'), DEFAULT_STAKE_AMOUNT, 'Allowance in callback should match')
     assert.equal(getDeepEventArgument(receipt, LockManagerMock.abi, 'LogLockCallback', 'data'), data, 'Data in callback should match')
