@@ -672,7 +672,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
             src := add(_data, 0x24)
             dst := add(extraData, 0x20)
         }
-        for(; len >= 32; len -= 32) {
+        for (; len >= 32; len -= 32) {
             assembly {
                 mstore(dst, mload(src))
             }
