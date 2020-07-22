@@ -512,8 +512,9 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     function _callLockManagerCallback(uint256 _amount, address _lockManager, uint256 _allowance, bytes _data) internal {
-        if (_toBytes4(_data) == ILockManager(_lockManager).receiveLock.selector) {
-            require(ILockManager(_lockManager).receiveLock(_amount, _allowance, _data), ERROR_LOCKMANAGER_CALL_FAIL);
+        (bytes4 signature, bytes memory extraData) = _splitData(_data);
+        if (signature == ILockManager(_lockManager).receiveLock.selector) {
+            require(ILockManager(_lockManager).receiveLock(_amount, _allowance, extraData), ERROR_LOCKMANAGER_CALL_FAIL);
         }
     }
 
@@ -649,11 +650,42 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
         return false;
     }
 
-    function _toBytes4(bytes memory _data) internal pure returns (bytes4 result) {
+    /**
+    * @dev Split a bytes array into the first 4 bytes and the rest
+    *      Inspired by: https://github.com/Arachnid/solidity-stringutils/blob/master/src/strings.sol#L45
+    * @param _data Bytes array to split
+    * @return signature First 4 bytes
+    * @return extraData The remaining data in the array if any
+    */
+    function _splitData(bytes memory _data) internal pure returns (bytes4 signature, bytes memory extraData) {
         if (_data.length < 4) {
-            return bytes4(0);
+            return (bytes4(0), new bytes(0));
         }
 
-        assembly { result := mload(add(_data, 0x20)) }
+        uint256 len = _data.length - 4;
+        extraData = new bytes(len);
+        // Copy word-length chunks while possible
+        uint256 src;
+        uint256 dst;
+        assembly {
+            signature := mload(add(_data, 0x20))
+            src := add(_data, 0x24)
+            dst := add(extraData, 0x20)
+        }
+        for(; len >= 32; len -= 32) {
+            assembly {
+                mstore(dst, mload(src))
+            }
+            dst += 32;
+            src += 32;
+        }
+
+        // Copy remaining bytes
+        uint256 mask = 256 ** (32 - len) - 1;
+        assembly {
+            let srcpart := and(mload(src), not(mask))
+            let dstpart := and(mload(dst), mask)
+            mstore(dst, or(dstpart, srcpart))
+        }
     }
 }

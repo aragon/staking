@@ -19,7 +19,7 @@ const getDeepEventArgument = (receipt, contractAbi, eventName, argument, index=0
 contract('Staking app, Locking and calling', ([owner, user1, user2]) => {
   let staking, token
 
-  const CALLBACK_DATA = sha3('receiveLock(uint256,uint256,bytes)').slice(0, 10)
+  const RECEIVE_LOCK_SIGNATURE = sha3('receiveLock(uint256,uint256,bytes)').slice(0, 10)
 
   beforeEach(async () => {
     const deployment = await deploy(user1)
@@ -43,15 +43,16 @@ contract('Staking app, Locking and calling', ([owner, user1, user2]) => {
 
     describe('allows lock manager and locks', () => {
       it('and calls lock manager, with just the signature', async () => {
-        const data = CALLBACK_DATA
+        const data = RECEIVE_LOCK_SIGNATURE
         const receipt = await approveStakeAndLock({ staking, manager: lockManager.address, allowanceAmount: DEFAULT_STAKE_AMOUNT, data, from: user1 })
-        checkCallbackLog(receipt, data)
+        checkCallbackLog(receipt, null)
       })
 
       it('and calls lock manager, with added data', async () => {
-        const data = CALLBACK_DATA + '0'.repeat(63) + '1'
+        const extraData = '0'.repeat(63) + '1'
+        const data = RECEIVE_LOCK_SIGNATURE + extraData
         const receipt = await approveStakeAndLock({ staking, manager: lockManager.address, allowanceAmount: DEFAULT_STAKE_AMOUNT, data, from: user1 })
-        checkCallbackLog(receipt, data)
+        checkCallbackLog(receipt, '0x' + extraData)
       })
 
       it('but doesn’t call lock manager without proper data', async () => {
@@ -71,15 +72,16 @@ contract('Staking app, Locking and calling', ([owner, user1, user2]) => {
 
     describe('allows lock manager without locking', () => {
       it('and calls lock manager, with just the signature', async () => {
-        const data = CALLBACK_DATA
+        const data = RECEIVE_LOCK_SIGNATURE
         const receipt = await staking.allowManager(lockManager.address, DEFAULT_STAKE_AMOUNT, data, { from: user1 })
-        checkCallbackLog(receipt, data, 0)
+        checkCallbackLog(receipt, null, 0)
       })
 
       it('and calls lock manager, with added data', async () => {
-        const data = CALLBACK_DATA + '0'.repeat(63) + '1'
+        const extraData = '0'.repeat(63) + '1'
+        const data = RECEIVE_LOCK_SIGNATURE + extraData
         const receipt = await staking.allowManager(lockManager.address, DEFAULT_STAKE_AMOUNT, data, { from: user1 })
-        checkCallbackLog(receipt, data, 0)
+        checkCallbackLog(receipt, '0x' + extraData, 0)
       })
 
       it('but doesn’t call lock manager without proper data', async () => {
@@ -114,7 +116,7 @@ contract('Staking app, Locking and calling', ([owner, user1, user2]) => {
       await token.approve(staking.address, DEFAULT_STAKE_AMOUNT, { from: user1 })
       await staking.stake(DEFAULT_STAKE_AMOUNT, EMPTY_DATA, { from: user1 })
 
-      await assertRevert(staking.allowManagerAndLock(DEFAULT_LOCK_AMOUNT, badLockManager.address, DEFAULT_STAKE_AMOUNT, CALLBACK_DATA, { from: user1 }), STAKING_ERRORS.STAKING_LOCKMANAGER_CALL_FAIL)
+      await assertRevert(staking.allowManagerAndLock(DEFAULT_LOCK_AMOUNT, badLockManager.address, DEFAULT_STAKE_AMOUNT, RECEIVE_LOCK_SIGNATURE, { from: user1 }), STAKING_ERRORS.STAKING_LOCKMANAGER_CALL_FAIL)
     })
 
   })
