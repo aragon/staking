@@ -101,8 +101,6 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      */
     function allowManager(address _lockManager, uint256 _allowance, bytes _data) external isInitialized {
         _allowManager(_lockManager, _allowance, _data);
-
-        _callLockManagerCallback(0, _lockManager, _allowance, _data);
     }
 
     /**
@@ -116,8 +114,6 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
         _allowManager(_lockManager, _allowance, _data);
 
         _lockUnsafe(msg.sender, _lockManager, _amount);
-
-        _callLockManagerCallback(_amount, _lockManager, _allowance, _data);
     }
 
     /**
@@ -509,12 +505,6 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
         emit NewLockManager(msg.sender, _lockManager, _data);
 
         _increaseLockAllowance(_lockManager, lock_, _allowance);
-    }
-
-    function _callLockManagerCallback(uint256 _amount, address _lockManager, uint256 _allowance, bytes _data) internal {
-        if (_toBytes4(_data) == ILockManager(_lockManager).receiveLock.selector) {
-            require(ILockManager(_lockManager).receiveLock(_amount, _allowance, _data), ERROR_LOCKMANAGER_CALL_FAIL);
-        }
     }
 
     function _increaseLockAllowance(address _lockManager, Lock storage _lock, uint256 _allowance) internal {
