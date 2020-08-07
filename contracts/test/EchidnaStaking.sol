@@ -1,9 +1,9 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.17;
 
 import "../Staking.sol";
 import "./mocks/NoApproveTokenMock.sol";
 
-import "@aragon/os/contracts/lib/math/SafeMath.sol";
+import "@aragon/court/contracts/lib/os/SafeMath.sol";
 
 
 contract EchidnaStaking is Staking {
@@ -62,7 +62,7 @@ contract EchidnaStaking is Staking {
 
     // total staked matches less or equal than token balance
     function echidna_total_staked_is_balance() external view returns (bool) {
-        if (_totalStaked() <= stakingToken.balanceOf(this)) {
+        if (_totalStaked() <= stakingToken.balanceOf(address(this))) {
             return true;
         }
 

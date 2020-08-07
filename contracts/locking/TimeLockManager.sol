@@ -1,10 +1,10 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.17;
 
 import "../locking/ILockManager.sol";
 import "../locking/IStakingLocking.sol";
 
-import "@aragon/os/contracts/common/TimeHelpers.sol";
-import "@aragon/os/contracts/evmscript/ScriptHelpers.sol";
+import "@aragon/court/contracts/lib/os/TimeHelpers.sol";
+import "../lib/os/ScriptHelpers.sol";
 
 
 /**

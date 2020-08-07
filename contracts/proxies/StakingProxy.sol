@@ -1,8 +1,8 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.17;
 
 import "../Staking.sol";
 import "./ThinProxy.sol";
-import "@aragon/os/contracts/lib/token/ERC20.sol";
+import "@aragon/court/contracts/lib/os/ERC20.sol";
 
 
 contract StakingProxy is ThinProxy {
@@ -12,7 +12,7 @@ contract StakingProxy is ThinProxy {
     constructor(Staking _implementation, ERC20 _token) ThinProxy(address(_implementation)) public {
         bytes4 selector = _implementation.initialize.selector;
         bytes memory initializeData = abi.encodeWithSelector(selector, _token);
-        bool success = address(_implementation).delegatecall(initializeData);
+        (bool success,) = address(_implementation).delegatecall(initializeData);
 
         if (!success) {
             assembly {

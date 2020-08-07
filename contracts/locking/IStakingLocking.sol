@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.17;
 
 
 interface IStakingLocking {
@@ -11,8 +11,8 @@ interface IStakingLocking {
     event StakeTransferred(address indexed from, address to, uint256 amount);
 
 
-    function allowManager(address _lockManager, uint256 _allowance, bytes _data) external;
-    function allowManagerAndLock(uint256 _amount, address _lockManager, uint256 _allowance, bytes _data) external;
+    function allowManager(address _lockManager, uint256 _allowance, bytes calldata _data) external;
+    function allowManagerAndLock(uint256 _amount, address _lockManager, uint256 _allowance, bytes calldata _data) external;
     function unlockAndRemoveManager(address _account, address _lockManager) external;
     function increaseLockAllowance(address _lockManager, uint256 _allowance) external;
     function decreaseLockAllowance(address _account, address _lockManager, uint256 _allowance) external;

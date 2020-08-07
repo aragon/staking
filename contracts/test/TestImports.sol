@@ -1,7 +1,7 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.17;
 
-import "@aragon/apps-shared-migrations/contracts/Migrations.sol";
-import "@aragon/apps-shared-minime/contracts/MiniMeToken.sol";
+//import "@aragon/apps-shared-migrations/contracts/Migrations.sol";
+import "../lib/os/MiniMeToken.sol";
 
 // You might think this file is a bit odd, but let me explain.
 // We only use some contracts in our tests, which means Truffle

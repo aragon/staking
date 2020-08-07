@@ -1,14 +1,14 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.17;
 
 import "./standards/ERC900.sol";
 import "./locking/IStakingLocking.sol";
 import "./locking/ILockManager.sol";
 import "./lib/Checkpointing.sol";
 
-import "@aragon/os/contracts/common/Autopetrified.sol";
-import "@aragon/os/contracts/common/IsContract.sol";
-import "@aragon/os/contracts/common/SafeERC20.sol";
-import "@aragon/os/contracts/lib/math/SafeMath.sol";
+import "./lib/os/Autopetrified.sol";
+import "@aragon/court/contracts/lib/os/IsContract.sol";
+import "@aragon/court/contracts/lib/os/SafeERC20.sol";
+import "@aragon/court/contracts/lib/os/SafeMath.sol";
 
 
 contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
@@ -56,7 +56,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _stakingToken ERC20 token used for staking
      */
     function initialize(ERC20 _stakingToken) external {
-        require(isContract(_stakingToken), ERROR_TOKEN_NOT_CONTRACT);
+        require(isContract(address(_stakingToken)), ERROR_TOKEN_NOT_CONTRACT);
         initialized();
         stakingToken = _stakingToken;
     }
@@ -66,7 +66,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _amount Number of tokens staked
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
-    function stake(uint256 _amount, bytes _data) external isInitialized {
+    function stake(uint256 _amount, bytes calldata _data) external isInitialized {
         _stakeFor(msg.sender, msg.sender, _amount, _data);
     }
 
@@ -76,7 +76,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _amount Number of tokens staked
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
-    function stakeFor(address _user, uint256 _amount, bytes _data) external isInitialized {
+    function stakeFor(address _user, uint256 _amount, bytes calldata _data) external isInitialized {
         _stakeFor(msg.sender, _user, _amount, _data);
     }
 
@@ -85,7 +85,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _amount Number of tokens to unstake
      * @param _data Used in Unstaked event, to add signalling information in more complex staking applications
      */
-    function unstake(uint256 _amount, bytes _data) external isInitialized {
+    function unstake(uint256 _amount, bytes calldata _data) external isInitialized {
         // unstaking 0 tokens is not allowed
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
@@ -99,7 +99,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _allowance Amount of tokens that the manager can lock
      * @param _data Data to parametrize logic for the lock to be enforced by the manager
      */
-    function allowManager(address _lockManager, uint256 _allowance, bytes _data) external isInitialized {
+    function allowManager(address _lockManager, uint256 _allowance, bytes calldata _data) external isInitialized {
         _allowManager(_lockManager, _allowance, _data);
     }
 
@@ -110,7 +110,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _allowance Amount of tokens that the manager can lock
      * @param _data Data to parametrize logic for the lock to be enforced by the manager
      */
-    function allowManagerAndLock(uint256 _amount, address _lockManager, uint256 _allowance, bytes _data) external isInitialized {
+    function allowManagerAndLock(uint256 _amount, address _lockManager, uint256 _allowance, bytes calldata _data) external isInitialized {
         _allowManager(_lockManager, _allowance, _data);
 
         _lockUnsafe(msg.sender, _lockManager, _amount);
@@ -303,7 +303,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _token MiniMeToken that is being approved and that the call comes from
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
-    function receiveApproval(address _from, uint256 _amount, address _token, bytes _data) external isInitialized {
+    function receiveApproval(address _from, uint256 _amount, address _token, bytes calldata _data) external isInitialized {
         require(_token == msg.sender, ERROR_TOKEN_NOT_SENDER);
         require(_token == address(stakingToken), ERROR_WRONG_TOKEN);
 
@@ -437,7 +437,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
         return _canUnlockUnsafe(_sender, _user, _lockManager, _amount);
     }
 
-    function _stakeFor(address _from, address _user, uint256 _amount, bytes _data) internal {
+    function _stakeFor(address _from, address _user, uint256 _amount, bytes memory _data) internal {
         // staking 0 tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
@@ -453,7 +453,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
         emit Staked(_user, _amount, newStake, _data);
     }
 
-    function _unstake(address _from, uint256 _amount, bytes _data) internal {
+    function _unstake(address _from, uint256 _amount, bytes memory _data) internal {
         // checkpoint updated staking balance
         uint256 newStake = _modifyStakeBalance(_from, _amount, false);
 
@@ -497,7 +497,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
         totalStakedHistory.add(getBlockNumber64(), newStake);
     }
 
-    function _allowManager(address _lockManager, uint256 _allowance, bytes _data) internal {
+    function _allowManager(address _lockManager, uint256 _allowance, bytes memory _data) internal {
         Lock storage lock_ = accounts[msg.sender].locks[_lockManager];
         // check if lock exists
         require(lock_.allowance == 0, ERROR_LOCK_ALREADY_EXISTS);

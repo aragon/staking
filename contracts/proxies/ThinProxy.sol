@@ -1,7 +1,7 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.17;
 
-import "@aragon/os/contracts/common/DelegateProxy.sol";
-import "@aragon/os/contracts/common/UnstructuredStorage.sol";
+import "../lib/os/DelegateProxy.sol";
+import "../lib/os/UnstructuredStorage.sol";
 
 
 contract ThinProxy is DelegateProxy {

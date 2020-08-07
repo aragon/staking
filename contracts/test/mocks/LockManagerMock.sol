@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.17;
 
 import "../../locking/ILockManager.sol";
 import "../../Staking.sol";
@@ -24,7 +24,7 @@ contract LockManagerMock is ILockManager {
     }
 
     function setLockManager(Staking _staking, address _account, ILockManager _newManager) external {
-        _staking.setLockManager(_account, _newManager);
+        _staking.setLockManager(_account, address(_newManager));
     }
 
     function canUnlock(address, uint256) external view returns (bool) {
