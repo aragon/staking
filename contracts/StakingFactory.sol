@@ -1,8 +1,9 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.17;
+
+import "./lib/os/ERC20.sol";
 
 import "./Staking.sol";
 import "./proxies/StakingProxy.sol";
-import "@aragon/os/contracts/lib/token/ERC20.sol";
 
 
 contract StakingFactory {

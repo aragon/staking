@@ -1,10 +1,9 @@
 // Copied from https://github.com/OpenZeppelin/openzeppelin-solidity/blob/a9f910d34f0ab33a1ae5e714f69f9596a02b4d91/contracts/token/ERC20/StandardToken.sol
 
-pragma solidity 0.4.24;
+pragma solidity 0.5.17;
 
-//import "./ERC20.sol";
-import "@aragon/os/contracts/lib/token/ERC20.sol";
-import "@aragon/os/contracts/lib/math/SafeMath.sol";
+import "../../lib/os/ERC20.sol";
+import "../../lib/os/SafeMath.sol";
 
 
 /**
@@ -177,7 +176,7 @@ contract NoApproveTokenMock is ERC20 {
    * @param _amount The amount that will be created.
    */
   function _mint(address _account, uint256 _amount) internal {
-    require(_account != 0);
+    require(_account != address(0));
     totalSupply_ = totalSupply_.add(_amount);
     balances[_account] = balances[_account].add(_amount);
     emit Transfer(address(0), _account, _amount);
@@ -190,7 +189,7 @@ contract NoApproveTokenMock is ERC20 {
    * @param _amount The amount that will be burnt.
    */
   function _burn(address _account, uint256 _amount) internal {
-    require(_account != 0);
+    require(_account != address(0));
     require(_amount <= balances[_account]);
 
     totalSupply_ = totalSupply_.sub(_amount);

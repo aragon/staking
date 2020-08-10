@@ -1,9 +1,9 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.17;
 
 import "../../Staking.sol";
 
-import "@aragon/os/contracts/lib/math/SafeMath.sol";
-import "@aragon/contract-helpers-test/contracts/TimeHelpersMock.sol";
+import "../../lib/os/SafeMath.sol";
+import "./TimeHelpersMock.sol";
 
 
 contract StakingMock is Staking, TimeHelpersMock {
@@ -22,7 +22,7 @@ contract StakingMock is Staking, TimeHelpersMock {
     }
 
     constructor(ERC20 _stakingToken) public {
-        require(isContract(_stakingToken), ERROR_TOKEN_NOT_CONTRACT);
+        require(isContract(address(_stakingToken)), ERROR_TOKEN_NOT_CONTRACT);
         initialized();
         stakingToken = _stakingToken;
     }

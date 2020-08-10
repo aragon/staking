@@ -15,10 +15,7 @@
     "ganache-cli:test": "./node_modules/@aragon/contract-helpers-test/ganache-cli.sh"
   },
   "devDependencies": {
-    "@aragon/apps-shared-migrations": "1.0.0",
-    "@aragon/apps-shared-minime": "^1.0.2",
     "@aragon/contract-helpers-test": "^0.0.3",
-    "@aragon/os": "4.2.0",
     "@aragon/truffle-config-v5": "^1.0.1",
     "coveralls": "^3.0.9",
     "eth-gas-reporter": "^0.1.5",

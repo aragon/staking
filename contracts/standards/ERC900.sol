@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.17;
 
 
 // Interface for ERC900: https://eips.ethereum.org/EIPS/eip-900
@@ -11,7 +11,7 @@ interface ERC900 {
      * @param _amount Amount of tokens to be staked
      * @param _data Optional data that can be used to add signalling information in more complex staking applications
      */
-    function stake(uint256 _amount, bytes _data) external;
+    function stake(uint256 _amount, bytes calldata _data) external;
 
     /**
      * @dev Stake a certain amount of tokens in favor of someone
@@ -19,14 +19,14 @@ interface ERC900 {
      * @param _amount Amount of tokens to be staked
      * @param _data Optional data that can be used to add signalling information in more complex staking applications
      */
-    function stakeFor(address _user, uint256 _amount, bytes _data) external;
+    function stakeFor(address _user, uint256 _amount, bytes calldata _data) external;
 
     /**
      * @dev Unstake a certain amount of tokens
      * @param _amount Amount of tokens to be unstaked
      * @param _data Optional data that can be used to add signalling information in more complex staking applications
      */
-    function unstake(uint256 _amount, bytes _data) external;
+    function unstake(uint256 _amount, bytes calldata _data) external;
 
     /**
      * @dev Tell the total amount of tokens staked for an address
