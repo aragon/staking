@@ -1,10 +1,9 @@
-/*
- * SPDX-License-Identifier:    MIT
- */
+// Brought from https://github.com/aragon/aragonOS/blob/v4.3.0/contracts/common/Initializable.sol
+// Adapted to use pragma ^0.5.17 and satisfy our linter rules
 
 pragma solidity ^0.5.17;
 
-import "@aragon/court/contracts/lib/os/TimeHelpers.sol";
+import "./TimeHelpers.sol";
 import "./UnstructuredStorage.sol";
 
 

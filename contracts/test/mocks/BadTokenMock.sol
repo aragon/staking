@@ -5,8 +5,8 @@
 pragma solidity 0.5.17;
 
 //import "./ERC20.sol";
-import "@aragon/court/contracts/lib/os/ERC20.sol";
-import "@aragon/court/contracts/lib/os/SafeMath.sol";
+import "../../lib/os/ERC20.sol";
+import "../../lib/os/SafeMath.sol";
 
 
 /**

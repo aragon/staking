@@ -2,7 +2,7 @@ pragma solidity 0.5.17;
 
 import "../../Staking.sol";
 
-import "@aragon/court/contracts/lib/os/SafeMath.sol";
+import "../../lib/os/SafeMath.sol";
 import "./TimeHelpersMock.sol";
 
 

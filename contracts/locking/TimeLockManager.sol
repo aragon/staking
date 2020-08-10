@@ -1,10 +1,10 @@
 pragma solidity 0.5.17;
 
+import "../lib/os/TimeHelpers.sol";
+import "../lib/os/ScriptHelpers.sol";
+
 import "../locking/ILockManager.sol";
 import "../locking/IStakingLocking.sol";
-
-import "@aragon/court/contracts/lib/os/TimeHelpers.sol";
-import "../lib/os/ScriptHelpers.sol";
 
 
 /**

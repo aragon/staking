@@ -1,9 +1,8 @@
 pragma solidity 0.5.17;
 
-import "../Staking.sol";
-import "./mocks/NoApproveTokenMock.sol";
-
-import "@aragon/court/contracts/lib/os/SafeMath.sol";
+import "../../Staking.sol";
+import "../../lib/os/SafeMath.sol";
+import "../mocks/NoApproveTokenMock.sol";
 
 
 contract EchidnaStaking is Staking {

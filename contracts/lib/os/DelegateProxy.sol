@@ -1,7 +1,10 @@
+// Brought from https://github.com/aragon/aragonOS/blob/v4.3.0/contracts/common/Autopetrified.sol
+// Adapted to use pragma ^0.5.17 and satisfy our linter rules
+
 pragma solidity 0.5.17;
 
-import "@aragon/court/contracts/lib/os/IsContract.sol";
 import "./ERCProxy.sol";
+import "./IsContract.sol";
 
 
 contract DelegateProxy is ERCProxy, IsContract {
