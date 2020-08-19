@@ -56,11 +56,11 @@ Stakes `_amount` tokens, transferring them from `msg.sender`
 
 ### stakeFor
 
-Stakes `_amount` tokens, transferring them from caller, and assigns them to `_user`
+Stakes `_amount` tokens, transferring them from `msg.sender`, and assigns them to `_user`
 
 - **Actor:** Staking user
 - **Inputs:**
-  - **_user:** The final staker of the tokens
+  - **_user:** The receiving accounts for the tokens staked
   - **_amount:** Number of tokens staked
   - **_data:** Used in Staked event, to add signalling information in more complex staking applications
 - **Authentication:** Open
