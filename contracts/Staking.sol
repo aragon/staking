@@ -62,7 +62,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Stakes `@tokenAmount(stakingToken: address, _amount)`, transferring them from `msg.sender`
+     * @notice Stakes `@tokenAmount(self.token(): address, _amount)`, transferring them from `msg.sender`
      * @param _amount Number of tokens staked
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
@@ -71,8 +71,8 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Stakes `@tokenAmount(stakingToken: address, _amount)`, transferring them from caller, and assigns them to `_user`
-     * @param _user The final user of the tokens
+     * @notice Stakes `@tokenAmount(self.token(): address, _amount)`, transferring them from `msg.sender`, and assigns them to `_user`
+     * @param _user The receiving accounts for the tokens staked
      * @param _amount Number of tokens staked
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
@@ -81,7 +81,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Unstakes `@tokenAmount(stakingToken: address, _amount)`, returning them to the user
+     * @notice Unstakes `@tokenAmount(self.token(): address, _amount)`, returning them to the user
      * @param _amount Number of tokens to unstake
      * @param _data Used in Unstaked event, to add signalling information in more complex staking applications
      */
@@ -93,7 +93,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Allow `_lockManager` to lock up to `@tokenAmount(stakingToken: address, _allowance)` of `msg.sender`
+     * @notice Allow `_lockManager` to lock up to `@tokenAmount(self.token(): address, _allowance)` of `msg.sender`
      *         It creates a new lock, so the lock for this manager cannot exist before.
      * @param _lockManager The manager entity for this particular lock
      * @param _allowance Amount of tokens that the manager can lock
@@ -104,7 +104,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Lock `@tokenAmount(stakingToken: address, _amount)` and assign `_lockManager` as manager with `@tokenAmount(stakingToken: address, _allowance)` allowance and `_data` as data, so they can not be unstaked
+     * @notice Lock `@tokenAmount(self.token(): address, _amount)` and assign `_lockManager` as manager with `@tokenAmount(self.token(): address, _allowance)` allowance and `_data` as data, so they can not be unstaked
      * @param _amount The amount of tokens to be locked
      * @param _lockManager The manager entity for this particular lock. This entity will have full control over the lock, in particular will be able to unlock it
      * @param _allowance Amount of tokens that the manager can lock
@@ -117,7 +117,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Transfer `@tokenAmount(stakingToken: address, _amount)` to `_to`’s staked balance
+     * @notice Transfer `@tokenAmount(self.token(): address, _amount)` to `_to`’s staked balance
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
      */
@@ -126,7 +126,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Transfer `@tokenAmount(stakingToken: address, _amount)` to `_to`’s external balance (i.e. unstaked)
+     * @notice Transfer `@tokenAmount(self.token(): address, _amount)` to `_to`’s external balance (i.e. unstaked)
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
      */
@@ -136,7 +136,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Transfer `@tokenAmount(stakingToken: address, _amount)` from `_from`'s lock by `msg.sender` to `_to`
+     * @notice Transfer `@tokenAmount(self.token(): address, _amount)` from `_from`'s lock by `msg.sender` to `_to`
      * @param _from Owner of locked tokens
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
@@ -154,7 +154,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Transfer `@tokenAmount(stakingToken: address, _amount)` from `_from`'s lock by `msg.sender` to `_to` (unstaked)
+     * @notice Transfer `@tokenAmount(self.token(): address, _amount)` from `_from`'s lock by `msg.sender` to `_to` (unstaked)
      * @param _from Owner of locked tokens
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
@@ -173,7 +173,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Transfer `@tokenAmount(stakingToken: address, _transferAmount)` from `_from`'s lock by `msg.sender` to `_to`, and decrease `@tokenAmount(stakingToken: address, _decreaseAmount)` from that lock
+     * @notice Transfer `@tokenAmount(self.token(): address, _slashAmount)` from `_from`'s lock by `msg.sender` to `_to`, and decrease `@tokenAmount(self.token(): address, _unlockAmount)` from that lock
      * @param _from Owner of locked tokens
      * @param _to Recipient of the tokens
      * @param _unlockAmount Number of tokens to be unlocked
@@ -197,7 +197,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Increase allowance in `@tokenAmount(stakingToken: address, _allowance)` of lock manager `_lockManager` for user `msg.sender`
+     * @notice Increase allowance by `@tokenAmount(self.token(): address, _allowance)` of lock manager `_lockManager` for user `msg.sender`
      * @param _lockManager The manager entity for this particular lock
      * @param _allowance Amount of allowed tokens increase
      */
@@ -209,7 +209,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Decrease allowance in `@tokenAmount(stakingToken: address, _allowance)` of lock manager `_lockManager` for user `_user`
+     * @notice Decrease allowance by `@tokenAmount(self.token(): address, _allowance)` of lock manager `_lockManager` for user `_user`
      * @param _user Owner of locked tokens
      * @param _lockManager The manager entity for this particular lock
      * @param _allowance Amount of allowed tokens decrease
@@ -231,7 +231,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Increase locked amount by `@tokenAmount(stakingToken: address, _amount)` for user `_user` by lock manager `_lockManager`
+     * @notice Increase locked amount by `@tokenAmount(self.token(): address, _amount)` for user `_user` by lock manager `_lockManager`
      * @param _user Owner of locked tokens
      * @param _lockManager The manager entity for this particular lock
      * @param _amount Amount of locked tokens increase
@@ -244,7 +244,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Decrease locked amount by `@tokenAmount(stakingToken: address, _amount)` for user `_user` by lock manager `_lockManager`
+     * @notice Decrease locked amount by `@tokenAmount(self.token(): address, _amount)` for user `_user` by lock manager `_lockManager`
      * @param _user Owner of locked tokens
      * @param _lockManager The manager entity for this particular lock
      * @param _amount Amount of locked tokens decrease
@@ -426,7 +426,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Check if `_sender` can unlock `_user`'s `@tokenAmount(stakingToken: address, _amount)` locked by `_lockManager`
+     * @notice Check if `_sender` can unlock `_user`'s `@tokenAmount(self.token(): address, _amount)` locked by `_lockManager`
      * @param _sender Account that would try to unlock tokens
      * @param _user Owner of lock
      * @param _lockManager Manager of the lock for the given owner
@@ -603,7 +603,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     }
 
     /**
-     * @notice Check if `_sender` can unlock `_user`'s `@tokenAmount(stakingToken: address, _amount)` locked by `_lockManager`
+     * @notice Check if `_sender` can unlock `_user`'s `@tokenAmount(self.token(): address, _amount)` locked by `_lockManager`
      * @dev If calling this from a state modifying function trying to unlock tokens, make sure first parameter is `msg.sender`
      * @param _sender Account that would try to unlock tokens
      * @param _user Owner of lock
