@@ -618,25 +618,24 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
 
         uint256 amount = _amount == 0 ? lock_.amount : _amount;
 
+        // If the sender is the lock manager, unlocking is allowed
         if (_sender == _lockManager) {
             return true;
         }
 
-        // here we know sender is not lock manager, so it must be owner
+        // If the sender is neither the lock manager nor the owner, unlocking is not allowed
         if (_sender != _user) {
             return false;
         }
 
-        // here we know sender is owner
+        // The sender must therefore be the owner of the tokens
+        // Allow unlocking if the amount of locked tokens has already been decreased to 0
         if (amount == 0) {
             return true;
         }
 
-        if (ILockManager(_lockManager).canUnlock(_user, amount)) {
-            return true;
-        }
-
-        return false;
+        // Otherwise, check whether the lock manager allows unlocking
+        return ILockManager(_lockManager).canUnlock(_user, amount));
     }
 
     function _toBytes4(bytes memory _data) internal pure returns (bytes4 result) {
