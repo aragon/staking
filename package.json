@@ -15,8 +15,8 @@
   "scripts": {
     "compile": "truffle compile",
     "lint": "solium --dir ./contracts",
-    "test": "TRUFFLE_TEST=true npm run ganache-cli:test",
-    "test:gas": "GAS_REPORTER=true npm test",
+    "test": "TRUFFLE_TEST=true yarn ganache-cli:test",
+    "test:gas": "GAS_REPORTER=true yarn test",
     "coverage": "npx truffle run coverage",
     "truffle:dev": "node_modules/.bin/truffle dev",
     "ganache-cli:test": "./node_modules/@aragon/contract-helpers-test/ganache-cli.sh"
