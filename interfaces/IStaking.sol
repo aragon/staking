@@ -2,8 +2,8 @@ pragma solidity >=0.4 <=0.7;
 
 
 interface IStaking {
-    function allowManager(address _lockManager, uint256 _allowance, bytes calldata _data) external;
-    function allowManagerAndLock(uint256 _amount, address _lockManager, uint256 _allowance, bytes calldata _data) external;
+    function allowManager(address _lockManager, uint256 _allowance, bytes _data) external;
+    function allowManagerAndLock(uint256 _amount, address _lockManager, uint256 _allowance, bytes _data) external;
     function unlockAndRemoveManager(address _account, address _lockManager) external;
     function increaseLockAllowance(address _lockManager, uint256 _allowance) external;
     function decreaseLockAllowance(address _account, address _lockManager, uint256 _allowance) external;

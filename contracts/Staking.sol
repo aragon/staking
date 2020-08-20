@@ -635,7 +635,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
         }
 
         // Otherwise, check whether the lock manager allows unlocking
-        return ILockManager(_lockManager).canUnlock(_user, amount));
+        return ILockManager(_lockManager).canUnlock(_user, amount);
     }
 
     function _toBytes4(bytes memory _data) internal pure returns (bytes4 result) {
