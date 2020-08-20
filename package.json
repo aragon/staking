@@ -5,6 +5,13 @@
   "author": "Aragon Institution MTU <contact@aragon.one>",
   "license": "(GPL-3.0-or-later OR MIT)",
   "repository": "https://github.com/aragon/staking",
+  "files": [
+    "/abi",
+    "/build",
+    "/contracts",
+    "/interfaces",
+    "/test"
+  ],
   "scripts": {
     "compile": "truffle compile",
     "lint": "solium --dir ./contracts",
