@@ -2,7 +2,7 @@
   "name": "@aragon/staking",
   "version": "0.2.9",
   "description": "",
-  "author": "Aragon Institution MTU <contact@aragon.one>",
+  "author": "Aragon Association <legal@aragon.org>",
   "license": "(GPL-3.0-or-later OR MIT)",
   "repository": "https://github.com/aragon/staking",
   "files": [
