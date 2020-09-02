@@ -1,39 +1,21 @@
 {
-  "name": "@aragon/staking",
-  "version": "0.2.9",
-  "description": "",
-  "author": "Aragon Association <legal@aragon.org>",
+  "name": "@aragon/monorepo-staking",
+  "version": "1.0.0",
+  "private": true,
+  "author": "Aragon Assocation <legal@aragon.org>",
   "license": "(GPL-3.0-or-later OR MIT)",
-  "repository": "https://github.com/aragon/staking",
-  "files": [
-    "/abi",
-    "/build",
-    "/contracts",
-    "/interfaces",
-    "/test"
-  ],
-  "scripts": {
-    "compile": "truffle compile",
-    "lint": "solium --dir ./contracts",
-    "test": "TRUFFLE_TEST=true yarn ganache-cli:test",
-    "test:gas": "GAS_REPORTER=true yarn test",
-    "coverage": "npx truffle run coverage",
-    "truffle:dev": "node_modules/.bin/truffle dev",
-    "ganache-cli:test": "./node_modules/@aragon/contract-helpers-test/ganache-cli.sh"
-  },
   "devDependencies": {
-    "@aragon/contract-helpers-test": "^0.0.3",
-    "@aragon/truffle-config-v5": "^1.0.1",
-    "coveralls": "^3.0.9",
-    "eth-gas-reporter": "^0.1.5",
-    "ganache-cli": "^6.1.0",
-    "solidity-coverage": "^0.7.5",
-    "solium": "^1.2.3",
-    "truffle": "^5.0.34",
-    "truffle-bytecode-manager": "^1.1.1",
-    "truffle-extract": "^1.2.1",
-    "truffle-flattener": "^1.4.4",
-    "web3-eth-abi": "1.2.5",
-    "web3-utils": "1.2.5"
+    "lerna": "^3.14.1"
+  },
+  "scripts": {
+    "lint": "lerna run --scope=@aragon/staking lint",
+    "test": "lerna run --scope=@aragon/staking --stream test",
+    "test:gas": "lerna run --scope=@aragon/staking --concurrency=1 --stream test:gas",
+    "coverage": "lerna run --scope=@aragon/staking --stream coverage"
+  },
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ]
   }
 }

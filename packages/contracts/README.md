@@ -4,7 +4,7 @@
 
 A Staking app with checkpointing (implementing ERC900 interface with history) and locking.
 
-#### 📓 [Read the full documentation](/docs)
+#### 📓 [Read the full documentation](/packages/docs)
 
 ## Testing
 ### Truffle

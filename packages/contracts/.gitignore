@@ -1,0 +1,8 @@
+# coverage
+coverage
+coverage.json
+coverageEnv/
+
+# build artifacts
+build
+flattened_contracts
