@@ -16,6 +16,9 @@
   "workspaces": {
     "packages": [
       "packages/*"
+    ],
+    "nohoist": [
+      "**/@aragon/contract-helpers-test"
     ]
   }
 }
