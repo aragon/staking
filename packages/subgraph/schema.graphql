@@ -1,0 +1,39 @@
+type StakingPool @entity {
+  id: ID!
+  token: ERC20!
+  createdAt: BigInt!
+  totalStaked: BigInt!
+  totalLocked: BigInt!
+  stakes: [Stake!] @derivedFrom(field: "pool")
+}
+
+type Stake @entity {
+  id: ID!
+  user: User!
+  pool: StakingPool!
+  amount: BigInt!
+  locked: BigInt!
+  available: BigInt!
+  locks: [Lock!] @derivedFrom(field: "stake")
+}
+
+type Lock @entity {
+  id: ID!
+  stake: Stake!
+  manager: Bytes!
+  amount: BigInt!
+  allowance: BigInt!
+  createdAt: BigInt!
+}
+
+type User @entity {
+  id: ID!
+  stakes: [Stake!]
+}
+
+type ERC20 @entity {
+  id: ID!
+  name: String!
+  symbol: String!
+  decimals: Int!
+}

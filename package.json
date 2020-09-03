@@ -18,7 +18,12 @@
       "packages/*"
     ],
     "nohoist": [
-      "**/@aragon/contract-helpers-test"
+      "**/@aragon/contract-helpers-test",
+      "**/@aragon/staking",
+      "**/@graphprotocol/graph-ts",
+      "**/@graphprotocol/graph-ts/**",
+      "**/@graphprotocol/graph-cli",
+      "**/@graphprotocol/graph-cli/**"
     ]
   }
 }
