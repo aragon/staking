@@ -134,9 +134,9 @@ function loadOrCreateLock(pool: Address, user: Address, manager: Address, event:
 }
 
 function buildStakeId(pool: Address, user: Address): string {
-  return pool.toHexString() + "user" + user.toHexString()
+  return pool.toHexString() + "-user-" + user.toHexString()
 }
 
 function buildLockId(pool: Address, user: Address, manager: Address): string {
-  return buildStakeId(pool, user) + "lock" + manager.toHexString()
+  return buildStakeId(pool, user) + "-lock-" + manager.toHexString()
 }
