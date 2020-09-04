@@ -90,17 +90,20 @@ library Checkpointing {
      * @param _value Numeric value to be registered at the given point in time
      */
     function _add192(History storage self, uint64 _time, uint192 _value) private {
-        uint256 length = self.history.length;
-        if (length == 0 || self.history[self.history.length - 1].time < _time) {
-            // If there was no value registered or the given point in time is after the latest registered value,
-            // we can insert it to the history directly.
-            self.history.push(Checkpoint(_time, _value));
+        uint256 length = _self.history.length;
+        if (length == 0) {
+            _self.history.push(Checkpoint(_time, _value));
         } else {
-            // If the point in time given for the new value is not after the latest registered value, we must ensure
-            // we are only trying to update the latest value, otherwise we would be changing past data.
-            Checkpoint storage currentCheckpoint = self.history[length - 1];
-            require(_time == currentCheckpoint.time, ERROR_CANNOT_ADD_PAST_VALUE);
-            currentCheckpoint.value = _value;
+            Checkpoint storage currentCheckpoint = _self.history[length - 1];
+            uint256 currentCheckpointTime = uint256(currentCheckpoint.time);
+
+            if (_time > currentCheckpointTime) {
+                _self.history.push(Checkpoint(_time, _value));
+            } else if (_time == currentCheckpointTime) {
+                currentCheckpoint.value = _value;
+            } else { // ensure list ordering
+                revert(ERROR_PAST_CHECKPOINT);
+            }
         }
     }
 
@@ -121,18 +124,19 @@ library Checkpointing {
 
         // If the requested time is equal to or after the time of the latest registered value, return latest value
         uint256 lastIndex = length - 1;
-        if (_time >= self.history[lastIndex].time) {
-            return uint256(self.history[lastIndex].value);
+        Checkpoint storage lastCheckpoint = _self.history[lastIndex];
+        if (_time >= lastCheckpoint.time) {
+            return uint256(lastCheckpoint.value);
         }
 
         // If the requested time is previous to the first registered value, return zero to denote missing checkpoint
-        if (_time < self.history[0].time) {
+        if (length == 1 || _time < self.history[0].time) {
             return 0;
         }
 
         // Execute a binary search between the checkpointed times of the history
         uint256 low = 0;
-        uint256 high = lastIndex;
+        uint256 high = lastIndex - 1;
 
         while (high > low) {
             // No need for SafeMath: for this to overflow array size should be ~2^255
