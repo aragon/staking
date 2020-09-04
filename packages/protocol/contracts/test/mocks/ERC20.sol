@@ -5,6 +5,7 @@ pragma solidity ^0.5.17;
  * @title ERC20 interface
  * @dev see https://github.com/ethereum/EIPs/issues/20
  */
+// Note: this can probably be deduped? There's another ERC20 contract / interface
 contract ERC20 {
     function totalSupply() public view returns (uint256);
 

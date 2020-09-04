@@ -1,6 +1,7 @@
 // Brought from https://github.com/aragon/aragonOS/blob/v4.3.0/contracts/lib/token/ERC20.sol
 // Adapted to use pragma ^0.5.8 and satisfy our linter rules
 
+// Note: let's just move this to the standards/ folder. Can it also be an interface?
 pragma solidity ^0.5.8;
 
 

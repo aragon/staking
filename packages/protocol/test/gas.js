@@ -5,6 +5,7 @@ const getEvent = (receipt, event, arg) => { return receipt.logs.filter(l => l.ev
 const { deploy } = require('./helpers/deploy')(artifacts)
 const { DEFAULT_STAKE_AMOUNT, DEFAULT_LOCK_AMOUNT, EMPTY_DATA, ZERO_ADDRESS, ACTIVATED_LOCK } = require('./helpers/constants')
 
+// Note: should these be unskipped?
 contract.skip('Staking app, gas measures', accounts => {
   let staking, token, lockManager, stakingAddress, tokenAddress, lockManagerAddress
   let owner, user1, user2

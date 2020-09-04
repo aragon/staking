@@ -1,5 +1,7 @@
+// Note: perhaps we should remove the comments / etc. that are not relevant (e.g. first blood, oz) since this is just a broken mock (see the aragonOS mocks)
 // Copied from https://github.com/OpenZeppelin/openzeppelin-solidity/blob/a9f910d34f0ab33a1ae5e714f69f9596a02b4d91/contracts/token/ERC20/StandardToken.sol
 
+// Perhaps we should use the same bad token mocks as aragonOS?
 // transfer function always returns false!
 
 pragma solidity 0.5.17;

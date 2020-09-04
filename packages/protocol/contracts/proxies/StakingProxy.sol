@@ -6,6 +6,9 @@ import "../Staking.sol";
 import "./ThinProxy.sol";
 
 
+// Note: given how many interactions we are expecting for each token's staking pool, it is better
+// economically, and user-experience wise, to avoid the proxy and eat the cost of deploying a full
+// contract on each token
 contract StakingProxy is ThinProxy {
     // keccak256("aragon.network.staking")
     bytes32 internal constant IMPLEMENTATION_SLOT = 0xbd536e2e005accda865e2f0d1827f83ec8824f3ea04ecd6131b7c10058635814;

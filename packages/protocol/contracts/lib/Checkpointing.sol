@@ -4,6 +4,8 @@ pragma solidity ^0.5.17;
 /**
 * @title Checkpointing - Library to handle a historic set of numeric values
 */
+// Note: perhaps worth using the same naming / contract from
+// https://github.com/aragonone/voting-connectors/blob/master/shared/contract-utils/contracts/Checkpointing.sol?
 library Checkpointing {
     uint256 private constant MAX_UINT192 = uint256(uint192(-1));
 
@@ -38,6 +40,7 @@ library Checkpointing {
      * @param _time Point in time to register the given value
      * @param _value Numeric value to be registered at the given point in time
      */
+     // Note: do we need this to be uint256, or can we do uint192 to make it simpler?
     function add(History storage self, uint64 _time, uint256 _value) internal {
         require(_value <= MAX_UINT192, ERROR_VALUE_TOO_BIG);
         _add192(self, _time, uint192(_value));
