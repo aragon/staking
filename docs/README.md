@@ -1,4 +1,4 @@
-Staking complies with the [ERC900 interface](https://eips.ethereum.org/EIPS/eip-900) with the following added features:
+Staking complies with the [ERC-900 interface](https://eips.ethereum.org/EIPS/eip-900) and adds the following features:
 
 - Anti-sybil protection
 - Locking-slashing mechanism
@@ -16,4 +16,3 @@ More discussion behind our motivations and use cases are available [here](https:
 5. [External interface](./5-external-interface)
 6. [Deployment](./6-deployment)
 7. [Testing guide](./7-testing-guide)
-
