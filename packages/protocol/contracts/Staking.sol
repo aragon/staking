@@ -3,7 +3,7 @@ pragma solidity 0.5.17;
 import "./lib/os/SafeMath.sol";
 import "./lib/os/SafeERC20.sol";
 import "./lib/os/IsContract.sol";
-import "./lib/os/Autopetrified.sol";
+import "./lib/os/TimeHelpers.sol";
 import "./lib/Checkpointing.sol";
 
 import "./standards/ERC900.sol";
@@ -11,7 +11,7 @@ import "./locking/IStakingLocking.sol";
 import "./locking/ILockManager.sol";
 
 
-contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
+contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     using SafeMath for uint256;
     using Checkpointing for Checkpointing.History;
     using SafeERC20 for ERC20;
@@ -55,9 +55,8 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @notice Initialize Staking app with token `_stakingToken`
      * @param _stakingToken ERC20 token used for staking
      */
-    function initialize(ERC20 _stakingToken) external {
+    constructor(ERC20 _stakingToken) public {
         require(isContract(address(_stakingToken)), ERROR_TOKEN_NOT_CONTRACT);
-        initialized();
         stakingToken = _stakingToken;
     }
 
@@ -66,7 +65,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _amount Number of tokens staked
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
-    function stake(uint256 _amount, bytes calldata _data) external isInitialized {
+    function stake(uint256 _amount, bytes calldata _data) external {
         _stakeFor(msg.sender, msg.sender, _amount, _data);
     }
 
@@ -76,7 +75,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _amount Number of tokens staked
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
-    function stakeFor(address _user, uint256 _amount, bytes calldata _data) external isInitialized {
+    function stakeFor(address _user, uint256 _amount, bytes calldata _data) external {
         _stakeFor(msg.sender, _user, _amount, _data);
     }
 
@@ -85,7 +84,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _amount Number of tokens to unstake
      * @param _data Used in Unstaked event, to add signalling information in more complex staking applications
      */
-    function unstake(uint256 _amount, bytes calldata _data) external isInitialized {
+    function unstake(uint256 _amount, bytes calldata _data) external {
         // unstaking 0 tokens is not allowed
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
@@ -99,7 +98,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _allowance Amount of tokens that the manager can lock
      * @param _data Data to parametrize logic for the lock to be enforced by the manager
      */
-    function allowManager(address _lockManager, uint256 _allowance, bytes calldata _data) external isInitialized {
+    function allowManager(address _lockManager, uint256 _allowance, bytes calldata _data) external {
         _allowManager(_lockManager, _allowance, _data);
     }
 
@@ -110,7 +109,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _allowance Amount of tokens that the manager can lock
      * @param _data Data to parametrize logic for the lock to be enforced by the manager
      */
-    function allowManagerAndLock(uint256 _amount, address _lockManager, uint256 _allowance, bytes calldata _data) external isInitialized {
+    function allowManagerAndLock(uint256 _amount, address _lockManager, uint256 _allowance, bytes calldata _data) external {
         _allowManager(_lockManager, _allowance, _data);
 
         _lockUnsafe(msg.sender, _lockManager, _amount);
@@ -121,7 +120,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
      */
-    function transfer(address _to, uint256 _amount) external isInitialized {
+    function transfer(address _to, uint256 _amount) external {
         _transfer(msg.sender, _to, _amount);
     }
 
@@ -130,7 +129,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
      */
-    function transferAndUnstake(address _to, uint256 _amount) external isInitialized {
+    function transferAndUnstake(address _to, uint256 _amount) external {
         _transfer(msg.sender, _to, _amount);
         _unstake(_to, _amount, new bytes(0));
     }
@@ -141,14 +140,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
      */
-    function slash(
-        address _from,
-        address _to,
-        uint256 _amount
-    )
-        external
-        isInitialized
-    {
+    function slash(address _from, address _to, uint256 _amount) external {
         _unlockUnsafe(_from, msg.sender, _amount);
         _transfer(_from, _to, _amount);
     }
@@ -159,14 +151,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
      */
-    function slashAndUnstake(
-        address _from,
-        address _to,
-        uint256 _amount
-    )
-        external
-        isInitialized
-    {
+    function slashAndUnstake(address _from, address _to, uint256 _amount) external {
         _unlockUnsafe(_from, msg.sender, _amount);
         _transfer(_from, _to, _amount);
         _unstake(_to, _amount, new bytes(0));
@@ -186,7 +171,6 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
         uint256 _slashAmount
     )
         external
-        isInitialized
     {
         // No need to check that _slashAmount is positive, as _transfer will fail
         // No need to check that have enough locked funds, as _unlockUnsafe will fail
@@ -201,7 +185,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _lockManager The manager entity for this particular lock
      * @param _allowance Amount of allowed tokens increase
      */
-    function increaseLockAllowance(address _lockManager, uint256 _allowance) external isInitialized {
+    function increaseLockAllowance(address _lockManager, uint256 _allowance) external {
         Lock storage lock_ = accounts[msg.sender].locks[_lockManager];
         require(lock_.allowance > 0, ERROR_LOCK_DOES_NOT_EXIST);
 
@@ -214,7 +198,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _lockManager The manager entity for this particular lock
      * @param _allowance Amount of allowed tokens decrease
      */
-    function decreaseLockAllowance(address _user, address _lockManager, uint256 _allowance) external isInitialized {
+    function decreaseLockAllowance(address _user, address _lockManager, uint256 _allowance) external {
         // only owner and manager can decrease allowance
         require(msg.sender == _user || msg.sender == _lockManager, ERROR_CANNOT_CHANGE_ALLOWANCE);
         require(_allowance > 0, ERROR_AMOUNT_ZERO);
@@ -236,7 +220,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _lockManager The manager entity for this particular lock
      * @param _amount Amount of locked tokens increase
      */
-    function lock(address _user, address _lockManager, uint256 _amount) external isInitialized {
+    function lock(address _user, address _lockManager, uint256 _amount) external {
         // we are locking funds from owner account, so only owner or manager are allowed
         require(msg.sender == _user || msg.sender == _lockManager, ERROR_SENDER_NOT_ALLOWED);
 
@@ -249,7 +233,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _lockManager The manager entity for this particular lock
      * @param _amount Amount of locked tokens decrease
      */
-    function unlock(address _user, address _lockManager, uint256 _amount) external isInitialized {
+    function unlock(address _user, address _lockManager, uint256 _amount) external {
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
         // only manager and owner (if manager allows) can unlock
@@ -263,7 +247,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _user Owner of locked tokens
      * @param _lockManager Manager of the lock for the given account
      */
-    function unlockAndRemoveManager(address _user, address _lockManager) external isInitialized {
+    function unlockAndRemoveManager(address _user, address _lockManager) external {
         // only manager and owner (if manager allows) can unlock
         require(_canUnlockUnsafe(msg.sender, _user, _lockManager, 0), ERROR_CANNOT_UNLOCK);
 
@@ -285,7 +269,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _user Owner of lock
      * @param _newLockManager New lock manager
      */
-    function setLockManager(address _user, address _newLockManager) external isInitialized {
+    function setLockManager(address _user, address _newLockManager) external {
         Lock storage lock_ = accounts[_user].locks[msg.sender];
         require(lock_.allowance > 0, ERROR_LOCK_DOES_NOT_EXIST);
 
@@ -303,7 +287,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _token MiniMeToken that is being approved and that the call comes from
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
-    function receiveApproval(address _from, uint256 _amount, address _token, bytes calldata _data) external isInitialized {
+    function receiveApproval(address _from, uint256 _amount, address _token, bytes calldata _data) external {
         require(_token == msg.sender, ERROR_TOKEN_NOT_SENDER);
         require(_token == address(stakingToken), ERROR_WRONG_TOKEN);
 
@@ -322,7 +306,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @notice Get the token used by the contract for staking and locking
      * @return The token used by the contract for staking and locking
      */
-    function token() external view isInitialized returns (address) {
+    function token() external view returns (address) {
         return address(stakingToken);
     }
 
@@ -331,7 +315,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _user Account requesting for
      * @return Last block number when account's balance was modified
      */
-    function lastStakedFor(address _user) external view isInitialized returns (uint256) {
+    function lastStakedFor(address _user) external view returns (uint256) {
         return accounts[_user].stakedHistory.lastUpdate();
     }
 
@@ -340,7 +324,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _user Owner of locks
      * @return Total amount of locked tokens for the requested account
      */
-    function lockedBalanceOf(address _user) external view isInitialized returns (uint256) {
+    function lockedBalanceOf(address _user) external view returns (uint256) {
         return _lockedBalanceOf(_user);
     }
 
@@ -354,7 +338,6 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     function getLock(address _user, address _lockManager)
         external
         view
-        isInitialized
         returns (
             uint256 _amount,
             uint256 _allowance
@@ -371,7 +354,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @return Amount of staked tokens
      * @return Amount of total locked tokens
      */
-    function getBalancesOf(address _user) external view isInitialized returns (uint256 staked, uint256 locked) {
+    function getBalancesOf(address _user) external view returns (uint256 staked, uint256 locked) {
         staked = _totalStakedFor(_user);
         locked = _lockedBalanceOf(_user);
     }
@@ -381,7 +364,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _user The owner of the tokens
      * @return The amount of tokens staked by the given account
      */
-    function totalStakedFor(address _user) external view isInitialized returns (uint256) {
+    function totalStakedFor(address _user) external view returns (uint256) {
         return _totalStakedFor(_user);
     }
 
@@ -389,7 +372,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @notice Get the total amount of tokens staked by all users
      * @return The total amount of tokens staked by all users
      */
-    function totalStaked() external view isInitialized returns (uint256) {
+    function totalStaked() external view returns (uint256) {
         return _totalStaked();
     }
 
@@ -399,7 +382,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _blockNumber Block number at which we are requesting
      * @return The amount of tokens staked by the account at the given block number
      */
-    function totalStakedForAt(address _user, uint256 _blockNumber) external view isInitialized returns (uint256) {
+    function totalStakedForAt(address _user, uint256 _blockNumber) external view returns (uint256) {
         require(_blockNumber <= MAX_UINT64, ERROR_BLOCKNUMBER_TOO_BIG);
 
         return accounts[_user].stakedHistory.get(uint64(_blockNumber));
@@ -410,7 +393,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _blockNumber Block number at which we are requesting
      * @return The amount of tokens staked at the given block number
      */
-    function totalStakedAt(uint256 _blockNumber) external view isInitialized returns (uint256) {
+    function totalStakedAt(uint256 _blockNumber) external view returns (uint256) {
         require(_blockNumber <= MAX_UINT64, ERROR_BLOCKNUMBER_TOO_BIG);
 
         return totalStakedHistory.get(uint64(_blockNumber));
@@ -421,7 +404,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _user Owner of the staked but unlocked balance
      * @return Amount of tokens staked but not locked by given account
      */
-    function unlockedBalanceOf(address _user) external view isInitialized returns (uint256) {
+    function unlockedBalanceOf(address _user) external view returns (uint256) {
         return _unlockedBalanceOf(_user);
     }
 
@@ -433,7 +416,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _amount Amount of tokens to be potentially unlocked. If zero, it means the whole locked amount
      * @return Whether given lock of given owner can be unlocked by given sender
      */
-    function canUnlock(address _sender, address _user, address _lockManager, uint256 _amount) external view isInitialized returns (bool) {
+    function canUnlock(address _sender, address _user, address _lockManager, uint256 _amount) external view returns (bool) {
         return _canUnlockUnsafe(_sender, _user, _lockManager, _amount);
     }
 
