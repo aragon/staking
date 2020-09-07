@@ -3,7 +3,7 @@
 
 pragma solidity ^0.5.8;
 
-import "./ERC20.sol";
+import "../../standards/ERC20.sol";
 
 
 library SafeERC20 {

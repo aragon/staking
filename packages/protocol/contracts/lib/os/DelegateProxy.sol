@@ -3,7 +3,7 @@
 
 pragma solidity 0.5.17;
 
-import "./ERCProxy.sol";
+import "../../standards/ERCProxy.sol";
 import "./IsContract.sol";
 
 

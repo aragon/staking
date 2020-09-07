@@ -4,7 +4,6 @@
 pragma solidity ^0.5.8;
 
 
-// Note: this can probably be moved to the test/ folder or etc.
 contract Migrations {
     address public owner;
     uint256 public lastCompletedMigration;
