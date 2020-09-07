@@ -1,7 +1,6 @@
 pragma solidity 0.5.17;
 
 import "../lib/os/TimeHelpers.sol";
-import "../lib/os/ScriptHelpers.sol";
 
 import "../locking/ILockManager.sol";
 import "../locking/IStakingLocking.sol";
@@ -15,9 +14,6 @@ import "../locking/IStakingLocking.sol";
 // Note: in terms of auditing this, is this something that is more like an example (and can be moved
 // to be an example that is not directly audited with Staking's core components)?
 contract TimeLockManager is ILockManager, TimeHelpers {
-    // Note: this doesn't appear to be used? Can we remove the library?
-    using ScriptHelpers for bytes;
-
     string private constant ERROR_ALREADY_LOCKED = "TLM_ALREADY_LOCKED";
     string private constant ERROR_WRONG_INTERVAL = "TLM_WRONG_INTERVAL";
 
