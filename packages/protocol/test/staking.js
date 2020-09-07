@@ -83,6 +83,11 @@ contract('Staking app', ([owner, other]) => {
     assertBn(await staking.totalStakedFor(other), bn(DEFAULT_STAKE_AMOUNT), "staked value for other should match")
   })
 
+  it('fails staking for the same account', async () => {
+    await token.approve(stakingAddress, DEFAULT_STAKE_AMOUNT)
+    await assertRevert(staking.stakeFor(owner, DEFAULT_STAKE_AMOUNT, EMPTY_DATA), STAKING_ERRORS.ERROR_SAME_ORIGIN_DESTINY)
+  })
+
   it('unstakes', async () => {
     const initialOwnerBalance = await getTokenBalance(token, owner)
     const initialStakingBalance = await getTokenBalance(token, stakingAddress)

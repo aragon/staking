@@ -335,6 +335,17 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await assertRevert(staking.slashAndUnlock(owner, user2, decreaseAmount, transferAmount, { from: user1 }), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
   })
 
+  it('fails to transfer (slash) and unlocks in one transaction if transfer recipient is the same as sender', async () => {
+    const totalLock = bigExp(120, 18)
+    const transferAmount = bigExp(40, 18)
+    const decreaseAmount = bigExp(60, 18)
+
+    await approveStakeAndLock({ staking, manager: user1, allowanceAmount: totalLock, lockAmount: totalLock, stakeAmount: totalLock, from: owner })
+
+    // unlock and transfer
+    await assertRevert(staking.slashAndUnlock(owner, owner, decreaseAmount, transferAmount, { from: user1 }), STAKING_ERRORS.ERROR_SAME_ORIGIN_DESTINY)
+  })
+
   it('fails to transfer (slash) and unlock in one transaction if not owner nor manager', async () => {
     const totalLock = bigExp(120, 18)
     const transferAmount = bigExp(40, 18)

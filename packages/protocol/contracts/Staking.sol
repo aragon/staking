@@ -35,6 +35,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     string private constant ERROR_CANNOT_CHANGE_ALLOWANCE = "STAKING_CANNOT_CHANGE_ALLOWANCE";
     string private constant ERROR_LOCKMANAGER_CALL_FAIL = "STAKING_LOCKMANAGER_CALL_FAIL";
     string private constant ERROR_BLOCKNUMBER_TOO_BIG = "STAKING_BLOCKNUMBER_TOO_BIG";
+    string private constant ERROR_SAME_ORIGIN_DESTINY = "STAKING_SAME_ORIGIN_DESTINY";
 
     struct Lock {
         uint256 amount;
@@ -77,6 +78,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
     function stakeFor(address _user, uint256 _amount, bytes calldata _data) external isInitialized {
+        require(msg.sender != _user, ERROR_SAME_ORIGIN_DESTINY);
         _stakeFor(msg.sender, _user, _amount, _data);
     }
 
@@ -562,6 +564,7 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
     function _transfer(address _from, address _to, uint256 _amount) internal {
         // transferring 0 staked tokens is invalid
         require(_amount > 0, ERROR_AMOUNT_ZERO);
+        require(_from != _to, ERROR_SAME_ORIGIN_DESTINY);
 
         // update stakes
         _modifyStakeBalance(_from, _amount, false);

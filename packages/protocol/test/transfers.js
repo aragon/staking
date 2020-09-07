@@ -45,6 +45,11 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
           await assertRevert(staking[transferType](user1, 0), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
         })
 
+        it('fails transferring with same origin and destiny', async () => {
+          await approveAndStake({ staking, from: owner })
+          await assertRevert(staking[transferType](owner, DEFAULT_STAKE_AMOUNT), STAKING_ERRORS.ERROR_SAME_ORIGIN_DESTINY)
+        })
+
         it('fails transferring more than staked balance', async () => {
           await approveAndStake({ staking, amount: DEFAULT_STAKE_AMOUNT, from: owner })
           await assertRevert(staking[transferType](user1, DEFAULT_STAKE_AMOUNT.add(bn(1))), STAKING_ERRORS.ERROR_NOT_ENOUGH_BALANCE)
@@ -110,6 +115,11 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
       it('fails transferring zero tokens', async () => {
         await approveStakeAndLock({ staking, manager: lockManager.address, from: owner })
         await assertRevert(lockManager[transferType](staking.address, owner, user1, 0), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
+      })
+
+      it('fails transferring with same origin and destiny', async () => {
+        await approveStakeAndLock({ staking, manager: lockManager.address, from: owner })
+        await assertRevert(lockManager[transferType](staking.address, owner, owner, DEFAULT_LOCK_AMOUNT), STAKING_ERRORS.ERROR_SAME_ORIGIN_DESTINY)
       })
 
       it('fails transferring more than locked balance', async () => {
