@@ -95,16 +95,20 @@ library Checkpointing {
     function _add192(History storage self, uint64 _time, uint192 _value) private {
         uint256 length = _self.history.length;
         if (length == 0) {
+            // If there was no value registered, we can insert it to the history directly.
             _self.history.push(Checkpoint(_time, _value));
         } else {
             Checkpoint storage currentCheckpoint = _self.history[length - 1];
             uint256 currentCheckpointTime = uint256(currentCheckpoint.time);
 
             if (_time > currentCheckpointTime) {
+                // If the given point in time is after the latest registered value,
+                // we can insert it to the history directly.
                 _self.history.push(Checkpoint(_time, _value));
             } else if (_time == currentCheckpointTime) {
                 currentCheckpoint.value = _value;
             } else { // ensure list ordering
+                // The given point cannot be before latest value, as past data cannot be changed
                 revert(ERROR_PAST_CHECKPOINT);
             }
         }
