@@ -289,6 +289,9 @@ contract Staking is Autopetrified, ERC900, IStakingLocking, IsContract {
         Lock storage lock_ = accounts[_user].locks[msg.sender];
         require(lock_.allowance > 0, ERROR_LOCK_DOES_NOT_EXIST);
 
+        // cannot replace an already existing lock
+        require(accounts[_user].locks[_newLockManager].allowance == 0, ERROR_LOCK_ALREADY_EXISTS);
+
         accounts[_user].locks[_newLockManager] = lock_;
 
         delete accounts[_user].locks[msg.sender];
