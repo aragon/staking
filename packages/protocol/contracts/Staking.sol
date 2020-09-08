@@ -48,18 +48,17 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
         Checkpointing.History stakedHistory;
     }
 
-    // Note: perhaps we can rename the variable to `token`, and make it public?
-    ERC20 internal stakingToken;
+    ERC20 public token;
     mapping (address => Account) internal accounts;
     Checkpointing.History internal totalStakedHistory;
 
     /**
-     * @notice Initialize Staking app with token `_stakingToken`
-     * @param _stakingToken ERC20 token used for staking
+     * @notice Initialize Staking app with token `_token`
+     * @param _token ERC20 token used for staking
      */
-    constructor(ERC20 _stakingToken) public {
-        require(isContract(address(_stakingToken)), ERROR_TOKEN_NOT_CONTRACT);
-        stakingToken = _stakingToken;
+    constructor(ERC20 _token) public {
+        require(isContract(address(_token)), ERROR_TOKEN_NOT_CONTRACT);
+        token = _token;
     }
 
     /**
@@ -278,7 +277,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     function receiveApproval(address _from, uint256 _amount, address _token, bytes calldata _data) external {
         // Note: perhaps we can just use one revert to reduce costs here
         require(_token == msg.sender, ERROR_TOKEN_NOT_SENDER);
-        require(_token == address(stakingToken), ERROR_WRONG_TOKEN);
+        require(_token == address(token), ERROR_WRONG_TOKEN);
 
         _stakeFor(_from, _from, _amount, _data);
     }
@@ -289,14 +288,6 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
      */
     function supportsHistory() external pure returns (bool) {
         return true;
-    }
-
-    /**
-     * @notice Get the token used by the contract for staking and locking
-     * @return The token used by the contract for staking and locking
-     */
-    function token() external view returns (address) {
-        return address(stakingToken);
     }
 
     /**
@@ -420,7 +411,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
         _modifyTotalStaked(_amount, true);
 
         // pull tokens into Staking contract
-        require(stakingToken.safeTransferFrom(_from, address(this), _amount), ERROR_TOKEN_DEPOSIT);
+        require(token.safeTransferFrom(_from, address(this), _amount), ERROR_TOKEN_DEPOSIT);
 
         emit Staked(_user, _amount, newStake, _data);
     }
@@ -433,7 +424,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
         _modifyTotalStaked(_amount, false);
 
         // transfer tokens
-        require(stakingToken.safeTransfer(_from, _amount), ERROR_TOKEN_TRANSFER);
+        require(token.safeTransfer(_from, _amount), ERROR_TOKEN_TRANSFER);
 
         emit Unstaked(_from, _amount, newStake, _data);
     }
