@@ -11,6 +11,7 @@ import "./locking/IStakingLocking.sol";
 import "./locking/ILockManager.sol";
 
 
+// Note: can we also add an interface for IERC223 / IApproveAndCallFallback?
 contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     using SafeMath for uint256;
     using Checkpointing for Checkpointing.History;
@@ -47,6 +48,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
         Checkpointing.History stakedHistory;
     }
 
+    // Note: perhaps we can rename the variable to `token`, and make it public?
     ERC20 internal stakingToken;
     mapping (address => Account) internal accounts;
     Checkpointing.History internal totalStakedHistory;
@@ -130,6 +132,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
      * @param _amount Number of tokens to be transferred
      */
     function transferAndUnstake(address _to, uint256 _amount) external {
+        // Note: I understand this is to re-use functions, but it would be a nice to skip the extra transfer in-between and just inline a function to emit an event
         _transfer(msg.sender, _to, _amount);
         _unstake(_to, _amount, new bytes(0));
     }
@@ -153,6 +156,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
      */
     function slashAndUnstake(address _from, address _to, uint256 _amount) external {
         _unlockUnsafe(_from, msg.sender, _amount);
+        // Note: similar to transferAndUnstake() above
         _transfer(_from, _to, _amount);
         _unstake(_to, _amount, new bytes(0));
     }
@@ -172,8 +176,8 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     )
         external
     {
-        // No need to check that _slashAmount is positive, as _transfer will fail
-        // No need to check that have enough locked funds, as _unlockUnsafe will fail
+        // Note: I'm wondering if this is that important to protect, given the gas cost
+        // Explicitly check unlockAmount to avoid slashAndUnlock() being allowed to behave the same as slash()
         require(_unlockAmount > 0, ERROR_AMOUNT_ZERO);
 
         _unlockUnsafe(_from, msg.sender, _unlockAmount.add(_slashAmount));
@@ -269,6 +273,8 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
      * @param _user Owner of lock
      * @param _newLockManager New lock manager
      */
+    // Note: this is more like a transfer than "set"
+    // Note: is this function ever used? Do we have a use case for it?
     function setLockManager(address _user, address _newLockManager) external {
         Lock storage lock_ = accounts[_user].locks[msg.sender];
         require(lock_.allowance > 0, ERROR_LOCK_DOES_NOT_EXIST);
@@ -288,6 +294,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
     function receiveApproval(address _from, uint256 _amount, address _token, bytes calldata _data) external {
+        // Note: perhaps we can just use one revert to reduce costs here
         require(_token == msg.sender, ERROR_TOKEN_NOT_SENDER);
         require(_token == address(stakingToken), ERROR_WRONG_TOKEN);
 
@@ -499,6 +506,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     }
 
     /**
+      // Note: not sure I understand this comment, since we don't use msg.sender internally
      * @dev Assumes that sender is either owner or lock manager
      */
     function _lockUnsafe(address _user, address _lockManager, uint256 _amount) internal {
@@ -523,6 +531,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     }
 
     /**
+      // Note: could we clarify this comment? We only explicitly check `_lockManager.canUnlock()` when users call into this internal function
      * @dev Assumes `canUnlock` passes
      */
     function _unlockUnsafe(address _user, address _lockManager, uint256 _amount) internal {
@@ -621,6 +630,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
         return ILockManager(_lockManager).canUnlock(_user, amount);
     }
 
+    // Note: this function doesn't seem to be used
     function _toBytes4(bytes memory _data) internal pure returns (bytes4 result) {
         if (_data.length < 4) {
             return bytes4(0);

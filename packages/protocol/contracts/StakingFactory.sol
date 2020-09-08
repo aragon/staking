@@ -8,10 +8,12 @@ import "./Staking.sol";
 contract StakingFactory {
     mapping (address => address) internal instances;
 
+    // Note: we might as well index the token
     event NewStaking(address indexed instance, address token);
 
     constructor() public {}
 
+    // Note: in terms of code style, should we align all the params to have the _ prefix?
     function existsInstance(ERC20 token) external view returns (bool) {
         return address(getInstance(token)) != address(0);
     }

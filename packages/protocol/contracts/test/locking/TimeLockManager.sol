@@ -36,6 +36,7 @@ contract TimeLockManager is ILockManager, TimeHelpers {
      * @param _start The start of the time interval
      * @param _end The end of the time interval
      */
+    // Note: not sure if there were any discussions around this, but this interaction pattern is awkward as you approve to one contract and then call another one
     function lock(IStakingLocking _staking, address _owner, uint256 _amount, uint256 _unit, uint256 _start, uint256 _end) external {
         require(timeIntervals[_owner].end == 0, ERROR_ALREADY_LOCKED);
         require(_end > _start, ERROR_WRONG_INTERVAL);
@@ -66,4 +67,6 @@ contract TimeLockManager is ILockManager, TimeHelpers {
 
         return (timeInterval.unit, timeInterval.start, timeInterval.end);
     }
+
+    // Note: how does one unlock? We don't clear their start/end time anywhere, so the account will never be able to re-lock at a future
 }

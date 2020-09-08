@@ -4,6 +4,8 @@ const { CHECKPOINT_ERRORS } = require('../helpers/errors')
 
 const Checkpointing = artifacts.require('CheckpointingMock')
 
+// Note: should we also add some of the tests from
+// https://github.com/aragonone/voting-connectors/blob/master/shared/contract-utils/test/checkpointing.js#L1?
 contract('Checkpointing', () => {
   let checkpointing
 
