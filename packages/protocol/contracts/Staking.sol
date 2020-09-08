@@ -269,27 +269,6 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     }
 
     /**
-     * @notice Change the manager of `_user`'s lock from `msg.sender` to `_newLockManager`
-     * @param _user Owner of lock
-     * @param _newLockManager New lock manager
-     */
-    // Note: this is more like a transfer than "set"
-    // Note: is this function ever used? Do we have a use case for it?
-    function setLockManager(address _user, address _newLockManager) external {
-        Lock storage lock_ = accounts[_user].locks[msg.sender];
-        require(lock_.allowance > 0, ERROR_LOCK_DOES_NOT_EXIST);
-
-        // cannot replace an already existing lock
-        require(accounts[_user].locks[_newLockManager].allowance == 0, ERROR_LOCK_ALREADY_EXISTS);
-
-        accounts[_user].locks[_newLockManager] = lock_;
-
-        delete accounts[_user].locks[msg.sender];
-
-        emit LockManagerTransferred(_user, msg.sender, _newLockManager);
-    }
-
-    /**
      * @dev MiniMeToken ApproveAndCallFallBack compliance
      * @param _from Account approving tokens
      * @param _amount Amount of `_token` tokens being approved

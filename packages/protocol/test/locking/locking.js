@@ -374,29 +374,4 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     // try to change amount
     await assertRevert(lockManager.unlock(staking.address, owner, DEFAULT_LOCK_AMOUNT.add(bn(1))), STAKING_ERRORS.ERROR_NOT_ENOUGH_LOCK)
   })
-
-  it('change lock manager', async () => {
-    await approveStakeAndLock({ staking, manager: user1, from: owner })
-    assert.equal(await staking.canUnlock(user1, owner, user1, 0), true, "User 1 can unlock")
-    assert.equal(await staking.canUnlock(user2, owner, user1, 0), false, "User 2 can not unlock")
-    await assertRevert(staking.canUnlock(user2, owner, user2, 0), STAKING_ERRORS.ERROR_LOCK_DOES_NOT_EXIST) // it doesn’t exist
-
-    // change manager
-    await staking.setLockManager(owner, user2, { from: user1 })
-
-    await assertRevert(staking.canUnlock(user1, owner, user1, 0), STAKING_ERRORS.ERROR_LOCK_DOES_NOT_EXIST) // it doesn’t exist
-    assert.equal(await staking.canUnlock(user1, owner, user2, 0), false, "User 1 can not unlock")
-    assert.equal(await staking.canUnlock(user2, owner, user2, 0), true, "User 2 can unlock")
-  })
-
-  it('fails to change lock manager if one already exists for new lock manager', async () => {
-    await approveStakeAndLock({ staking, manager: user1, from: owner })
-    await approveStakeAndLock({ staking, manager: user2, from: owner })
-
-    await assertRevert(staking.setLockManager(owner, user2, { from: user1 }), STAKING_ERRORS.ERROR_LOCK_ALREADY_EXIST)
-  })
-
-  it('fails to change lock manager if it doesn’t exist', async () => {
-    await assertRevert(staking.setLockManager(owner, user2, { from: user1 }), STAKING_ERRORS.ERROR_LOCK_DOES_NOT_EXIST)
-  })
 })

@@ -25,7 +25,6 @@ interface IStakingLocking {
     // Note: should we prefer amount before the lock manager in the interface? The ones before have it before, the ones below have it after
     function lock(address _account, address _lockManager, uint256 _amount) external;
     function unlock(address _account, address _lockManager, uint256 _amount) external;
-    function setLockManager(address _account, address _newLockManager) external;
     function transfer(address _to, uint256 _amount) external;
     function transferAndUnstake(address _to, uint256 _amount) external;
     function slash(address _account, address _to, uint256 _amount) external;
