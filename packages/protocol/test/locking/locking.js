@@ -389,6 +389,13 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     assert.equal(await staking.canUnlock(user2, owner, user2, 0), true, "User 2 can unlock")
   })
 
+  it('fails to change lock manager if one already exists for new lock manager', async () => {
+    await approveStakeAndLock({ staking, manager: user1, from: owner })
+    await approveStakeAndLock({ staking, manager: user2, from: owner })
+
+    await assertRevert(staking.setLockManager(owner, user2, { from: user1 }), STAKING_ERRORS.ERROR_LOCK_ALREADY_EXIST)
+  })
+
   it('fails to change lock manager if it doesn’t exist', async () => {
     await assertRevert(staking.setLockManager(owner, user2, { from: user1 }), STAKING_ERRORS.ERROR_LOCK_DOES_NOT_EXIST)
   })
