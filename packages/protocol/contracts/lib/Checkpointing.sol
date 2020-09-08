@@ -4,8 +4,6 @@ pragma solidity ^0.5.17;
 /**
 * @title Checkpointing - Library to handle a historic set of numeric values
 */
-// Note: perhaps worth using the same naming / contract from
-// https://github.com/aragonone/voting-connectors/blob/master/shared/contract-utils/contracts/Checkpointing.sol?
 library Checkpointing {
     uint256 private constant MAX_UINT192 = uint256(uint192(-1));
 
