@@ -319,7 +319,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
      * @return Last block number when account's balance was modified
      */
     function lastStakedFor(address _user) external view returns (uint256) {
-        return accounts[_user].stakedHistory.lastUpdate();
+        return accounts[_user].stakedHistory.lastUpdated();
     }
 
     /**
@@ -388,7 +388,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     function totalStakedForAt(address _user, uint256 _blockNumber) external view returns (uint256) {
         require(_blockNumber <= MAX_UINT64, ERROR_BLOCKNUMBER_TOO_BIG);
 
-        return accounts[_user].stakedHistory.get(uint64(_blockNumber));
+        return accounts[_user].stakedHistory.getValueAt(uint64(_blockNumber));
     }
 
     /**
@@ -399,7 +399,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     function totalStakedAt(uint256 _blockNumber) external view returns (uint256) {
         require(_blockNumber <= MAX_UINT64, ERROR_BLOCKNUMBER_TOO_BIG);
 
-        return totalStakedHistory.get(uint64(_blockNumber));
+        return totalStakedHistory.getValueAt(uint64(_blockNumber));
     }
 
     /**
@@ -464,7 +464,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
         }
 
         // add new value to account history
-        accounts[_user].stakedHistory.add(getBlockNumber64(), newStake);
+        accounts[_user].stakedHistory.addCheckpoint(getBlockNumber64(), newStake);
 
         return newStake;
     }
@@ -480,7 +480,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
         }
 
         // add new value to total history
-        totalStakedHistory.add(getBlockNumber64(), newStake);
+        totalStakedHistory.addCheckpoint(getBlockNumber64(), newStake);
     }
 
     function _allowManager(address _lockManager, uint256 _allowance, bytes memory _data) internal {
@@ -563,7 +563,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
      */
     function _totalStakedFor(address _user) internal view returns (uint256) {
         // we assume it's not possible to stake in the future
-        return accounts[_user].stakedHistory.getLast();
+        return accounts[_user].stakedHistory.latestValue();
     }
 
     /**
@@ -572,7 +572,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
      */
     function _totalStaked() internal view returns (uint256) {
         // we assume it's not possible to stake in the future
-        return totalStakedHistory.getLast();
+        return totalStakedHistory.latestValue();
     }
 
     /**

@@ -8,23 +8,23 @@ contract CheckpointingMock {
 
     Checkpointing.History history;
 
-    function add(uint64 value, uint256 time) public {
-        history.add(value, time);
+    function addCheckpoint(uint64 value, uint256 time) public {
+        history.addCheckpoint(value, time);
     }
 
-    function getLast() public view returns (uint256) {
-        return history.getLast();
+    function latestValue() public view returns (uint256) {
+        return history.latestValue();
     }
 
-    function get(uint64 time) public view returns (uint256) {
-        return history.get(time);
+    function getValueAt(uint64 time) public view returns (uint256) {
+        return history.getValueAt(time);
     }
 
     function getHistorySize() public view returns (uint256) {
         return history.history.length;
     }
 
-    function lastUpdate() public view returns (uint256) {
-        return history.lastUpdate();
+    function lastUpdated() public view returns (uint256) {
+        return history.lastUpdated();
     }
 }

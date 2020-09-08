@@ -2,13 +2,17 @@ pragma solidity ^0.5.17;
 
 
 /**
-* @title Checkpointing - Library to handle a historic set of numeric values
-*/
+ * @title Checkpointing
+ * @notice Checkpointing library for keeping track of historical values based on an arbitrary time
+ *         unit (e.g. seconds or block numbers).
+ * @dev Inspired by:
+ *   - MiniMe token (https://github.com/aragon/minime/blob/master/contracts/MiniMeToken.sol)
+ */
 library Checkpointing {
     uint256 private constant MAX_UINT192 = uint256(uint192(-1));
 
     string private constant ERROR_VALUE_TOO_BIG = "CHECKPOINT_VALUE_TOO_BIG";
-    string private constant ERROR_CANNOT_ADD_PAST_VALUE = "CHECKPOINT_CANNOT_ADD_PAST_VALUE";
+    string private constant ERROR_PAST_CHECKPOINT = "CHECKPOINT_PAST_CHECKPOINT";
 
     /**
      * @dev To specify a value at a given point in time, we need to store two values:
@@ -38,7 +42,7 @@ library Checkpointing {
      * @param _time Point in time to register the given value
      * @param _value Numeric value to be registered at the given point in time
      */
-    function add(History storage self, uint64 _time, uint256 _value) internal {
+    function addCheckpoint(History storage self, uint64 _time, uint256 _value) internal {
         require(_value <= MAX_UINT192, ERROR_VALUE_TOO_BIG);
         _add192(self, _time, uint192(_value));
     }
@@ -46,7 +50,7 @@ library Checkpointing {
     /**
      * TODO
      */
-    function lastUpdate(History storage self) internal view returns (uint256) {
+    function lastUpdated(History storage self) internal view returns (uint256) {
         uint256 length = self.history.length;
 
         if (length > 0) {
@@ -60,7 +64,7 @@ library Checkpointing {
      * @dev Fetch the latest registered value of history, it will return zero if there was no value registered
      * @param self Checkpoints history to be queried
      */
-    function getLast(History storage self) internal view returns (uint256) {
+    function latestValue(History storage self) internal view returns (uint256) {
         uint256 length = self.history.length;
         if (length > 0) {
             return uint256(self.history[length - 1].value);
@@ -74,52 +78,12 @@ library Checkpointing {
      *      how recent it is beforehand. It will return zero if there is no registered value or if given time is
      *      previous to the first registered value.
      *      It uses a binary search.
-     * @param self Checkpoints history to be queried
-     * @param _time Point in time to query the most recent registered past value of
-     */
-    function get(History storage self, uint64 _time) internal view returns (uint256) {
-        return _binarySearch(self, _time);
-    }
-
-    /**
-     * @dev Private function to add a new value to a history for a given point in time. This function does not allow to
-     *      add values previous to the latest registered value, if the value willing to add corresponds to the latest
-     *      registered value, it will be updated.
-     * @param self Checkpoints history to be altered
-     * @param _time Point in time to register the given value
-     * @param _value Numeric value to be registered at the given point in time
-     */
-    function _add192(History storage self, uint64 _time, uint192 _value) private {
-        uint256 length = self.history.length;
-        if (length == 0) {
-            // If there was no value registered, we can insert it to the history directly.
-            self.history.push(Checkpoint(_time, _value));
-        } else {
-            Checkpoint storage currentCheckpoint = self.history[length - 1];
-            uint256 currentCheckpointTime = uint256(currentCheckpoint.time);
-
-            if (_time > currentCheckpointTime) {
-                // If the given point in time is after the latest registered value,
-                // we can insert it to the history directly.
-                self.history.push(Checkpoint(_time, _value));
-            } else if (_time == currentCheckpointTime) {
-                currentCheckpoint.value = _value;
-            } else { // ensure list ordering
-                // The given point cannot be before latest value, as past data cannot be changed
-                revert(ERROR_CANNOT_ADD_PAST_VALUE);
-            }
-        }
-    }
-
-    /**
-     * @dev Private function execute a binary search to find the most recent registered past value of a history based on
-     *      a given point in time. It will return zero if there is no registered value or if given time is previous to
-     *      the first registered value. Note that this function will be more suitable when don't know how recent the
+     *      Note that this function will be more suitable when don't know how recent the
      *      time used to index may be.
      * @param self Checkpoints history to be queried
      * @param _time Point in time to query the most recent registered past value of
      */
-    function _binarySearch(History storage self, uint64 _time) private view returns (uint256) {
+    function getValueAt(History storage self, uint64 _time) internal view returns (uint256) {
         // If there was no value registered for the given history return simply zero
         uint256 length = self.history.length;
         if (length == 0) {
@@ -159,5 +123,35 @@ library Checkpointing {
         }
 
         return uint256(self.history[low].value);
+    }
+
+    /**
+     * @dev Private function to add a new value to a history for a given point in time. This function does not allow to
+     *      add values previous to the latest registered value, if the value willing to add corresponds to the latest
+     *      registered value, it will be updated.
+     * @param self Checkpoints history to be altered
+     * @param _time Point in time to register the given value
+     * @param _value Numeric value to be registered at the given point in time
+     */
+    function _add192(History storage self, uint64 _time, uint192 _value) private {
+        uint256 length = self.history.length;
+        if (length == 0) {
+            // If there was no value registered, we can insert it to the history directly.
+            self.history.push(Checkpoint(_time, _value));
+        } else {
+            Checkpoint storage currentCheckpoint = self.history[length - 1];
+            uint256 currentCheckpointTime = uint256(currentCheckpoint.time);
+
+            if (_time > currentCheckpointTime) {
+                // If the given point in time is after the latest registered value,
+                // we can insert it to the history directly.
+                self.history.push(Checkpoint(_time, _value));
+            } else if (_time == currentCheckpointTime) {
+                currentCheckpoint.value = _value;
+            } else { // ensure list ordering
+                // The given point cannot be before latest value, as past data cannot be changed
+                revert(ERROR_PAST_CHECKPOINT);
+            }
+        }
     }
 }

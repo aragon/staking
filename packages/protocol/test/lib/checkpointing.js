@@ -12,7 +12,7 @@ contract('Checkpointing', () => {
   })
 
   const assertFetchedValue = async (time, expectedValue) => {
-    assertBn((await checkpointing.get(time)), expectedValue, 'value does not match')
+    assertBn((await checkpointing.getValueAt(time)), expectedValue, 'value does not match')
   }
 
   describe('add', () => {
@@ -24,7 +24,7 @@ contract('Checkpointing', () => {
           const time = bn(0)
 
           it('adds the new value', async () => {
-            await checkpointing.add(time, value)
+            await checkpointing.addCheckpoint(time, value)
 
             await assertFetchedValue(time, value)
           })
@@ -34,7 +34,7 @@ contract('Checkpointing', () => {
           const time= bn(1)
 
           it('adds the new value', async () => {
-            await checkpointing.add(time, value)
+            await checkpointing.addCheckpoint(time, value)
 
             await assertFetchedValue(time, value)
           })
@@ -43,16 +43,16 @@ contract('Checkpointing', () => {
 
       context('when there were some values already registered', async () => {
         beforeEach('add some values', async () => {
-          await checkpointing.add(30, 1)
-          await checkpointing.add(50, 2)
-          await checkpointing.add(90, 3)
+          await checkpointing.addCheckpoint(30, 1)
+          await checkpointing.addCheckpoint(50, 2)
+          await checkpointing.addCheckpoint(90, 3)
         })
 
         context('when the given time is previous to the latest registered value', async () => {
           const time= bn(40)
 
           it('reverts', async () => {
-            await assertRevert(checkpointing.add(time, value), CHECKPOINT_ERRORS.CANNOT_ADD_PAST_VALUE)
+            await assertRevert(checkpointing.addCheckpoint(time, value), CHECKPOINT_ERRORS.CANNOT_ADD_PAST_VALUE)
           })
         })
 
@@ -60,7 +60,7 @@ contract('Checkpointing', () => {
           const time= bn(90)
 
           it('updates the already registered value', async () => {
-            await checkpointing.add(time, value)
+            await checkpointing.addCheckpoint(time, value)
 
             await assertFetchedValue(time, value)
             await assertFetchedValue(time.add(bn(1)), value)
@@ -71,9 +71,9 @@ contract('Checkpointing', () => {
           const time= bn(95)
 
           it('adds the new last value', async () => {
-            const previousLast = await checkpointing.getLast()
+            const previousLast = await checkpointing.latestValue()
 
-            await checkpointing.add(time, value)
+            await checkpointing.addCheckpoint(time, value)
 
             await assertFetchedValue(time, value)
             await assertFetchedValue(time.add(bn(1)), value)
@@ -87,7 +87,7 @@ contract('Checkpointing', () => {
       const value = MAX_UINT256
 
       it('reverts', async () => {
-        await assertRevert(checkpointing.add(0, value), CHECKPOINT_ERRORS.VALUE_TOO_BIG)
+        await assertRevert(checkpointing.addCheckpoint(0, value), CHECKPOINT_ERRORS.VALUE_TOO_BIG)
       })
     })
   })
@@ -95,19 +95,19 @@ contract('Checkpointing', () => {
   describe('lastUpdate', () => {
     context('when there are no values registered yet', () => {
       it('returns zero', async () => {
-        assertBn((await checkpointing.lastUpdate()), bn(0), 'time does not match')
+        assertBn((await checkpointing.lastUpdated()), bn(0), 'time does not match')
       })
     })
 
     context('when there are values already registered', () => {
       beforeEach('add some values', async () => {
-        await checkpointing.add(30, 1)
-        await checkpointing.add(50, 2)
-        await checkpointing.add(90, 3)
+        await checkpointing.addCheckpoint(30, 1)
+        await checkpointing.addCheckpoint(50, 2)
+        await checkpointing.addCheckpoint(90, 3)
       })
 
       it('returns the last registered value', async () => {
-        assertBn((await checkpointing.lastUpdate()), bn(90), 'time does not match')
+        assertBn((await checkpointing.lastUpdated()), bn(90), 'time does not match')
       })
     })
   })
@@ -115,19 +115,19 @@ contract('Checkpointing', () => {
   describe('getLast', () => {
     context('when there are no values registered yet', () => {
       it('returns zero', async () => {
-        assertBn((await checkpointing.getLast()), bn(0), 'value does not match')
+        assertBn((await checkpointing.latestValue()), bn(0), 'value does not match')
       })
     })
 
     context('when there are values already registered', () => {
       beforeEach('add some values', async () => {
-        await checkpointing.add(30, 1)
-        await checkpointing.add(50, 2)
-        await checkpointing.add(90, 3)
+        await checkpointing.addCheckpoint(30, 1)
+        await checkpointing.addCheckpoint(50, 2)
+        await checkpointing.addCheckpoint(90, 3)
       })
 
       it('returns the last registered value', async () => {
-        assertBn((await checkpointing.getLast()), bn(3), 'value does not match')
+        assertBn((await checkpointing.latestValue()), bn(3), 'value does not match')
       })
     })
   })
@@ -153,9 +153,9 @@ contract('Checkpointing', () => {
 
     context('when there are values already registered', () => {
       beforeEach('add some values', async () => {
-        await checkpointing.add(30, 1)
-        await checkpointing.add(50, 2)
-        await checkpointing.add(90, 3)
+        await checkpointing.addCheckpoint(30, 1)
+        await checkpointing.addCheckpoint(50, 2)
+        await checkpointing.addCheckpoint(90, 3)
       })
 
       context('when there given time is zero', () => {
