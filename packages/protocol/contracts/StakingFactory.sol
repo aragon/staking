@@ -10,8 +10,6 @@ contract StakingFactory {
 
     event NewStaking(address indexed instance, address token);
 
-    constructor() public {}
-
     function existsInstance(ERC20 token) external view returns (bool) {
         return address(getInstance(token)) != address(0);
     }
