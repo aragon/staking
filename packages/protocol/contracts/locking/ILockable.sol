@@ -1,7 +1,7 @@
 pragma solidity ^0.5.17;
 
 
-interface IStakingLocking {
+interface ILockable {
     event NewLockManager(address indexed account, address indexed lockManager, bytes data);
     event Unlocked(address indexed account, address indexed lockManager, uint256 amount);
     event LockAmountChanged(address indexed account, address indexed lockManager, uint256 amount, bool increase);
@@ -17,8 +17,6 @@ interface IStakingLocking {
 
     function lock(address _account, uint256 _amount) external;
     function unlock(address _account, address _lockManager, uint256 _amount) external;
-    function transfer(address _to, uint256 _amount) external;
-    function transferAndUnstake(address _to, uint256 _amount) external;
     function slash(address _account, address _to, uint256 _amount) external;
     function slashAndUnstake(address _account, address _to, uint256 _amount) external;
 

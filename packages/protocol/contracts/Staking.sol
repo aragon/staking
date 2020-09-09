@@ -7,12 +7,12 @@ import "./lib/os/TimeHelpers.sol";
 import "./lib/Checkpointing.sol";
 
 import "./standards/IERC900.sol";
-import "./locking/IStakingLocking.sol";
+import "./locking/ILockable.sol";
 import "./locking/ILockManager.sol";
 
 
 // Note: can we also add an interface for IERC223 / IApproveAndCallFallback?
-contract Staking is IERC900, IStakingLocking, IsContract, TimeHelpers {
+contract Staking is IERC900, ILockable, IsContract, TimeHelpers {
     using SafeMath for uint256;
     using Checkpointing for Checkpointing.History;
     using SafeERC20 for IERC20;
