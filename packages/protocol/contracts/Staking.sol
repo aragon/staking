@@ -37,6 +37,8 @@ contract Staking is IERC900, ILockable, IERC223Recipient, IApproveAndCallFallBac
     string private constant ERROR_LOCKMANAGER_CALL_FAIL = "STAKING_LOCKMANAGER_CALL_FAIL";
     string private constant ERROR_BLOCKNUMBER_TOO_BIG = "STAKING_BLOCKNUMBER_TOO_BIG";
 
+    event StakeTransferred(address indexed from, address indexed to, uint256 amount);
+
     struct Lock {
         uint256 amount;
         uint256 allowance;  // must be greater than zero to consider the lock active, and always greater than or equal to amount
