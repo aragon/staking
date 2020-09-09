@@ -92,15 +92,6 @@
   - **_allowance:** Amount of tokens that the manager can lock
   - **_data:** Used in `NewLockManager` event and to parametrize logic for the lock to be enforced by the manager
 
-### Allow new manager and lock
-
-- **Name:** allowManagerAndLock
-- **Inputs:**
-  - **_amount:** The amount of tokens to be locked
-  - **_lockManager:** The manager entity for this particular lock
-  - **_allowance:** Amount of tokens that the manager can lock
-  - **_data:** Used in `NewLockManager` event and to parametrize logic for the lock to be enforced by the manager
-
 ### Transfer
 
 - **Name:** transfer
@@ -160,7 +151,6 @@
 - **Name:** lock
 - **Inputs:**
   - **_user:** Owner of locked tokens
-  - **_lockManager:** The manager entity for this particular lock
   - **_amount:** Amount of locked tokens increase
 
 ### Unlock

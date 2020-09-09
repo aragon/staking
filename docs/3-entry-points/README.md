@@ -202,30 +202,6 @@ It creates a new lock, so the lock for this manager cannot exist before.
   - Sets allowance for the pair owner-manager to the given amount
   - Calls lock manager callback
 
-### allowManagerAndLock
-
-Lock `_amount` staked tokens and assign `_lockManager` as manager with `_allowance` allowed tokens and `_data` as data, so they can not be unstaked
-
-- **Actor:** Staking user (owner)
-- **Inputs:**
-  - **_amount:** The amount of tokens to be locked
-  - **_lockManager:** The manager entity for this particular lock
-  - **_allowance:** Amount of tokens that the manager can lock
-  - **_data:** Used in `NewLockManager` event and to parametrize logic for the lock to be enforced by the manager
-- **Authentication:** Open. Implicitly, sender must be staking owner.
-- **Pre-flight checks:**
-  - Checks that contract has been initialized
-  - Checks that allowance input is not zero
-  - Checks that lock didn’t exist before
-  - Checks that amount input is not zero
-  - Checks that user has enough unlocked tokens available
-  - Checks that amount is not greater than allowance
-- **State transitions:**
-  - Sets allowance for the pair owner-manager to the given amount
-  - Sets the amount of tokens as locked by the manager
-  - Increases the total amount of locked tokens balance for the user
-  - Calls lock manager callback
-
 
 ### transfer
 
@@ -364,12 +340,11 @@ Decrease allowance in `_allowance` tokens of lock manager `_lockManager` for use
 
 ### lock
 
-Increase locked amount by `_amount` tokens for user `_user` by lock manager `_lockManager`
+Increase locked amount by `_amount` tokens for user `_user` by lock manager `msg.sender`
 
-- **Actor:** Staking user (owner) or lock manager
+- **Actor:** Lock manager
 - **Inputs:**
   - **_user:** Owner of locked tokens
-  - **_lockManager:** The manager entity for this particular lock
   - **_amount:** Amount of locked tokens increase
 - **Authentication:** Only owner or lock manager
 - **Pre-flight checks:**
