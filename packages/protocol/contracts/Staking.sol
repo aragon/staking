@@ -112,14 +112,25 @@ contract Staking is IERC900, IStakingLocking, IsContract, TimeHelpers {
     }
 
     /**
-     * @notice Transfer `@tokenAmount(self.token(): address, _amount)` to `_to`’s external balance (i.e. unstaked)
+     * @notice Transfer `@tokenAmount(self.token(): address, _amount)` belonging to `msg.sender`’s stake to `_to`’s external balance (i.e. unstaked)
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
      */
     function transferAndUnstake(address _to, uint256 _amount) external {
-        // Note: I understand this is to re-use functions, but it would be a nice to skip the extra transfer in-between and just inline a function to emit an event
-        _transfer(msg.sender, _to, _amount);
-        _unstake(_to, _amount, new bytes(0));
+        // transferring 0 staked tokens is invalid
+        require(_amount > 0, ERROR_AMOUNT_ZERO);
+
+        // update stake
+        uint256 newStake = _modifyStakeBalance(msg.sender, _amount, false);
+
+        // checkpoint total supply
+        _modifyTotalStaked(_amount, false);
+
+        emit Unstaked(msg.sender, _amount, newStake, new bytes(0));
+
+        // transfer tokens
+        require(token.safeTransfer(_to, _amount), ERROR_TOKEN_TRANSFER);
+
     }
 
     /**
@@ -140,10 +151,21 @@ contract Staking is IERC900, IStakingLocking, IsContract, TimeHelpers {
      * @param _amount Number of tokens to be transferred
      */
     function slashAndUnstake(address _from, address _to, uint256 _amount) external {
+        // transferring 0 staked tokens is invalid
+        require(_amount > 0, ERROR_AMOUNT_ZERO);
+
         _unlockUnsafe(_from, msg.sender, _amount);
-        // Note: similar to transferAndUnstake() above
-        _transfer(_from, _to, _amount);
-        _unstake(_to, _amount, new bytes(0));
+
+        // update stakes
+        uint256 newStake = _modifyStakeBalance(_from, _amount, false);
+
+        // checkpoint total supply
+        _modifyTotalStaked(_amount, false);
+
+        emit Unstaked(_from, _amount, newStake, new bytes(0));
+
+        // transfer tokens
+        require(token.safeTransfer(_to, _amount), ERROR_TOKEN_TRANSFER);
     }
 
     /**
