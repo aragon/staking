@@ -47,7 +47,6 @@ Stakes `_amount` tokens, transferring them from `msg.sender`
   - **_data:** Used in Staked event, to add signalling information in more complex staking applications
 - **Authentication:** Open
 - **Pre-flight checks:**
-  - Checks that contract has been initialized
   - Checks that amount is not zero
 - **State transitions:**
   - Transfers tokens from sender to contract
@@ -65,7 +64,6 @@ Stakes `_amount` tokens, transferring them from `msg.sender`, and assigns them t
   - **_data:** Used in Staked event, to add signalling information in more complex staking applications
 - **Authentication:** Open
 - **Pre-flight checks:**
-  - Checks that contract has been initialized
   - Checks that amount is not zero
 - **State transitions:**
   - Transfers tokens from sender to contract
@@ -83,7 +81,6 @@ Unstakes `_amount` tokens, returning them to the user
   - **_data:** Used in Unstaked event, to add signalling information in more complex staking applications
 - **Authentication:** Open
 - **Pre-flight checks:**
-  - Checks that contract has been initialized
   - Checks that amount is not zero
 - **State transitions:**
   - Transfers tokens from contract to sender
@@ -99,8 +96,6 @@ Get the token used by the contract for staking and locking
 - **Outputs:**
   - Address of the staking token
 - **Authentication:** Open
-- **Pre-flight checks:**
-  - Checks that contract has been initialized
 
 
 ### supportsHistory
@@ -123,8 +118,6 @@ Get last time `_user` modified its staked balance
 - **Outputs:**
   - Last block number when account’s balance was modified
 - **Authentication:** Open
-- **Pre-flight checks:**
-  - Checks that contract has been initialized
 
 
 ### totalStakedForAt
@@ -138,8 +131,6 @@ Get the total amount of tokens staked by `_user` at block number `_blockNumber`
 - **Outputs:**
   - The amount of tokens staked by the account at the given block number
 - **Authentication:** Open
-- **Pre-flight checks:**
-  - Checks that contract has been initialized
 
 
 ### totalStakedAt
@@ -152,8 +143,6 @@ Get the total amount of tokens staked by all users at block number `_blockNumber
 - **Outputs:**
   - The amount of tokens staked at the given block number
 - **Authentication:** Open
-- **Pre-flight checks:**
-  - Checks that contract has been initialized
 
 
 ### totalStakedFor
@@ -166,8 +155,6 @@ Get the amount of tokens staked by `_user`
 - **Outputs:**
   - The amount of tokens staked by the given account
 - **Authentication:** Open
-- **Pre-flight checks:**
-  - Checks that contract has been initialized
 
 ### totalStaked
 
@@ -177,8 +164,6 @@ Get the total amount of tokens staked by all users
 - **Outputs:**
   - The total amount of tokens staked by all users
 - **Authentication:** Open
-- **Pre-flight checks:**
-  - Checks that contract has been initialized
 
 
 ## Locking interface
@@ -195,7 +180,6 @@ It creates a new lock, so the lock for this manager cannot exist before.
   - **_data:** Used in `NewLockManager` event and to parametrize logic for the lock to be enforced by the manager
 - **Authentication:** Open. Implicitly, sender must be staking owner.
 - **Pre-flight checks:**
-  - Checks that contract has been initialized
   - Checks that allowance input is not zero
   - Checks that lock didn’t exist before
 - **State transitions:**
@@ -213,7 +197,6 @@ Transfer `_amount` tokens to `_to`’s staked balance
   - **_amount:** Number of tokens to be transferred
 - **Authentication:** Open. Implicitly, sender must be staking owner.
 - **Pre-flight checks:**
-  - Checks that contract has been initialized
   - Checks that amount input is not zero
   - Checks that user has enough unlocked tokens available
 - **State transitions:**
@@ -230,7 +213,6 @@ Transfer `_amount` tokens to `_to`’s external balance (i.e. unstaked)
   - **_amount:** Number of tokens to be transferred
 - **Authentication:** Open. Implicitly, sender must be staking owner.
 - **Pre-flight checks:**
-  - Checks that contract has been initialized
   - Checks that amount input is not zero
   - Checks that user has enough unlocked tokens available
 - **State transitions:**
@@ -249,7 +231,6 @@ Transfer `_amount` tokens from `_from`'s lock by `msg.sender` to `_to`
   - **_amount:** Number of tokens to be transferred
 - **Authentication:** Open. Implicitly, sender must be lock manager.
 - **Pre-flight checks:**
-  - Checks that contract has been initialized
   - Check that owner’s lock is enough
   - Checks that amount input is not zero
 - **State transitions:**
@@ -269,7 +250,6 @@ Transfer `_amount` tokens from `_from`'s lock by `msg.sender` to `_to`’s exter
   - **_amount:** Number of tokens to be transferred
 - **Authentication:** Open. Implicitly, sender must be lock manager
 - **Pre-flight checks:**
-  - Checks that contract has been initialized
   - Check that owner’s lock is enough
   - Checks that amount input is not zero
 - **State transitions:**
@@ -291,7 +271,6 @@ Transfer `_transferAmount` tokens from `_from`'s lock by `msg.sender` to `_to`, 
   - **_slashAmount:** Number of tokens to be transferred
 - **Authentication:** Open. Implicitly, sender must be lock manager
 - **Pre-flight checks:**
-  - Checks that contract has been initialized
   - Check that owner’s lock is enough
   - Checks that unlock amount input is not zero
   - Checks that slash amount input is not zero
@@ -312,7 +291,6 @@ Increase allowance in `_allowance` tokens of lock manager `_lockManager` for use
   - **_allowance:** Amount of allowed tokens increase
 - **Authentication:** Open. Implicitly, sender must be staking owner.
 - **Pre-flight checks:**
-  - Checks that contract has been initialized
   - Checks that lock exists (i.e., it has a previous allowance)
   - Checks that amount input is not zero
 - **State transitions:**
@@ -329,7 +307,6 @@ Decrease allowance in `_allowance` tokens of lock manager `_lockManager` for use
   - **_allowance:** Amount of allowed tokens decrease
 - **Authentication:** Only owner or lock manager
 - **Pre-flight checks:**
-  - Checks that contract has been initialized
   - Checks that amount input is not zero
   - Checks that lock exists (i.e., it has a previous allowance)
   - Checks that final allowed amount is not less than currently locked tokens
@@ -348,7 +325,6 @@ Increase locked amount by `_amount` tokens for user `_user` by lock manager `msg
   - **_amount:** Amount of locked tokens increase
 - **Authentication:** Only owner or lock manager
 - **Pre-flight checks:**
-  - Checks that contract has been initialized
   - Checks that amount input is not zero
   - Checks that user has enough unlocked tokens available
   - Checks that lock has enough allowance
@@ -367,7 +343,6 @@ Decrease locked amount by `_amount` tokens for user `_user` by lock manager `_lo
   - **_amount:** Amount of locked tokens decrease
 - **Authentication:** Only owner or lock manager
 - **Pre-flight checks:**
-  - Checks that contract has been initialized
   - Checks that amount input is not zero
   - Checks that lock exists (i.e., it has a previous allowance)
   - Checks that user has enough unlocked tokens available
@@ -387,7 +362,6 @@ Unlock `_user`'s lock by `_lockManager` so locked tokens can be unstaked again
   - **_lockManager:** The manager entity for this particular lock
 - **Authentication:** Only owner or lock manager
 - **Pre-flight checks:**
-  - Checks that contract has been initialized
   - Checks that lock exists (i.e., it has a previous allowance)
   - If sender is owner and there were locked tokens, checks that manager allows to unlock
 - **State transitions:**
