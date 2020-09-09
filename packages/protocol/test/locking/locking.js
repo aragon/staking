@@ -325,17 +325,6 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     assertBn(await staking.lockedBalanceOf(user2), bn(0), "total locked doesn’t match")
   })
 
-  it('fails to transfer (slash) and unlocks in one transaction if unlock amount is zero', async () => {
-    const totalLock = bigExp(120, 18)
-    const transferAmount = bigExp(40, 18)
-    const decreaseAmount = bigExp(0, 18)
-
-    await approveStakeAndLock({ staking, manager: user1, allowanceAmount: totalLock, lockAmount: totalLock, stakeAmount: totalLock, from: owner })
-
-    // unlock and transfer
-    await assertRevert(staking.slashAndUnlock(owner, user2, decreaseAmount, transferAmount, { from: user1 }), STAKING_ERRORS.ERROR_AMOUNT_ZERO)
-  })
-
   it('fails to transfer (slash) and unlock in one transaction if not owner nor manager', async () => {
     const totalLock = bigExp(120, 18)
     const transferAmount = bigExp(40, 18)

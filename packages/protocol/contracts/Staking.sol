@@ -161,10 +161,6 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     )
         external
     {
-        // Note: I'm wondering if this is that important to protect, given the gas cost
-        // Explicitly check unlockAmount to avoid slashAndUnlock() being allowed to behave the same as slash()
-        require(_unlockAmount > 0, ERROR_AMOUNT_ZERO);
-
         _unlockUnsafe(_from, msg.sender, _unlockAmount.add(_slashAmount));
         _transfer(_from, _to, _slashAmount);
     }
