@@ -419,21 +419,6 @@ Unlock `_user`'s lock by `_lockManager` so locked tokens can be unstaked again
   - Decreases owner’s total locked amount by currently locked tokens for this lock manager
   - Deletes lock for this pair of owner and lock manager
 
-### setLockManager
-
-Change the manager of `_user`'s lock from `msg.sender` to `_newLockManager`
-
-- **Actor:** Lock manager
-- **Inputs:**
-  - **_user:** Owner of lock
-  - **_newLockManager:** New lock manager
-- **Authentication:** Open. Implicitly, sender must be lock manager
-- **Pre-flight checks:**
-  - Checks that contract has been initialized
-  - Checks that lock exists
-- **State transitions:**
-  - Assigns lock to new manager
-
 ### getTotalLockedOf
 
 Get total amount of locked tokens for `_user`

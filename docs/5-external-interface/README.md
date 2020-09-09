@@ -178,13 +178,6 @@
   - **_user:** Owner of locked tokens
   - **_lockManager:** The manager entity for this particular lock
 
-### Set lock manager
-
-- **Name:** setLockManager
-- **Inputs:**
-  - **_user:** Owner of lock
-  - **_newLockManager:** New lock manager
-
 ### Get total locked of
 
 - **Name:** getTotalLockedOf
