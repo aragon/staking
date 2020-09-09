@@ -46,6 +46,24 @@ contract('Staking app, Locking funds flows', ([_, owner, user1, user2, user3]) =
     managers.push(lockManager.address)
   })
 
+  const handleManager = async (isContract, canUnlock) => {
+    let managerAddress, manager
+
+    if (isContract) {
+      manager = lockManager
+      managerAddress = lockManager.address
+
+      if (canUnlock) {
+        await lockManager.setResult(true)
+      }
+    } else {
+      manager = user3
+      managerAddress = user3
+    }
+
+    return { manager, managerAddress }
+  }
+
   describe('same origin and destiny', () => {
     context('when user hasn’t staked', () => {
       it('check invariants', async () => {
@@ -78,18 +96,15 @@ contract('Staking app, Locking funds flows', ([_, owner, user1, user2, user3]) =
         const lockAmount = DEFAULT_LOCK_AMOUNT
 
         const moveFunds = ({ isContract, canUnlock = false }) => {
-          let lockManagerAddress
+          let manager, managerAddress
 
           beforeEach('stakes and locks', async () => {
-            lockManagerAddress = isContract ? lockManager.address : user3
-            if (isContract && canUnlock) {
-              await lockManager.setResult(true)
-            }
+            ({ manager, managerAddress } = await handleManager(isContract, canUnlock))
 
             await checkInvariants({ staking, users, managers })
             await approveStakeAndLockWithState({
               staking,
-              manager: lockManagerAddress,
+              manager,
               stakeAmount,
               allowanceAmount: stakeAmount,
               lockAmount,
@@ -108,7 +123,7 @@ contract('Staking app, Locking funds flows', ([_, owner, user1, user2, user3]) =
           })
 
           const unlockAndUnstake = async (unlockAmount) => {
-            await unlockWithState({ staking, managerAddress: lockManagerAddress, unlockAmount, user: users[0]})
+            await unlockWithState({ staking, managerAddress: managerAddress, unlockAmount, user: users[0]})
             await unstake(stakeAmount.sub(lockAmount.sub(unlockAmount)))
           }
 
@@ -127,7 +142,7 @@ contract('Staking app, Locking funds flows', ([_, owner, user1, user2, user3]) =
             })
           } else {
             it('owner cannot unlock', async () => {
-              await assertRevert(staking.unlock(users[0].address, lockManagerAddress, bn(1), { from: users[0].address }))
+              await assertRevert(staking.unlock(users[0].address, managerAddress, bn(1), { from: users[0].address }))
             })
 
             if (isContract) {
@@ -205,18 +220,15 @@ contract('Staking app, Locking funds flows', ([_, owner, user1, user2, user3]) =
         const lockAmount = DEFAULT_LOCK_AMOUNT
 
         const moveFunds = ({ isContract, canUnlock = false, toStaking }) => {
-          let lockManagerAddress
+          let managerAddress, manager
 
           beforeEach('stakes and locks', async () => {
-            lockManagerAddress = isContract ? lockManager.address : user3
-            if (isContract && canUnlock) {
-              await lockManager.setResult(true)
-            }
+            ({ manager, managerAddress } = await handleManager(isContract, canUnlock))
 
             await checkInvariants({ staking, users, managers })
             await approveStakeAndLockWithState({
               staking,
-              manager: lockManagerAddress,
+              manager,
               stakeAmount,
               allowanceAmount: stakeAmount,
               lockAmount,
@@ -236,9 +248,9 @@ contract('Staking app, Locking funds flows', ([_, owner, user1, user2, user3]) =
 
           const slashAndTransfer = async (slashAmount) => {
             if (toStaking) {
-              await slashWithState({ staking, slashAmount, userFrom: users[0], userTo: users[1], managerAddress: lockManagerAddress })
+              await slashWithState({ staking, slashAmount, userFrom: users[0], userTo: users[1], managerAddress: managerAddress })
             } else {
-              await slashAndUnstakeWithState({ staking, slashAmount, userFrom: users[0], userTo: users[1], managerAddress: lockManagerAddress })
+              await slashAndUnstakeWithState({ staking, slashAmount, userFrom: users[0], userTo: users[1], managerAddress })
             }
             await transfer(stakeAmount.sub(lockAmount.sub(slashAmount)))
           }

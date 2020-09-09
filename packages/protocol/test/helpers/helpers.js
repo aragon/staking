@@ -24,7 +24,14 @@ module.exports = (artifacts) => {
     from
   }) => {
     await approveAndStake({ staking, stake: stakeAmount, from })
-    const receipt = await staking.allowManagerAndLock(lockAmount, manager, allowanceAmount, data, { from })
+    let receipt
+    if (typeof manager === 'string') { // EOA
+      await staking.allowManager(manager, allowanceAmount, data, { from })
+      receipt = await staking.lock(from, lockAmount, { from: manager })
+    } else {
+      await staking.allowManager(manager.address, allowanceAmount, data, { from })
+      receipt = await manager.lock(staking.address, from, lockAmount, { from })
+    }
 
     return receipt
   }

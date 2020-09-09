@@ -103,19 +103,6 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     }
 
     /**
-     * @notice Lock `@tokenAmount(self.token(): address, _amount)` and assign `_lockManager` as manager with `@tokenAmount(self.token(): address, _allowance)` allowance and `_data` as data, so they can not be unstaked
-     * @param _amount The amount of tokens to be locked
-     * @param _lockManager The manager entity for this particular lock. This entity will have full control over the lock, in particular will be able to unlock it
-     * @param _allowance Amount of tokens that the manager can lock
-     * @param _data Data to parametrize logic for the lock to be enforced by the manager
-     */
-    function allowManagerAndLock(uint256 _amount, address _lockManager, uint256 _allowance, bytes calldata _data) external {
-        _allowManager(_lockManager, _allowance, _data);
-
-        _lockUnsafe(msg.sender, _lockManager, _amount);
-    }
-
-    /**
      * @notice Transfer `@tokenAmount(self.token(): address, _amount)` to `_to`’s staked balance
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
@@ -217,16 +204,29 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     }
 
     /**
-     * @notice Increase locked amount by `@tokenAmount(self.token(): address, _amount)` for user `_user` by lock manager `_lockManager`
+     * @notice Increase locked amount by `@tokenAmount(self.token(): address, _amount)` for user `_user` by lock manager `msg.sender`
      * @param _user Owner of locked tokens
-     * @param _lockManager The manager entity for this particular lock
      * @param _amount Amount of locked tokens increase
      */
-    function lock(address _user, address _lockManager, uint256 _amount) external {
-        // we are locking funds from owner account, so only owner or manager are allowed
-        require(msg.sender == _user || msg.sender == _lockManager, ERROR_SENDER_NOT_ALLOWED);
+    function lock(address _user, uint256 _amount) external {
+        require(_amount > 0, ERROR_AMOUNT_ZERO);
 
-        _lockUnsafe(_user, _lockManager, _amount);
+        // check enough unlocked tokens are available
+        require(_amount <= _unlockedBalanceOf(_user), ERROR_NOT_ENOUGH_BALANCE);
+
+        Account storage account = accounts[_user];
+        Lock storage lock_ = account.locks[msg.sender];
+
+        uint256 newAmount = lock_.amount.add(_amount);
+        // check allowance is enough, it also means that lock exists, as newAmount is greater than zero
+        require(newAmount <= lock_.allowance, ERROR_NOT_ENOUGH_ALLOWANCE);
+
+        lock_.amount = newAmount;
+
+        // update total
+        account.totalLocked = account.totalLocked.add(_amount);
+
+        emit LockAmountChanged(_user, msg.sender, _amount, true);
     }
 
     /**
@@ -473,31 +473,6 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
         _lock.allowance = _lock.allowance.add(_allowance);
 
         emit LockAllowanceChanged(msg.sender, _lockManager, _allowance, true);
-    }
-
-    /**
-      // Note: not sure I understand this comment, since we don't use msg.sender internally
-     * @dev Assumes that sender is either owner or lock manager
-     */
-    function _lockUnsafe(address _user, address _lockManager, uint256 _amount) internal {
-        require(_amount > 0, ERROR_AMOUNT_ZERO);
-
-        // check enough unlocked tokens are available
-        require(_amount <= _unlockedBalanceOf(_user), ERROR_NOT_ENOUGH_BALANCE);
-
-        Account storage account = accounts[_user];
-        Lock storage lock_ = account.locks[_lockManager];
-
-        uint256 newAmount = lock_.amount.add(_amount);
-        // check allowance is enough, it also means that lock exists, as newAmount is greater than zero
-        require(newAmount <= lock_.allowance, ERROR_NOT_ENOUGH_ALLOWANCE);
-
-        lock_.amount = newAmount;
-
-        // update total
-        account.totalLocked = account.totalLocked.add(_amount);
-
-        emit LockAmountChanged(_user, _lockManager, _amount, true);
     }
 
     /**
