@@ -23,7 +23,6 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     string private constant ERROR_AMOUNT_ZERO = "STAKING_AMOUNT_ZERO";
     string private constant ERROR_TOKEN_TRANSFER = "STAKING_TOKEN_TRANSFER_FAIL";
     string private constant ERROR_TOKEN_DEPOSIT = "STAKING_TOKEN_DEPOSIT_FAIL";
-    string private constant ERROR_TOKEN_NOT_SENDER = "STAKING_TOKEN_NOT_SENDER";
     string private constant ERROR_WRONG_TOKEN = "STAKING_WRONG_TOKEN";
     string private constant ERROR_NOT_ENOUGH_BALANCE = "STAKING_NOT_ENOUGH_BALANCE";
     string private constant ERROR_NOT_ENOUGH_ALLOWANCE = "STAKING_NOT_ENOUGH_ALLOWANCE";
@@ -275,9 +274,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
     function receiveApproval(address _from, uint256 _amount, address _token, bytes calldata _data) external {
-        // Note: perhaps we can just use one revert to reduce costs here
-        require(_token == msg.sender, ERROR_TOKEN_NOT_SENDER);
-        require(_token == address(token), ERROR_WRONG_TOKEN);
+        require(_token == msg.sender && _token == address(token), ERROR_WRONG_TOKEN);
 
         _stakeFor(_from, _from, _amount, _data);
     }

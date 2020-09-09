@@ -47,6 +47,6 @@ contract('Staking app, Approve and call fallback', ([owner, user]) => {
   })
 
   it('fails calling receiveApproval from a different account than the token', async () => {
-    await assertRevert(staking.receiveApproval(user, DEFAULT_STAKE_AMOUNT, tokenAddress, EMPTY_DATA), STAKING_ERRORS.ERROR_TOKEN_NOT_SENDER)
+    await assertRevert(staking.receiveApproval(user, DEFAULT_STAKE_AMOUNT, tokenAddress, EMPTY_DATA), STAKING_ERRORS.ERROR_WRONG_TOKEN)
   })
 })
