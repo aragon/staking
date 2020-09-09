@@ -2,7 +2,6 @@ pragma solidity ^0.5.17;
 
 
 // Interface for ERC900: https://eips.ethereum.org/EIPS/eip-900
-// Note: we should also add the optional history methods as a separate interface
 interface IERC900 {
     event Staked(address indexed user, uint256 amount, uint256 total, bytes data);
     event Unstaked(address indexed user, uint256 amount, uint256 total, bytes data);
@@ -53,4 +52,8 @@ interface IERC900 {
      * @return True if the optional history functions are implemented, false otherwise
      */
     function supportsHistory() external pure returns (bool);
+
+    function lastStakedFor(address addr) external view returns (uint256);
+    function totalStakedForAt(address addr, uint256 blockNumber) external view returns (uint256);
+    function totalStakedAt(uint256 blockNumber) external view returns (uint256);
 }
