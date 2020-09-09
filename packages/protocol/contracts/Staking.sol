@@ -602,13 +602,4 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
         // Otherwise, check whether the lock manager allows unlocking
         return ILockManager(_lockManager).canUnlock(_user, amount);
     }
-
-    // Note: this function doesn't seem to be used
-    function _toBytes4(bytes memory _data) internal pure returns (bytes4 result) {
-        if (_data.length < 4) {
-            return bytes4(0);
-        }
-
-        assembly { result := mload(add(_data, 0x20)) }
-    }
 }
