@@ -472,8 +472,8 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     }
 
     /**
-      // Note: could we clarify this comment? We only explicitly check `_lockManager.canUnlock()` when users call into this internal function
-     * @dev Assumes `canUnlock` passes
+     * @dev Assumes `canUnlock` passes, i.e., either sender is the lock manager or it’s the owner,
+     *      and the lock manager allows to unlock.
      */
     function _unlockUnsafe(address _user, address _lockManager, uint256 _amount) internal {
         Account storage account = accounts[_user];
