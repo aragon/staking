@@ -1,8 +1,8 @@
 # External interface
 
-### Initialize
+### Constructor
 
-- **Name:** initialize
+- **Name:** constructor
 - **Inputs:**
   - **_stakingToken:** ERC20 token to be used for staking
 

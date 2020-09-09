@@ -20,9 +20,7 @@ Funds flows with different origin and destiny:
 | Lock   | Stake  | slash              |
 | Lock   | Wallet | slashAndUnstake    |
 
-### initialize
-
-This is used by the Staking Factory when creating a new proxy. See deployment section for more details.
+### constructor
 
 - **Actor:** Deployer account
 - **Inputs:**
