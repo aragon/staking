@@ -9,7 +9,7 @@ contract EchidnaStaking is Staking {
     using SafeMath for uint256;
 
     constructor() public {
-        token = ERC20(new NoApproveTokenMock(msg.sender, 10 ** 24));
+        token = IERC20(new NoApproveTokenMock(msg.sender, 10 ** 24));
     }
 
     // check that staked amount for an account is always >= total locked

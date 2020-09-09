@@ -3,7 +3,7 @@
 
 pragma solidity ^0.5.8;
 
-import "../../standards/ERC20.sol";
+import "../../standards/IERC20.sol";
 
 
 library SafeERC20 {
@@ -15,7 +15,7 @@ library SafeERC20 {
     * @dev Same as a standards-compliant ERC20.transfer() that never reverts (returns false).
     *      Note that this makes an external call to the token.
     */
-    function safeTransfer(ERC20 _token, address _to, uint256 _amount) internal returns (bool) {
+    function safeTransfer(IERC20 _token, address _to, uint256 _amount) internal returns (bool) {
         bytes memory transferCallData = abi.encodeWithSelector(
             TRANSFER_SELECTOR,
             _to,
@@ -28,7 +28,7 @@ library SafeERC20 {
     * @dev Same as a standards-compliant ERC20.transferFrom() that never reverts (returns false).
     *      Note that this makes an external call to the token.
     */
-    function safeTransferFrom(ERC20 _token, address _from, address _to, uint256 _amount) internal returns (bool) {
+    function safeTransferFrom(IERC20 _token, address _from, address _to, uint256 _amount) internal returns (bool) {
         bytes memory transferFromCallData = abi.encodeWithSelector(
             _token.transferFrom.selector,
             _from,
@@ -42,7 +42,7 @@ library SafeERC20 {
     * @dev Same as a standards-compliant ERC20.approve() that never reverts (returns false).
     *      Note that this makes an external call to the token.
     */
-    function safeApprove(ERC20 _token, address _spender, uint256 _amount) internal returns (bool) {
+    function safeApprove(IERC20 _token, address _spender, uint256 _amount) internal returns (bool) {
         bytes memory approveCallData = abi.encodeWithSelector(
             _token.approve.selector,
             _spender,

@@ -6,16 +6,16 @@ import "./lib/os/IsContract.sol";
 import "./lib/os/TimeHelpers.sol";
 import "./lib/Checkpointing.sol";
 
-import "./standards/ERC900.sol";
+import "./standards/IERC900.sol";
 import "./locking/IStakingLocking.sol";
 import "./locking/ILockManager.sol";
 
 
 // Note: can we also add an interface for IERC223 / IApproveAndCallFallback?
-contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
+contract Staking is IERC900, IStakingLocking, IsContract, TimeHelpers {
     using SafeMath for uint256;
     using Checkpointing for Checkpointing.History;
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
 
     uint256 private constant MAX_UINT64 = uint256(uint64(-1));
 
@@ -47,7 +47,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
         Checkpointing.History stakedHistory;
     }
 
-    ERC20 public token;
+    IERC20 public token;
     mapping (address => Account) internal accounts;
     Checkpointing.History internal totalStakedHistory;
 
@@ -55,7 +55,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
      * @notice Initialize Staking app with token `_token`
      * @param _token ERC20 token used for staking
      */
-    constructor(ERC20 _token) public {
+    constructor(IERC20 _token) public {
         require(isContract(address(_token)), ERROR_TOKEN_NOT_CONTRACT);
         token = _token;
     }

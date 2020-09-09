@@ -2,9 +2,8 @@ pragma solidity ^0.5.17;
 
 
 // Interface for ERC900: https://eips.ethereum.org/EIPS/eip-900
-// Note: should we name this IERC900, since it's an interface?
 // Note: we should also add the optional history methods as a separate interface
-interface ERC900 {
+interface IERC900 {
     event Staked(address indexed user, uint256 amount, uint256 total, bytes data);
     event Unstaked(address indexed user, uint256 amount, uint256 total, bytes data);
 

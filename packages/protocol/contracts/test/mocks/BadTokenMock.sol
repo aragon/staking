@@ -1,6 +1,6 @@
 pragma solidity 0.5.17;
 
-import "../../standards/ERC20.sol";
+import "../../standards/IERC20.sol";
 import "../../lib/os/SafeMath.sol";
 
 
@@ -9,7 +9,7 @@ import "../../lib/os/SafeMath.sol";
  *
  * @dev Transfer function always returns false!
  */
-contract BadTokenMock is ERC20 {
+contract BadTokenMock is IERC20 {
     using SafeMath for uint256;
 
     mapping (address => uint256) private balances;
