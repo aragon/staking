@@ -7,6 +7,10 @@ import "../../Staking.sol";
 contract LockManagerMock is ILockManager {
     bool result;
 
+    function lock(Staking _staking, address _user, uint256 _amount) external {
+        _staking.lock(_user, _amount);
+    }
+
     function slash(Staking _staking, address _from, address _to, uint256 _amount) external {
         _staking.slash(_from, _to, _amount);
     }
@@ -21,10 +25,6 @@ contract LockManagerMock is ILockManager {
 
     function unlockAndRemoveManager(Staking _staking, address _account) external {
         _staking.unlockAndRemoveManager(_account, address(this));
-    }
-
-    function setLockManager(Staking _staking, address _account, ILockManager _newManager) external {
-        _staking.setLockManager(_account, address(_newManager));
     }
 
     function canUnlock(address, uint256) external view returns (bool) {

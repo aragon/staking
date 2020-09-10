@@ -9,7 +9,7 @@ contract EchidnaStaking is Staking {
     using SafeMath for uint256;
 
     constructor() public {
-        stakingToken = ERC20(new NoApproveTokenMock(msg.sender, 10 ** 24));
+        token = IERC20(new NoApproveTokenMock(msg.sender, 10 ** 24));
     }
 
     // check that staked amount for an account is always >= total locked
@@ -61,7 +61,7 @@ contract EchidnaStaking is Staking {
 
     // total staked matches less or equal than token balance
     function echidna_total_staked_is_balance() external view returns (bool) {
-        if (_totalStaked() <= stakingToken.balanceOf(address(this))) {
+        if (_totalStaked() <= token.balanceOf(address(this))) {
             return true;
         }
 

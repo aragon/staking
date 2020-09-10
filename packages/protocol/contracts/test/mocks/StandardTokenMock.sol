@@ -2,7 +2,7 @@
 
 pragma solidity 0.5.17;
 
-import "../../standards/ERC20.sol";
+import "../../standards/IERC20.sol";
 import "../../lib/os/SafeMath.sol";
 
 
@@ -12,7 +12,7 @@ import "../../lib/os/SafeMath.sol";
  * @dev Implementation of the basic standard token.
  * https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md
  */
-contract StandardTokenMock is ERC20 {
+contract StandardTokenMock is IERC20 {
     using SafeMath for uint256;
 
     mapping (address => uint256) private balances;

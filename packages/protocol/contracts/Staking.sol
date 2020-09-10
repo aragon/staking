@@ -6,15 +6,18 @@ import "./lib/os/IsContract.sol";
 import "./lib/os/TimeHelpers.sol";
 import "./lib/Checkpointing.sol";
 
-import "./standards/ERC900.sol";
-import "./locking/IStakingLocking.sol";
+import "./locking/ILockable.sol";
 import "./locking/ILockManager.sol";
 
+import "./standards/IERC900.sol";
+import "./standards/IERC900History.sol";
+import "./standards/IApproveAndCallFallBack.sol";
 
-contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
+
+contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack, IsContract, TimeHelpers {
     using SafeMath for uint256;
     using Checkpointing for Checkpointing.History;
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
 
     uint256 private constant MAX_UINT64 = uint256(uint64(-1));
 
@@ -22,19 +25,18 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     string private constant ERROR_AMOUNT_ZERO = "STAKING_AMOUNT_ZERO";
     string private constant ERROR_TOKEN_TRANSFER = "STAKING_TOKEN_TRANSFER_FAIL";
     string private constant ERROR_TOKEN_DEPOSIT = "STAKING_TOKEN_DEPOSIT_FAIL";
-    string private constant ERROR_TOKEN_NOT_SENDER = "STAKING_TOKEN_NOT_SENDER";
     string private constant ERROR_WRONG_TOKEN = "STAKING_WRONG_TOKEN";
     string private constant ERROR_NOT_ENOUGH_BALANCE = "STAKING_NOT_ENOUGH_BALANCE";
     string private constant ERROR_NOT_ENOUGH_ALLOWANCE = "STAKING_NOT_ENOUGH_ALLOWANCE";
-    string private constant ERROR_SENDER_NOT_ALLOWED = "STAKING_SENDER_NOT_ALLOWED";
     string private constant ERROR_ALLOWANCE_ZERO = "STAKING_ALLOWANCE_ZERO";
     string private constant ERROR_LOCK_ALREADY_EXISTS = "STAKING_LOCK_ALREADY_EXISTS";
     string private constant ERROR_LOCK_DOES_NOT_EXIST = "STAKING_LOCK_DOES_NOT_EXIST";
     string private constant ERROR_NOT_ENOUGH_LOCK = "STAKING_NOT_ENOUGH_LOCK";
     string private constant ERROR_CANNOT_UNLOCK = "STAKING_CANNOT_UNLOCK";
     string private constant ERROR_CANNOT_CHANGE_ALLOWANCE = "STAKING_CANNOT_CHANGE_ALLOWANCE";
-    string private constant ERROR_LOCKMANAGER_CALL_FAIL = "STAKING_LOCKMANAGER_CALL_FAIL";
     string private constant ERROR_BLOCKNUMBER_TOO_BIG = "STAKING_BLOCKNUMBER_TOO_BIG";
+
+    event StakeTransferred(address indexed from, address indexed to, uint256 amount);
 
     struct Lock {
         uint256 amount;
@@ -47,17 +49,17 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
         Checkpointing.History stakedHistory;
     }
 
-    ERC20 internal stakingToken;
+    IERC20 public token;
     mapping (address => Account) internal accounts;
     Checkpointing.History internal totalStakedHistory;
 
     /**
-     * @notice Initialize Staking app with token `_stakingToken`
-     * @param _stakingToken ERC20 token used for staking
+     * @notice Initialize Staking app with token `_token`
+     * @param _token ERC20 token used for staking
      */
-    constructor(ERC20 _stakingToken) public {
-        require(isContract(address(_stakingToken)), ERROR_TOKEN_NOT_CONTRACT);
-        stakingToken = _stakingToken;
+    constructor(IERC20 _token) public {
+        require(isContract(address(_token)), ERROR_TOKEN_NOT_CONTRACT);
+        token = _token;
     }
 
     /**
@@ -103,19 +105,6 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     }
 
     /**
-     * @notice Lock `@tokenAmount(self.token(): address, _amount)` and assign `_lockManager` as manager with `@tokenAmount(self.token(): address, _allowance)` allowance and `_data` as data, so they can not be unstaked
-     * @param _amount The amount of tokens to be locked
-     * @param _lockManager The manager entity for this particular lock. This entity will have full control over the lock, in particular will be able to unlock it
-     * @param _allowance Amount of tokens that the manager can lock
-     * @param _data Data to parametrize logic for the lock to be enforced by the manager
-     */
-    function allowManagerAndLock(uint256 _amount, address _lockManager, uint256 _allowance, bytes calldata _data) external {
-        _allowManager(_lockManager, _allowance, _data);
-
-        _lockUnsafe(msg.sender, _lockManager, _amount);
-    }
-
-    /**
      * @notice Transfer `@tokenAmount(self.token(): address, _amount)` to `_to`’s staked balance
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
@@ -125,13 +114,12 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     }
 
     /**
-     * @notice Transfer `@tokenAmount(self.token(): address, _amount)` to `_to`’s external balance (i.e. unstaked)
+     * @notice Transfer `@tokenAmount(self.token(): address, _amount)` belonging to `msg.sender`’s stake to `_to`’s external balance (i.e. unstaked)
      * @param _to Recipient of the tokens
      * @param _amount Number of tokens to be transferred
      */
     function transferAndUnstake(address _to, uint256 _amount) external {
-        _transfer(msg.sender, _to, _amount);
-        _unstake(_to, _amount, new bytes(0));
+        _transferAndUnstake(msg.sender, _to, _amount);
     }
 
     /**
@@ -153,8 +141,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
      */
     function slashAndUnstake(address _from, address _to, uint256 _amount) external {
         _unlockUnsafe(_from, msg.sender, _amount);
-        _transfer(_from, _to, _amount);
-        _unstake(_to, _amount, new bytes(0));
+        _transferAndUnstake(_from, _to, _amount);
     }
 
     /**
@@ -172,10 +159,6 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     )
         external
     {
-        // No need to check that _slashAmount is positive, as _transfer will fail
-        // No need to check that have enough locked funds, as _unlockUnsafe will fail
-        require(_unlockAmount > 0, ERROR_AMOUNT_ZERO);
-
         _unlockUnsafe(_from, msg.sender, _unlockAmount.add(_slashAmount));
         _transfer(_from, _to, _slashAmount);
     }
@@ -211,20 +194,33 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
 
         lock_.allowance = newAllowance;
 
-        emit LockAllowanceChanged(_user, _lockManager, _allowance, false);
+        emit LockAllowanceChanged(_user, _lockManager, newAllowance);
     }
 
     /**
-     * @notice Increase locked amount by `@tokenAmount(self.token(): address, _amount)` for user `_user` by lock manager `_lockManager`
+     * @notice Increase locked amount by `@tokenAmount(self.token(): address, _amount)` for user `_user` by lock manager `msg.sender`
      * @param _user Owner of locked tokens
-     * @param _lockManager The manager entity for this particular lock
      * @param _amount Amount of locked tokens increase
      */
-    function lock(address _user, address _lockManager, uint256 _amount) external {
-        // we are locking funds from owner account, so only owner or manager are allowed
-        require(msg.sender == _user || msg.sender == _lockManager, ERROR_SENDER_NOT_ALLOWED);
+    function lock(address _user, uint256 _amount) external {
+        require(_amount > 0, ERROR_AMOUNT_ZERO);
 
-        _lockUnsafe(_user, _lockManager, _amount);
+        // check enough unlocked tokens are available
+        require(_amount <= _unlockedBalanceOf(_user), ERROR_NOT_ENOUGH_BALANCE);
+
+        Account storage account = accounts[_user];
+        Lock storage lock_ = account.locks[msg.sender];
+
+        uint256 newAmount = lock_.amount.add(_amount);
+        // check allowance is enough, it also means that lock exists, as newAmount is greater than zero
+        require(newAmount <= lock_.allowance, ERROR_NOT_ENOUGH_ALLOWANCE);
+
+        lock_.amount = newAmount;
+
+        // update total
+        account.totalLocked = account.totalLocked.add(_amount);
+
+        emit LockAmountChanged(_user, msg.sender, newAmount);
     }
 
     /**
@@ -258,29 +254,10 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
         // update total
         account.totalLocked = account.totalLocked.sub(amount);
 
-        emit LockAmountChanged(_user, _lockManager, amount, false);
+        emit LockAmountChanged(_user, _lockManager, 0);
         emit LockManagerRemoved(_user, _lockManager);
 
         delete account.locks[_lockManager];
-    }
-
-    /**
-     * @notice Change the manager of `_user`'s lock from `msg.sender` to `_newLockManager`
-     * @param _user Owner of lock
-     * @param _newLockManager New lock manager
-     */
-    function setLockManager(address _user, address _newLockManager) external {
-        Lock storage lock_ = accounts[_user].locks[msg.sender];
-        require(lock_.allowance > 0, ERROR_LOCK_DOES_NOT_EXIST);
-
-        // cannot replace an already existing lock
-        require(accounts[_user].locks[_newLockManager].allowance == 0, ERROR_LOCK_ALREADY_EXISTS);
-
-        accounts[_user].locks[_newLockManager] = lock_;
-
-        delete accounts[_user].locks[msg.sender];
-
-        emit LockManagerTransferred(_user, msg.sender, _newLockManager);
     }
 
     /**
@@ -291,8 +268,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
      * @param _data Used in Staked event, to add signalling information in more complex staking applications
      */
     function receiveApproval(address _from, uint256 _amount, address _token, bytes calldata _data) external {
-        require(_token == msg.sender, ERROR_TOKEN_NOT_SENDER);
-        require(_token == address(stakingToken), ERROR_WRONG_TOKEN);
+        require(_token == msg.sender && _token == address(token), ERROR_WRONG_TOKEN);
 
         _stakeFor(_from, _from, _amount, _data);
     }
@@ -303,14 +279,6 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
      */
     function supportsHistory() external pure returns (bool) {
         return true;
-    }
-
-    /**
-     * @notice Get the token used by the contract for staking and locking
-     * @return The token used by the contract for staking and locking
-     */
-    function token() external view returns (address) {
-        return address(stakingToken);
     }
 
     /**
@@ -434,7 +402,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
         _modifyTotalStaked(_amount, true);
 
         // pull tokens into Staking contract
-        require(stakingToken.safeTransferFrom(_from, address(this), _amount), ERROR_TOKEN_DEPOSIT);
+        require(token.safeTransferFrom(_from, address(this), _amount), ERROR_TOKEN_DEPOSIT);
 
         emit Staked(_user, _amount, newStake, _data);
     }
@@ -447,7 +415,7 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
         _modifyTotalStaked(_amount, false);
 
         // transfer tokens
-        require(stakingToken.safeTransfer(_from, _amount), ERROR_TOKEN_TRANSFER);
+        require(token.safeTransfer(_from, _amount), ERROR_TOKEN_TRANSFER);
 
         emit Unstaked(_from, _amount, newStake, _data);
     }
@@ -496,37 +464,15 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
     function _increaseLockAllowance(address _lockManager, Lock storage _lock, uint256 _allowance) internal {
         require(_allowance > 0, ERROR_AMOUNT_ZERO);
 
-        _lock.allowance = _lock.allowance.add(_allowance);
+        uint256 newAllowance = _lock.allowance.add(_allowance);
+        _lock.allowance = newAllowance;
 
-        emit LockAllowanceChanged(msg.sender, _lockManager, _allowance, true);
+        emit LockAllowanceChanged(msg.sender, _lockManager, newAllowance);
     }
 
     /**
-     * @dev Assumes that sender is either owner or lock manager
-     */
-    function _lockUnsafe(address _user, address _lockManager, uint256 _amount) internal {
-        require(_amount > 0, ERROR_AMOUNT_ZERO);
-
-        // check enough unlocked tokens are available
-        require(_amount <= _unlockedBalanceOf(_user), ERROR_NOT_ENOUGH_BALANCE);
-
-        Account storage account = accounts[_user];
-        Lock storage lock_ = account.locks[_lockManager];
-
-        uint256 newAmount = lock_.amount.add(_amount);
-        // check allowance is enough, it also means that lock exists, as newAmount is greater than zero
-        require(newAmount <= lock_.allowance, ERROR_NOT_ENOUGH_ALLOWANCE);
-
-        lock_.amount = newAmount;
-
-        // update total
-        account.totalLocked = account.totalLocked.add(_amount);
-
-        emit LockAmountChanged(_user, _lockManager, _amount, true);
-    }
-
-    /**
-     * @dev Assumes `canUnlock` passes
+     * @dev Assumes `canUnlock` passes, i.e., either sender is the lock manager or it’s the owner,
+     *      and the lock manager allows to unlock.
      */
     function _unlockUnsafe(address _user, address _lockManager, uint256 _amount) internal {
         Account storage account = accounts[_user];
@@ -537,12 +483,13 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
 
         // update lock amount
         // No need for SafeMath: checked just above
-        lock_.amount = lockAmount - _amount;
+        uint256 newAmount = lockAmount - _amount;
+        lock_.amount = newAmount;
 
         // update total
         account.totalLocked = account.totalLocked.sub(_amount);
 
-        emit LockAmountChanged(_user, _lockManager, _amount, false);
+        emit LockAmountChanged(_user, _lockManager, newAmount);
     }
 
     function _transfer(address _from, address _to, uint256 _amount) internal {
@@ -554,6 +501,25 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
         _modifyStakeBalance(_to, _amount, true);
 
         emit StakeTransferred(_from, _to, _amount);
+    }
+
+    /**
+     * @dev This is similar to a `_transfer()` followed by a `_unstake()`, but optimized to avoid spurious SSTOREs on modifying _to's checkpointed balance
+     */
+    function _transferAndUnstake(address _from, address _to, uint256 _amount) internal {
+        // transferring 0 staked tokens is invalid
+        require(_amount > 0, ERROR_AMOUNT_ZERO);
+
+        // update stake
+        uint256 newStake = _modifyStakeBalance(_from, _amount, false);
+
+        // checkpoint total supply
+        _modifyTotalStaked(_amount, false);
+
+        emit Unstaked(_from, _amount, newStake, new bytes(0));
+
+        // transfer tokens
+        require(token.safeTransfer(_to, _amount), ERROR_TOKEN_TRANSFER);
     }
 
     /**
@@ -622,13 +588,5 @@ contract Staking is ERC900, IStakingLocking, IsContract, TimeHelpers {
 
         // Otherwise, check whether the lock manager allows unlocking
         return ILockManager(_lockManager).canUnlock(_user, amount);
-    }
-
-    function _toBytes4(bytes memory _data) internal pure returns (bytes4 result) {
-        if (_data.length < 4) {
-            return bytes4(0);
-        }
-
-        assembly { result := mload(add(_data, 0x20)) }
     }
 }
