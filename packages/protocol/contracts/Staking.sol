@@ -109,70 +109,6 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     }
 
     /**
-     * @notice Transfer `@tokenAmount(self.token(): address, _amount)` to `_to`’s staked balance
-     * @dev Callable only by a user
-     * @param _to Recipient
-     * @param _amount Amount of tokens to be transferred
-     */
-    function transfer(address _to, uint256 _amount) external {
-        _transfer(msg.sender, _to, _amount);
-    }
-
-    /**
-     * @notice Transfer `@tokenAmount(self.token(): address, _amount)` directly to `_to`’s balance
-     * @dev Callable only by a user
-     * @param _to Recipient
-     * @param _amount Amount of tokens to be transferred
-     */
-    function transferAndUnstake(address _to, uint256 _amount) external {
-        _transferAndUnstake(msg.sender, _to, _amount);
-    }
-
-    /**
-     * @notice Slash `@tokenAmount(self.token(): address, _amount)` from `_from`'s locked balance to `_to`'s staked balance
-     * @dev Callable only by a lock manager
-     * @param _from Owner of the locked tokens
-     * @param _to Recipient
-     * @param _amount Amount of tokens to be transferred via slashing
-     */
-    function slash(address _from, address _to, uint256 _amount) external {
-        _unlockUnsafe(_from, msg.sender, _amount);
-        _transfer(_from, _to, _amount);
-    }
-
-    /**
-     * @notice Slash `@tokenAmount(self.token(): address, _amount)` from `_from`'s locked balance  directly to `_to`'s balance
-     * @dev Callable only by a lock manager
-     * @param _from Owner of the locked tokens
-     * @param _to Recipient
-     * @param _amount Amount of tokens to be transferred via slashing
-     */
-    function slashAndUnstake(address _from, address _to, uint256 _amount) external {
-        _unlockUnsafe(_from, msg.sender, _amount);
-        _transferAndUnstake(_from, _to, _amount);
-    }
-
-    /**
-     * @notice Slash `@tokenAmount(self.token(): address, _slashAmount)` from `_from`'s locked balance to `_to`'s staked balance, and leave an additional `@tokenAmount(self.token(): address, _unlockAmount)` unlocked for `_from`
-     * @dev Callable only by a lock manager
-     * @param _from Owner of the locked tokens
-     * @param _to Recipient
-     * @param _unlockAmount Amount of tokens to be left unlocked
-     * @param _slashAmount Amount of tokens to be transferred via slashing
-     */
-    function slashAndUnlock(
-        address _from,
-        address _to,
-        uint256 _unlockAmount,
-        uint256 _slashAmount
-    )
-        external
-    {
-        _unlockUnsafe(_from, msg.sender, _unlockAmount.add(_slashAmount));
-        _transfer(_from, _to, _slashAmount);
-    }
-
-    /**
      * @notice Increase allowance of lock manager `_lockManager` by `@tokenAmount(self.token(): address, _allowance)`
      * @dev Callable only by a user
      * @param _lockManager Lock manager
@@ -271,6 +207,70 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
         emit LockManagerRemoved(_user, _lockManager);
 
         delete account.locks[_lockManager];
+    }
+
+    /**
+     * @notice Slash `@tokenAmount(self.token(): address, _amount)` from `_from`'s locked balance to `_to`'s staked balance
+     * @dev Callable only by a lock manager
+     * @param _from Owner of the locked tokens
+     * @param _to Recipient
+     * @param _amount Amount of tokens to be transferred via slashing
+     */
+    function slash(address _from, address _to, uint256 _amount) external {
+        _unlockUnsafe(_from, msg.sender, _amount);
+        _transfer(_from, _to, _amount);
+    }
+
+    /**
+     * @notice Slash `@tokenAmount(self.token(): address, _amount)` from `_from`'s locked balance  directly to `_to`'s balance
+     * @dev Callable only by a lock manager
+     * @param _from Owner of the locked tokens
+     * @param _to Recipient
+     * @param _amount Amount of tokens to be transferred via slashing
+     */
+    function slashAndUnstake(address _from, address _to, uint256 _amount) external {
+        _unlockUnsafe(_from, msg.sender, _amount);
+        _transferAndUnstake(_from, _to, _amount);
+    }
+
+    /**
+     * @notice Slash `@tokenAmount(self.token(): address, _slashAmount)` from `_from`'s locked balance to `_to`'s staked balance, and leave an additional `@tokenAmount(self.token(): address, _unlockAmount)` unlocked for `_from`
+     * @dev Callable only by a lock manager
+     * @param _from Owner of the locked tokens
+     * @param _to Recipient
+     * @param _unlockAmount Amount of tokens to be left unlocked
+     * @param _slashAmount Amount of tokens to be transferred via slashing
+     */
+    function slashAndUnlock(
+        address _from,
+        address _to,
+        uint256 _unlockAmount,
+        uint256 _slashAmount
+    )
+        external
+    {
+        _unlockUnsafe(_from, msg.sender, _unlockAmount.add(_slashAmount));
+        _transfer(_from, _to, _slashAmount);
+    }
+
+    /**
+     * @notice Transfer `@tokenAmount(self.token(): address, _amount)` to `_to`’s staked balance
+     * @dev Callable only by a user
+     * @param _to Recipient
+     * @param _amount Amount of tokens to be transferred
+     */
+    function transfer(address _to, uint256 _amount) external {
+        _transfer(msg.sender, _to, _amount);
+    }
+
+    /**
+     * @notice Transfer `@tokenAmount(self.token(): address, _amount)` directly to `_to`’s balance
+     * @dev Callable only by a user
+     * @param _to Recipient
+     * @param _amount Amount of tokens to be transferred
+     */
+    function transferAndUnstake(address _to, uint256 _amount) external {
+        _transferAndUnstake(msg.sender, _to, _amount);
     }
 
     /**
