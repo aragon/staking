@@ -28,14 +28,12 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     string private constant ERROR_WRONG_TOKEN = "STAKING_WRONG_TOKEN";
     string private constant ERROR_NOT_ENOUGH_BALANCE = "STAKING_NOT_ENOUGH_BALANCE";
     string private constant ERROR_NOT_ENOUGH_ALLOWANCE = "STAKING_NOT_ENOUGH_ALLOWANCE";
-    string private constant ERROR_SENDER_NOT_ALLOWED = "STAKING_SENDER_NOT_ALLOWED";
     string private constant ERROR_ALLOWANCE_ZERO = "STAKING_ALLOWANCE_ZERO";
     string private constant ERROR_LOCK_ALREADY_EXISTS = "STAKING_LOCK_ALREADY_EXISTS";
     string private constant ERROR_LOCK_DOES_NOT_EXIST = "STAKING_LOCK_DOES_NOT_EXIST";
     string private constant ERROR_NOT_ENOUGH_LOCK = "STAKING_NOT_ENOUGH_LOCK";
     string private constant ERROR_CANNOT_UNLOCK = "STAKING_CANNOT_UNLOCK";
     string private constant ERROR_CANNOT_CHANGE_ALLOWANCE = "STAKING_CANNOT_CHANGE_ALLOWANCE";
-    string private constant ERROR_LOCKMANAGER_CALL_FAIL = "STAKING_LOCKMANAGER_CALL_FAIL";
     string private constant ERROR_BLOCKNUMBER_TOO_BIG = "STAKING_BLOCKNUMBER_TOO_BIG";
 
     event StakeTransferred(address indexed from, address indexed to, uint256 amount);
