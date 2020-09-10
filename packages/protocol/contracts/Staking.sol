@@ -6,13 +6,15 @@ import "./lib/os/IsContract.sol";
 import "./lib/os/TimeHelpers.sol";
 import "./lib/Checkpointing.sol";
 
-import "./standards/IERC900.sol";
-import "./standards/IERC900History.sol";
 import "./locking/ILockable.sol";
 import "./locking/ILockManager.sol";
 
+import "./standards/IERC900.sol";
+import "./standards/IERC900History.sol";
+import "./standards/IApproveAndCallFallBack.sol";
 
-contract Staking is IERC900, IERC900History, ILockable, IsContract, TimeHelpers {
+
+contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack, IsContract, TimeHelpers {
     using SafeMath for uint256;
     using Checkpointing for Checkpointing.History;
     using SafeERC20 for IERC20;
