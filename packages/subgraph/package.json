@@ -4,20 +4,20 @@
   "license": "GPL-3.0-or-later",
   "scripts": {
     "build:graph": "./scripts/build-graph.sh",
-    "build:graph:rinkeby": "NETWORK=rinkeby npm run build:graph",
-    "build:graph:mainnet": "NETWORK=mainnet npm run build:graph",
+    "build:graph:rinkeby": "NETWORK=rinkeby yarn build:graph",
+    "build:graph:mainnet": "NETWORK=mainnet yarn build:graph",
     "build:manifest": "./scripts/build-manifest.sh",
-    "build:manifest:rinkeby": "NETWORK=rinkeby npm run build:manifest",
-    "build:manifest:mainnet": "NETWORK=mainnet npm run build:manifest",
+    "build:manifest:rinkeby": "NETWORK=rinkeby yarn build:manifest",
+    "build:manifest:mainnet": "NETWORK=mainnet yarn build:manifest",
     "codegen": "./scripts/codegen.sh",
-    "codegen:rinkeby": "NETWORK=rinkeby npm run codegen",
-    "codegen:mainnet": "NETWORK=mainnet npm run codegen",
+    "codegen:rinkeby": "NETWORK=rinkeby yarn codegen",
+    "codegen:mainnet": "NETWORK=mainnet yarn codegen",
     "deploy": "./scripts/deploy.sh",
-    "deploy:rinkeby": "NETWORK=rinkeby npm run deploy",
-    "deploy:mainnet": "NETWORK=mainnet npm run deploy"
+    "deploy:rinkeby": "NETWORK=rinkeby yarn deploy",
+    "deploy:mainnet": "NETWORK=mainnet yarn deploy"
   },
   "dependencies": {
-    "@aragon/staking": "^0.2.9"
+    "@aragon/staking": "0.3.0"
   },
   "devDependencies": {
     "@graphprotocol/graph-cli": "0.18.0",

@@ -27,7 +27,7 @@ dataSources:
         - name: ERC20
           file: ./node_modules/@aragon/staking/abi/MiniMeToken.json
       eventHandlers:
-        - event: NewStaking(indexed address,address)
+        - event: NewStaking(indexed address,indexed address)
           handler: handleNewStaking
       file: ./src/StakingFactory.ts
 templates:
@@ -54,14 +54,14 @@ templates:
           handler: handleStaked
         - event: Unstaked(indexed address,uint256,uint256,bytes)
           handler: handleUnstaked
-        - event: LockAmountChanged(indexed address,indexed address,uint256,bool)
+        - event: LockAmountChanged(indexed address,indexed address,uint256)
           handler: handleLockAmountChanged
-        - event: LockAllowanceChanged(indexed address,indexed address,uint256,bool)
+        - event: LockAllowanceChanged(indexed address,indexed address,uint256)
           handler: handleLockAllowanceChanged
-        - event: LockManagerRemoved(indexed address,address)
+        - event: LockManagerRemoved(indexed address,indexed address)
           handler: handleLockManagerRemoved
-        - event: LockManagerTransferred(indexed address,indexed address,address)
+        - event: LockManagerTransferred(indexed address,indexed address,indexed address)
           handler: handleLockManagerTransferred
-        - event: StakeTransferred(indexed address,address,uint256)
+        - event: StakeTransferred(indexed address,indexed address,uint256)
           handler: handleStakeTransferred
       file: ./src/StakingPool.ts

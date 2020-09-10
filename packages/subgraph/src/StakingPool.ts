@@ -26,22 +26,23 @@ export function handleUnstaked(event: Unstaked): void {
 }
 
 export function handleLockAmountChanged(event: LockAmountChanged): void {
-  const stake = loadOrCreateStake(event.address, event.params.account)
-  const lock = loadOrCreateLock(event.address, event.params.account, event.params.lockManager, event)
+  const stake = loadOrCreateStake(event.address, event.params.user)
+  const lock = loadOrCreateLock(event.address, event.params.user, event.params.lockManager, event)
   const pool = StakingPool.load(stake.pool)!
 
-  if (event.params.increase) {
-    stake.locked = stake.locked.plus(event.params.amount)
-    stake.available = stake.available.minus(event.params.amount)
+  const newLockedAmount = event.params.amount
+  const increase = newLockedAmount.gt(lock.amount)
+  const diff = increase ? newLockedAmount.minus(lock.amount) : lock.amount.minus(newLockedAmount)
+  lock.amount = newLockedAmount
 
-    lock.amount = lock.amount.plus(event.params.amount)
-    pool.totalLocked = pool.totalLocked.plus(event.params.amount)
+  if (increase) {
+    stake.locked = stake.locked.plus(diff)
+    stake.available = stake.available.minus(diff)
+    pool.totalLocked = pool.totalLocked.plus(diff)
   } else {
-    stake.locked = stake.locked.minus(event.params.amount)
-    stake.available = stake.available.plus(event.params.amount)
-
-    lock.amount = lock.amount.minus(event.params.amount)
-    pool.totalLocked = pool.totalLocked.minus(event.params.amount)
+    stake.locked = stake.locked.minus(diff)
+    stake.available = stake.available.plus(diff)
+    pool.totalLocked = pool.totalLocked.minus(diff)
   }
 
   stake.save()
@@ -50,27 +51,21 @@ export function handleLockAmountChanged(event: LockAmountChanged): void {
 }
 
 export function handleLockAllowanceChanged(event: LockAllowanceChanged): void {
-  const lock = loadOrCreateLock(event.address, event.params.account, event.params.lockManager, event)
-
-  if (event.params.increase) {
-    lock.allowance = lock.allowance.plus(event.params.allowance)
-  } else {
-    lock.allowance = lock.allowance.minus(event.params.allowance)
-  }
-
+  const lock = loadOrCreateLock(event.address, event.params.user, event.params.lockManager, event)
+  lock.allowance = event.params.allowance
   lock.save()
 }
 
 export function handleLockManagerRemoved(event: LockManagerRemoved): void {
-  const lock = loadOrCreateLock(event.address, event.params.account, event.params.lockManager, event)
+  const lock = loadOrCreateLock(event.address, event.params.user, event.params.lockManager, event)
   lock.amount = BigInt.fromI32(0)
   lock.allowance = BigInt.fromI32(0)
   lock.save()
 }
 
 export function handleLockManagerTransferred(event: LockManagerTransferred): void {
-  const lockTo = loadOrCreateLock(event.address, event.params.account, event.params.newLockManager, event)
-  const lockFrom = loadOrCreateLock(event.address, event.params.account, event.params.oldLockManager, event)
+  const lockTo = loadOrCreateLock(event.address, event.params.user, event.params.newLockManager, event)
+  const lockFrom = loadOrCreateLock(event.address, event.params.user, event.params.oldLockManager, event)
   lockTo.amount = lockTo.amount.plus(lockFrom.amount)
   lockFrom.amount = lockFrom.amount.minus(lockFrom.amount)
   lockTo.save()

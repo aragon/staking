@@ -4,7 +4,7 @@
 set -o errexit
 
 # Run graph build
-npm run build:graph
+yarn build:graph
 
 # Use custom subgraph name based on target network
 SUBGRAPH_EXT="-${NETWORK}"

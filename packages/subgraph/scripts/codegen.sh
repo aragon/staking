@@ -4,7 +4,7 @@
 set -o errexit
 
 # Create manifest
-npm run build:manifest
+yarn build:manifest
 
 # Run codegen
 rm -rf ./types && graph codegen -o types
