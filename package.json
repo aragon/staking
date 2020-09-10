@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "author": "Aragon Assocation <legal@aragon.org>",
-  "license": "(GPL-3.0-or-later OR MIT)",
+  "license": "GPL-3.0-or-later",
   "devDependencies": {
     "lerna": "^3.14.1"
   },
