@@ -52,26 +52,4 @@ interface IERC900 {
      * @return True if the optional history functions are implemented, false otherwise
      */
     function supportsHistory() external pure returns (bool);
-
-    /**
-     * @dev Get last time a user modified its staked balance
-     * @param _user Account requesting for
-     * @return Last block number when account's balance was modified
-     */
-    function lastStakedFor(address _user) external view returns (uint256);
-
-    /**
-     * @dev Get the total amount of tokens staked by a user at a given block number
-     * @param _user Account requesting for
-     * @param _blockNumber Block number at which we are requesting
-     * @return The amount of tokens staked by the account at the given block number
-     */
-    function totalStakedForAt(address _user, uint256 _blockNumber) external view returns (uint256);
-
-    /**
-     * @dev Get the total amount of tokens staked by all users at a given block number
-     * @param _blockNumber Block number at which we are requesting
-     * @return The amount of tokens staked at the given block number
-     */
-    function totalStakedAt(uint256 _blockNumber) external view returns (uint256);
 }
