@@ -1,7 +1,7 @@
 // Brought from https://github.com/aragon/aragonOS/blob/v4.3.0/contracts/lib/token/ERC20.sol
-// Adapted to use pragma ^0.5.8 and satisfy our linter rules
+// Adapted to use pragma ^0.5.17 and satisfy our linter rules
 
-pragma solidity ^0.5.8;
+pragma solidity ^0.5.17;
 
 
 /**

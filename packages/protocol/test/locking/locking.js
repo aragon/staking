@@ -19,9 +19,9 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await approveStakeAndLock({ staking, manager: user1, from: owner })
 
     // check lock values
-    const { _amount, _allowance } = await staking.getLock(owner, user1)
-    assertBn(_amount, DEFAULT_LOCK_AMOUNT, "locked amount should match")
-    assertBn(_allowance, DEFAULT_LOCK_AMOUNT, "locked allowance should match")
+    const { amount, allowance } = await staking.getLock(owner, user1)
+    assertBn(amount, DEFAULT_LOCK_AMOUNT, "locked amount should match")
+    assertBn(allowance, DEFAULT_LOCK_AMOUNT, "locked allowance should match")
 
     assertBn(await staking.unlockedBalanceOf(owner), DEFAULT_STAKE_AMOUNT.sub(DEFAULT_LOCK_AMOUNT), "Unlocked balance should match")
     const { staked, locked } = await staking.getBalancesOf(owner)
@@ -63,8 +63,8 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
   it('creates a new allowance', async () => {
     await staking.allowManager(user1, DEFAULT_LOCK_AMOUNT, EMPTY_DATA)
 
-    const { _allowance  } = await staking.getLock(owner, user1)
-    assertBn(_allowance, DEFAULT_LOCK_AMOUNT, "allowed amount should match")
+    const { allowance  } = await staking.getLock(owner, user1)
+    assertBn(allowance, DEFAULT_LOCK_AMOUNT, "allowed amount should match")
   })
 
   it('creates a new allowance and then lock manager locks', async () => {
@@ -73,9 +73,9 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await staking.lock(owner, DEFAULT_LOCK_AMOUNT, { from: user1 })
 
     // check lock values
-    const { _amount, _allowance } = await staking.getLock(owner, user1)
-    assertBn(_amount, DEFAULT_LOCK_AMOUNT, "locked amount should match")
-    assertBn(_allowance, DEFAULT_LOCK_AMOUNT, "locked allowance should match")
+    const { amount, allowance } = await staking.getLock(owner, user1)
+    assertBn(amount, DEFAULT_LOCK_AMOUNT, "locked amount should match")
+    assertBn(allowance, DEFAULT_LOCK_AMOUNT, "locked allowance should match")
 
     assertBn(await staking.unlockedBalanceOf(owner), DEFAULT_STAKE_AMOUNT.sub(DEFAULT_LOCK_AMOUNT), "Unlocked balance should match")
   })
@@ -94,8 +94,8 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
 
     await staking.increaseLockAllowance(user1, DEFAULT_LOCK_AMOUNT)
 
-    const { _allowance } = await staking.getLock(owner, user1)
-    assertBn(_allowance, DEFAULT_LOCK_AMOUNT.mul(bn(2)), "allowed amount should match")
+    const { allowance } = await staking.getLock(owner, user1)
+    assertBn(allowance, DEFAULT_LOCK_AMOUNT.mul(bn(2)), "allowed amount should match")
   })
 
   it('fails increasing allowance of non-existing', async () => {
@@ -121,8 +121,8 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
 
     await staking.decreaseLockAllowance(owner, user1, 1, { from: owner })
 
-    const { _allowance } = await staking.getLock(owner, user1)
-    assertBn(_allowance, DEFAULT_LOCK_AMOUNT, "allowed amount should match")
+    const { allowance } = await staking.getLock(owner, user1)
+    assertBn(allowance, DEFAULT_LOCK_AMOUNT, "allowed amount should match")
   })
 
   it('decreases allowance of existing lock by manager', async () => {
@@ -132,8 +132,8 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
 
     await staking.decreaseLockAllowance(owner, user1, 1, { from: user1 })
 
-    const { _allowance } = await staking.getLock(owner, user1)
-    assertBn(_allowance, DEFAULT_LOCK_AMOUNT, "allowed amount should match")
+    const { allowance } = await staking.getLock(owner, user1)
+    assertBn(allowance, DEFAULT_LOCK_AMOUNT, "allowed amount should match")
   })
 
   it('fails decreasing allowance of existing lock by 0', async () => {
@@ -173,8 +173,8 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     await staking.increaseLockAllowance(user1, DEFAULT_LOCK_AMOUNT)
     await staking.lock(owner, DEFAULT_LOCK_AMOUNT, { from: user1 })
 
-    const { _amount } = await staking.getLock(owner, user1)
-    assertBn(_amount, DEFAULT_LOCK_AMOUNT.mul(bn(2)), "locked amount should match")
+    const { amount } = await staking.getLock(owner, user1)
+    assertBn(amount, DEFAULT_LOCK_AMOUNT.mul(bn(2)), "locked amount should match")
   })
 
   it('fails increasing lock with 0 tokens', async () => {
@@ -338,7 +338,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
 
   it('change lock amount', async () => {
     await approveStakeAndLock({ staking, manager: lockManager, from: owner })
-    const { _amount: amount1 } = await staking.getLock(owner, lockManager.address)
+    const { amount: amount1 } = await staking.getLock(owner, lockManager.address)
     assertBn(amount1, bn(DEFAULT_LOCK_AMOUNT), "Amount should match")
     assertBn(await staking.unlockedBalanceOf(owner), DEFAULT_STAKE_AMOUNT.sub(DEFAULT_LOCK_AMOUNT), "Unlocked balance should match")
 
@@ -346,7 +346,7 @@ contract('Staking app, Locking', ([owner, user1, user2]) => {
     const unlockAmount = DEFAULT_LOCK_AMOUNT.div(bn(2))
     await lockManager.unlock(staking.address, owner, unlockAmount)
 
-    const { _amount: amount2 } = await staking.getLock(owner, lockManager.address)
+    const { amount: amount2 } = await staking.getLock(owner, lockManager.address)
     assertBn(amount2, unlockAmount, "Amount should match")
     assertBn(await staking.unlockedBalanceOf(owner), DEFAULT_STAKE_AMOUNT.sub(unlockAmount), "Unlocked balance should match")
   })

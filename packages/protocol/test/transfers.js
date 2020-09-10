@@ -83,7 +83,7 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
         assertBn(await staking.totalStaked(), totalStaked, "Total stake should match")
 
         // check lock values
-        const { _amount: amount, _data: data }  = await staking.getLock(owner, lockManager.address)
+        const { amount, data }  = await staking.getLock(owner, lockManager.address)
         assertBn(amount, DEFAULT_LOCK_AMOUNT.sub(transferAmount), "locked amount should match")
       })
 
@@ -103,7 +103,7 @@ contract('Staking app, Transferring', ([owner, user1, user2]) => {
         assertBn(await staking.totalStaked(), totalStaked, "Total stake should match")
 
         // check lock values
-        const { _amount: amount, _data: data }  = await staking.getLock(owner, lockManager.address)
+        const { amount: amount, data: data }  = await staking.getLock(owner, lockManager.address)
         assertBn(amount, bn(0), "locked amount should match")
       })
 

@@ -14,8 +14,8 @@ interface IERC900 {
     function stake(uint256 _amount, bytes calldata _data) external;
 
     /**
-     * @dev Stake a certain amount of tokens in favor of someone
-     * @param _user Address to stake an amount of tokens to
+     * @dev Stake a certain amount of tokens to another address
+     * @param _user Address to stake tokens to
      * @param _amount Amount of tokens to be staked
      * @param _data Optional data that can be used to add signalling information in more complex staking applications
      */
@@ -29,27 +29,27 @@ interface IERC900 {
     function unstake(uint256 _amount, bytes calldata _data) external;
 
     /**
-     * @dev Tell the total amount of tokens staked for an address
-     * @param _addr Address querying the total amount of tokens staked for
-     * @return Total amount of tokens staked for an address
+     * @dev Tell the current total amount of tokens staked for an address
+     * @param _addr Address to query
+     * @return Current total amount of tokens staked for the address
      */
     function totalStakedFor(address _addr) external view returns (uint256);
 
     /**
-     * @dev Tell the total amount of tokens staked
-     * @return Total amount of tokens staked
+     * @dev Tell the current total amount of tokens staked from all addresses
+     * @return Current total amount of tokens staked from all addresses
      */
     function totalStaked() external view returns (uint256);
 
     /**
-     * @dev Tell the address of the token used for staking
-     * @return Address of the token used for staking
+     * @dev Tell the address of the staking token
+     * @return Address of the staking token
      */
     function token() external view returns (address);
 
     /*
-     * @dev Tell if the current registry supports historic information or not
-     * @return True if the optional history functions are implemented, false otherwise
+     * @dev Tell if the optional history functions are implemented
+     * @return True if the optional history functions are implemented
      */
     function supportsHistory() external pure returns (bool);
 }
