@@ -121,20 +121,7 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
      * @param _amount Number of tokens to be transferred
      */
     function transferAndUnstake(address _to, uint256 _amount) external {
-        // transferring 0 staked tokens is invalid
-        require(_amount > 0, ERROR_AMOUNT_ZERO);
-
-        // update stake
-        uint256 newStake = _modifyStakeBalance(msg.sender, _amount, false);
-
-        // checkpoint total supply
-        _modifyTotalStaked(_amount, false);
-
-        emit Unstaked(msg.sender, _amount, newStake, new bytes(0));
-
-        // transfer tokens
-        require(token.safeTransfer(_to, _amount), ERROR_TOKEN_TRANSFER);
-
+        _transferAndUnstake(msg.sender, _to, _amount);
     }
 
     /**
@@ -155,21 +142,8 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
      * @param _amount Number of tokens to be transferred
      */
     function slashAndUnstake(address _from, address _to, uint256 _amount) external {
-        // transferring 0 staked tokens is invalid
-        require(_amount > 0, ERROR_AMOUNT_ZERO);
-
         _unlockUnsafe(_from, msg.sender, _amount);
-
-        // update stakes
-        uint256 newStake = _modifyStakeBalance(_from, _amount, false);
-
-        // checkpoint total supply
-        _modifyTotalStaked(_amount, false);
-
-        emit Unstaked(_from, _amount, newStake, new bytes(0));
-
-        // transfer tokens
-        require(token.safeTransfer(_to, _amount), ERROR_TOKEN_TRANSFER);
+        _transferAndUnstake(_from, _to, _amount);
     }
 
     /**
@@ -529,6 +503,25 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
         _modifyStakeBalance(_to, _amount, true);
 
         emit StakeTransferred(_from, _to, _amount);
+    }
+
+    /**
+     * @dev This is similar to a `_transfer()` followed by a `_unstake()`, but optimized to avoid spurious SSTOREs on modifying _to's checkpointed balance
+     */
+    function _transferAndUnstake(address _from, address _to, uint256 _amount) internal {
+        // transferring 0 staked tokens is invalid
+        require(_amount > 0, ERROR_AMOUNT_ZERO);
+
+        // update stake
+        uint256 newStake = _modifyStakeBalance(_from, _amount, false);
+
+        // checkpoint total supply
+        _modifyTotalStaked(_amount, false);
+
+        emit Unstaked(_from, _amount, newStake, new bytes(0));
+
+        // transfer tokens
+        require(token.safeTransfer(_to, _amount), ERROR_TOKEN_TRANSFER);
     }
 
     /**
