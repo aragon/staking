@@ -1,10 +1,10 @@
 pragma solidity 0.5.17;
 
+import "./lib/Checkpointing.sol";
+import "./lib/os/IsContract.sol";
 import "./lib/os/SafeMath.sol";
 import "./lib/os/SafeERC20.sol";
-import "./lib/os/IsContract.sol";
 import "./lib/os/TimeHelpers.sol";
-import "./lib/Checkpointing.sol";
 
 import "./locking/ILockable.sol";
 import "./locking/ILockManager.sol";
@@ -15,9 +15,9 @@ import "./standards/IApproveAndCallFallBack.sol";
 
 
 contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack, IsContract, TimeHelpers {
-    using SafeMath for uint256;
     using Checkpointing for Checkpointing.History;
     using SafeERC20 for IERC20;
+    using SafeMath for uint256;
 
     uint256 private constant MAX_UINT64 = uint256(uint64(-1));
 
