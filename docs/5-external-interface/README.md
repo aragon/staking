@@ -1,11 +1,11 @@
 # External interface
 
+// Note: is there any point in this file if it's just duplicating the entry points?
 ### Initialize
 
 - **Name:** initialize
 - **Inputs:**
   - **_stakingToken:** ERC20 token to be used for staking
-
 
 ## Staking ERC900 interface
 
@@ -193,7 +193,6 @@
 - **Outputs:**
   - Total amount of locked tokens for the requested account
 
-
 ### Get lock
 
 - **Name:** getLock
@@ -204,7 +203,6 @@
   - **_amount:** Amount of locked tokens
   - **_allowance:** Amount of tokens that lock manager is allowed to lock
 
-
 ### Get balances of
 
 - **Name:** getBalancesOf
@@ -214,7 +212,6 @@
   - **staked:** Amount of staked tokens
   - **locked:** Amount of total locked tokens
 
-
 ### Unlocked balance of
 
 - **Name:** unlockedBalanceOf
@@ -222,7 +219,6 @@
   - **_user:** Owner of the staked but unlocked balance
 - **Outputs:**
   - Amount of tokens staked but not locked by given account
-
 
 ### Can unlock
 
@@ -244,5 +240,3 @@
   - **_amount:** Amount of `_token` tokens being approved
   - **_token:** MiniMeToken that is being approved and that the call comes from
   - **_data:** Used in Staked event, to add signalling information in more complex staking applications
-
-

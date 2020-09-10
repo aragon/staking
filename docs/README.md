@@ -1,11 +1,11 @@
-The Staking app complies with [interface ERC900](https://eips.ethereum.org/EIPS/eip-900) with the following added features:
+Staking complies with the [ERC-900 interface](https://eips.ethereum.org/EIPS/eip-900) and adds the following features:
 
 - Anti-sybil protection
 - Locking-slashing mechanism
 
-The main motivation is to be used in conjunction with [Agreements](https://github.com/aragon/aragon-apps/tree/master/apps/agreement) in the context of Aragon Network, but it has been designed to be as generic as possible, in order to allow for other use cases too.
+The main motivation is to be used in conjunction with [Agreements](https://github.com/aragon/aragon-apps/tree/master/apps/agreement) in the context of the Aragon Network, but it has been designed to be as generic as possible, in order to allow for other use cases too.
 
-You can read the initial motivation and spec for this [here](https://forum.aragon.org/t/staking-locks-spec-v2/217).
+More discussion behind our motivations and use cases are available [here](https://forum.aragon.org/t/staking-locks-spec-v2/217).
 
 ## Table of Contents
 
@@ -16,4 +16,3 @@ You can read the initial motivation and spec for this [here](https://forum.arago
 5. [External interface](./5-external-interface)
 6. [Deployment](./6-deployment)
 7. [Testing guide](./7-testing-guide)
-
