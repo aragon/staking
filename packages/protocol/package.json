@@ -13,17 +13,15 @@
     "/test"
   ],
   "scripts": {
-    "postinstall": "yarn build",
-    "build": "yarn compile --all && yarn abi:extract -- --no-compile",
     "compile": "truffle compile",
-    "abi:extract": "truffle-extract --output abi/ --keys abi",
     "lint": "solium --dir ./contracts",
     "test": "TRUFFLE_TEST=true yarn ganache-cli:test",
     "test:gas": "GAS_REPORTER=true yarn test",
-    "coverage": "npx truffle run coverage",
-    "truffle:dev": "node_modules/.bin/truffle dev",
+    "coverage": "truffle run coverage",
     "ganache-cli:test": "./node_modules/@aragon/contract-helpers-test/ganache-cli.sh",
-    "prepublish": "yarn build"
+    "clean": "rm -rf abi/ build/",
+    "abi:extract": "truffle-extract --output abi/ --keys abi",
+    "prepublishOnly": "yarn clean && yarn compile --all && yarn abi:extract --no-compile"
   },
   "devDependencies": {
     "@aragon/contract-helpers-test": "^0.0.3",
