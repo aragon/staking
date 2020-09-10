@@ -1,8 +1,5 @@
 # dependencies
 node_modules
 
-# build files
-abi
-
 # lock files
 package-lock.json
