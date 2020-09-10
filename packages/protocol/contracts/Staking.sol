@@ -326,13 +326,13 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
         external
         view
         returns (
-            uint256 _amount,
-            uint256 _allowance
+            uint256 amount,
+            uint256 allowance
         )
     {
         Lock storage lock_ = accounts[_user].locks[_lockManager];
-        _amount = lock_.amount;
-        _allowance = lock_.allowance;
+        amount = lock_.amount;
+        allowance = lock_.allowance;
     }
 
     /**
