@@ -40,11 +40,11 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
 
     struct Lock {
         uint256 amount;
-        uint256 allowance;  // must be greater than zero to consider the lock active, and always greater than or equal to amount
+        uint256 allowance; // A lock is considered active when its allowance is greater than zero, and the allowance is always greater than or equal to amount
     }
 
     struct Account {
-        mapping (address => Lock) locks; // from manager to lock
+        mapping (address => Lock) locks; // Mapping of lock manager => lock info
         uint256 totalLocked;
         Checkpointing.History stakedHistory;
     }
@@ -63,42 +63,46 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     }
 
     /**
-     * @notice Stakes `@tokenAmount(self.token(): address, _amount)`, transferring them from `msg.sender`
-     * @param _amount Number of tokens staked
-     * @param _data Used in Staked event, to add signalling information in more complex staking applications
+     * @notice Stake `@tokenAmount(self.token(): address, _amount)`
+     * @dev Callable only by a user
+     * @param _amount Amount of tokens to be staked
+     * @param _data Optional data emitted with the Staked event, to add signalling information in more complex staking applications
      */
     function stake(uint256 _amount, bytes calldata _data) external {
         _stakeFor(msg.sender, msg.sender, _amount, _data);
     }
 
     /**
-     * @notice Stakes `@tokenAmount(self.token(): address, _amount)`, transferring them from `msg.sender`, and assigns them to `_user`
-     * @param _user The receiving accounts for the tokens staked
-     * @param _amount Number of tokens staked
-     * @param _data Used in Staked event, to add signalling information in more complex staking applications
+     * @notice Stake `@tokenAmount(self.token(): address, _amount)` for `_user`
+     * @dev Callable only by a user
+     * @param _user Address to stake tokens to
+     * @param _amount Amount of tokens to be staked
+     * @param _data Optional data emitted with the Staked event, to add signalling information in more complex staking applications
      */
     function stakeFor(address _user, uint256 _amount, bytes calldata _data) external {
         _stakeFor(msg.sender, _user, _amount, _data);
     }
 
     /**
-     * @notice Unstakes `@tokenAmount(self.token(): address, _amount)`, returning them to the user
-     * @param _amount Number of tokens to unstake
-     * @param _data Used in Unstaked event, to add signalling information in more complex staking applications
+     * @notice Unstake `@tokenAmount(self.token(): address, _amount)`
+     * @dev Callable only by a user
+     * @param _amount Amount of tokens to be unstaked
+     * @param _data Optional data emitted with the Unstaked event, to add signalling information in more complex staking applications
      */
     function unstake(uint256 _amount, bytes calldata _data) external {
-        // unstaking 0 tokens is not allowed
+        // _unstake() expects the caller to do this check
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
         _unstake(msg.sender, _amount, _data);
     }
 
     /**
-     * @notice Allow `_lockManager` to lock up to `@tokenAmount(self.token(): address, _allowance)` of `msg.sender`
-     *         It creates a new lock, so the lock for this manager cannot exist before.
-     * @param _lockManager The manager entity for this particular lock
-     * @param _allowance Amount of tokens that the manager can lock
-     * @param _data Data to parametrize logic for the lock to be enforced by the manager
+     * @notice Allow `_lockManager` to lock up to `@tokenAmount(self.token(): address, _allowance)` of your staked balance
+     * @dev Callable only by a user.
+     *      This creates a new lock, so this manager cannot have an existing lock in place for the caller.
+     * @param _lockManager Lock manager
+     * @param _allowance Amount of tokens the manager will be allowed to lock
+     * @param _data Optional, arbitrary data to be submitted to the manager
      */
     function allowManager(address _lockManager, uint256 _allowance, bytes calldata _data) external {
         _allowManager(_lockManager, _allowance, _data);
@@ -106,27 +110,30 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
 
     /**
      * @notice Transfer `@tokenAmount(self.token(): address, _amount)` to `_to`’s staked balance
-     * @param _to Recipient of the tokens
-     * @param _amount Number of tokens to be transferred
+     * @dev Callable only by a user
+     * @param _to Recipient
+     * @param _amount Amount of tokens to be transferred
      */
     function transfer(address _to, uint256 _amount) external {
         _transfer(msg.sender, _to, _amount);
     }
 
     /**
-     * @notice Transfer `@tokenAmount(self.token(): address, _amount)` belonging to `msg.sender`’s stake to `_to`’s external balance (i.e. unstaked)
-     * @param _to Recipient of the tokens
-     * @param _amount Number of tokens to be transferred
+     * @notice Transfer `@tokenAmount(self.token(): address, _amount)` directly to `_to`’s balance
+     * @dev Callable only by a user
+     * @param _to Recipient
+     * @param _amount Amount of tokens to be transferred
      */
     function transferAndUnstake(address _to, uint256 _amount) external {
         _transferAndUnstake(msg.sender, _to, _amount);
     }
 
     /**
-     * @notice Transfer `@tokenAmount(self.token(): address, _amount)` from `_from`'s lock by `msg.sender` to `_to`
-     * @param _from Owner of locked tokens
-     * @param _to Recipient of the tokens
-     * @param _amount Number of tokens to be transferred
+     * @notice Slash `@tokenAmount(self.token(): address, _amount)` from `_from`'s locked balance to `_to`'s staked balance
+     * @dev Callable only by a lock manager
+     * @param _from Owner of the locked tokens
+     * @param _to Recipient
+     * @param _amount Amount of tokens to be transferred via slashing
      */
     function slash(address _from, address _to, uint256 _amount) external {
         _unlockUnsafe(_from, msg.sender, _amount);
@@ -134,10 +141,11 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     }
 
     /**
-     * @notice Transfer `@tokenAmount(self.token(): address, _amount)` from `_from`'s lock by `msg.sender` to `_to` (unstaked)
-     * @param _from Owner of locked tokens
-     * @param _to Recipient of the tokens
-     * @param _amount Number of tokens to be transferred
+     * @notice Slash `@tokenAmount(self.token(): address, _amount)` from `_from`'s locked balance  directly to `_to`'s balance
+     * @dev Callable only by a lock manager
+     * @param _from Owner of the locked tokens
+     * @param _to Recipient
+     * @param _amount Amount of tokens to be transferred via slashing
      */
     function slashAndUnstake(address _from, address _to, uint256 _amount) external {
         _unlockUnsafe(_from, msg.sender, _amount);
@@ -145,11 +153,12 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     }
 
     /**
-     * @notice Transfer `@tokenAmount(self.token(): address, _slashAmount)` from `_from`'s lock by `msg.sender` to `_to`, and decrease `@tokenAmount(self.token(): address, _unlockAmount)` from that lock
-     * @param _from Owner of locked tokens
-     * @param _to Recipient of the tokens
-     * @param _unlockAmount Number of tokens to be unlocked
-     * @param _slashAmount Number of tokens to be transferred
+     * @notice Slash `@tokenAmount(self.token(): address, _slashAmount)` from `_from`'s locked balance to `_to`'s staked balance, and leave an additional `@tokenAmount(self.token(): address, _unlockAmount)` unlocked for `_from`
+     * @dev Callable only by a lock manager
+     * @param _from Owner of the locked tokens
+     * @param _to Recipient
+     * @param _unlockAmount Amount of tokens to be left unlocked
+     * @param _slashAmount Amount of tokens to be transferred via slashing
      */
     function slashAndUnlock(
         address _from,
@@ -164,9 +173,10 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     }
 
     /**
-     * @notice Increase allowance by `@tokenAmount(self.token(): address, _allowance)` of lock manager `_lockManager` for user `msg.sender`
-     * @param _lockManager The manager entity for this particular lock
-     * @param _allowance Amount of allowed tokens increase
+     * @notice Increase allowance of lock manager `_lockManager` by `@tokenAmount(self.token(): address, _allowance)`
+     * @dev Callable only by a user
+     * @param _lockManager Lock manager
+     * @param _allowance Amount to increase allowance by
      */
     function increaseLockAllowance(address _lockManager, uint256 _allowance) external {
         Lock storage lock_ = accounts[msg.sender].locks[_lockManager];
@@ -176,20 +186,21 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     }
 
     /**
-     * @notice Decrease allowance by `@tokenAmount(self.token(): address, _allowance)` of lock manager `_lockManager` for user `_user`
-     * @param _user Owner of locked tokens
-     * @param _lockManager The manager entity for this particular lock
-     * @param _allowance Amount of allowed tokens decrease
+     * @notice Decrease allowance of lock manager `_lockManager` by `@tokenAmount(self.token(): address, _allowance)`
+     * @dev Callable only by the user or lock manager.
+     *      Cannot completely remove the allowance to the lock manager (and deactivate the lock).
+     * @param _user Owner of the locked tokens
+     * @param _lockManager Lock manager
+     * @param _allowance Amount to decrease allowance by
      */
     function decreaseLockAllowance(address _user, address _lockManager, uint256 _allowance) external {
-        // only owner and manager can decrease allowance
         require(msg.sender == _user || msg.sender == _lockManager, ERROR_CANNOT_CHANGE_ALLOWANCE);
         require(_allowance > 0, ERROR_AMOUNT_ZERO);
 
         Lock storage lock_ = accounts[_user].locks[_lockManager];
         uint256 newAllowance = lock_.allowance.sub(_allowance);
         require(newAllowance >= lock_.amount, ERROR_NOT_ENOUGH_ALLOWANCE);
-        // unlockAndRemoveManager must be used for this:
+        // unlockAndRemoveManager() must be used for this:
         require(newAllowance > 0, ERROR_ALLOWANCE_ZERO);
 
         lock_.allowance = newAllowance;
@@ -198,9 +209,10 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     }
 
     /**
-     * @notice Increase locked amount by `@tokenAmount(self.token(): address, _amount)` for user `_user` by lock manager `msg.sender`
-     * @param _user Owner of locked tokens
-     * @param _amount Amount of locked tokens increase
+     * @notice Lock `@tokenAmount(self.token(): address, _amount)` to lock manager `msg.sender`
+     * @dev Callable only by an allowed lock manager
+     * @param _user Owner of the locked tokens
+     * @param _amount Amount of tokens to lock
      */
     function lock(address _user, uint256 _amount) external {
         require(_amount > 0, ERROR_AMOUNT_ZERO);
@@ -224,27 +236,28 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     }
 
     /**
-     * @notice Decrease locked amount by `@tokenAmount(self.token(): address, _amount)` for user `_user` by lock manager `_lockManager`
-     * @param _user Owner of locked tokens
-     * @param _lockManager The manager entity for this particular lock
-     * @param _amount Amount of locked tokens decrease
+     * @notice Unlock `@tokenAmount(self.token(): address, _amount)` from lock manager `_lockManager`
+     * @dev Callable only by the user or lock manager. If called by the user, checks with the lock manager whether the request should be allowed.
+     * @param _user Owner of the locked tokens
+     * @param _lockManager Lock manager
+     * @param _amount Amount of tokens to unlock
      */
     function unlock(address _user, address _lockManager, uint256 _amount) external {
+        // _unlockUnsafe() expects the caller to do this check
         require(_amount > 0, ERROR_AMOUNT_ZERO);
 
-        // only manager and owner (if manager allows) can unlock
         require(_canUnlockUnsafe(msg.sender, _user, _lockManager, _amount), ERROR_CANNOT_UNLOCK);
 
         _unlockUnsafe(_user, _lockManager, _amount);
     }
 
     /**
-     * @notice Unlock `_user`'s lock by `_lockManager` so locked tokens can be unstaked again
-     * @param _user Owner of locked tokens
-     * @param _lockManager Manager of the lock for the given account
+     * @notice Unlock all tokens from lock manager `_lockManager` and remove them as a manager
+     * @dev Callable only by the user or lock manager. If called by the user, checks with the lock manager whether the request should be allowed.
+     * @param _user Owner of the locked tokens
+     * @param _lockManager Lock manager
      */
     function unlockAndRemoveManager(address _user, address _lockManager) external {
-        // only manager and owner (if manager allows) can unlock
         require(_canUnlockUnsafe(msg.sender, _user, _lockManager, 0), ERROR_CANNOT_UNLOCK);
 
         Account storage account = accounts[_user];
@@ -261,11 +274,14 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     }
 
     /**
-     * @dev MiniMeToken ApproveAndCallFallBack compliance
+    /**
+     * @dev ApproveAndCallFallBack compliance.
+     *      Stakes the approved tokens for the user, allowing users to stake their tokens in a single transaction.
+     *      Callable only by the staking token.
      * @param _from Account approving tokens
-     * @param _amount Amount of `_token` tokens being approved
-     * @param _token MiniMeToken that is being approved and that the call comes from
-     * @param _data Used in Staked event, to add signalling information in more complex staking applications
+     * @param _amount Amount of tokens being approved
+     * @param _token Token being approved, should be the caller
+     * @param _data Optional data emitted with the Staked event, to add signalling information in more complex staking applications
      */
     function receiveApproval(address _from, uint256 _amount, address _token, bytes calldata _data) external {
         require(_token == msg.sender && _token == address(token), ERROR_WRONG_TOKEN);
@@ -274,7 +290,7 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     }
 
     /**
-     * @notice Check whether it supports history of stakes
+     * @dev Tell whether the history methods are supported
      * @return Always true
      */
     function supportsHistory() external pure returns (bool) {
@@ -282,27 +298,27 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     }
 
     /**
-     * @notice Get last time `_user` modified its staked balance
-     * @param _user Account requesting for
-     * @return Last block number when account's balance was modified
+     * @dev Tell the last time `_user` modified their staked balance
+     * @param _user Address
+     * @return Last block number the account's staked balance was modified. 0 if it has never been modified.
      */
     function lastStakedFor(address _user) external view returns (uint256) {
         return accounts[_user].stakedHistory.lastUpdate();
     }
 
     /**
-     * @notice Get total amount of locked tokens for `_user`
-     * @param _user Owner of locks
-     * @return Total amount of locked tokens for the requested account
+     * @dev Tell the current locked balance for `_user`
+     * @param _user Address
+     * @return Amount of locked tokens owned by the requested account across all locks
      */
     function lockedBalanceOf(address _user) external view returns (uint256) {
         return _lockedBalanceOf(_user);
     }
 
     /**
-     * @notice Get details of `_user`'s lock by `_lockManager`
-     * @param _user Owner of lock
-     * @param _lockManager Manager of the lock for the given account
+     * @dev Tell details of `_user`'s lock managed by `_lockManager`
+     * @param _user Address
+     * @param _lockManager Lock manager
      * @return Amount of locked tokens
      * @return Amount of tokens that lock manager is allowed to lock
      */
@@ -320,10 +336,10 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     }
 
     /**
-     * @notice Get staked and locked balances of `_user`
-     * @param _user Account being requested
-     * @return Amount of staked tokens
-     * @return Amount of total locked tokens
+     * @dev Tell the current staked and locked balances for `_user`
+     * @param _user Address
+     * @return Staked balance
+     * @return Locked balance
      */
     function getBalancesOf(address _user) external view returns (uint256 staked, uint256 locked) {
         staked = _totalStakedFor(_user);
@@ -331,27 +347,27 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     }
 
     /**
-     * @notice Get the amount of tokens staked by `_user`
-     * @param _user The owner of the tokens
-     * @return The amount of tokens staked by the given account
+     * @dev Tell the current staked balance for `_user`
+     * @param _user Address
+     * @return Staked balance
      */
     function totalStakedFor(address _user) external view returns (uint256) {
         return _totalStakedFor(_user);
     }
 
     /**
-     * @notice Get the total amount of tokens staked by all users
-     * @return The total amount of tokens staked by all users
+     * @dev Tell the total staked balance from all users
+     * @return The total amount of staked tokens from all users
      */
     function totalStaked() external view returns (uint256) {
         return _totalStaked();
     }
 
     /**
-     * @notice Get the total amount of tokens staked by `_user` at block number `_blockNumber`
-     * @param _user Account requesting for
-     * @param _blockNumber Block number at which we are requesting
-     * @return The amount of tokens staked by the account at the given block number
+     * @dev Tell the staked balance for `_user` at block number `_blockNumber`
+     * @param _user Address
+     * @param _blockNumber Block height
+     * @return Staked balance at the given block number
      */
     function totalStakedForAt(address _user, uint256 _blockNumber) external view returns (uint256) {
         require(_blockNumber <= MAX_UINT64, ERROR_BLOCKNUMBER_TOO_BIG);
@@ -360,9 +376,9 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     }
 
     /**
-     * @notice Get the total amount of tokens staked by all users at block number `_blockNumber`
-     * @param _blockNumber Block number at which we are requesting
-     * @return The amount of tokens staked at the given block number
+     * @dev Tell the total staked balance from all users at block number `_blockNumber`
+     * @param _blockNumber Block height
+     * @return The total amount of staked tokens from all users at the given block number
      */
     function totalStakedAt(uint256 _blockNumber) external view returns (uint256) {
         require(_blockNumber <= MAX_UINT64, ERROR_BLOCKNUMBER_TOO_BIG);
@@ -371,21 +387,21 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     }
 
     /**
-     * @notice Get the staked but unlocked amount of tokens by `_user`
-     * @param _user Owner of the staked but unlocked balance
-     * @return Amount of tokens staked but not locked by given account
+     * @dev Tell the portion of `user`'s staked balance that can be immediately withdrawn
+     * @param _user Address
+     * @return Amount of tokens available to be withdrawn
      */
     function unlockedBalanceOf(address _user) external view returns (uint256) {
         return _unlockedBalanceOf(_user);
     }
 
     /**
-     * @notice Check if `_sender` can unlock `_user`'s `@tokenAmount(self.token(): address, _amount)` locked by `_lockManager`
-     * @param _sender Account that would try to unlock tokens
+     * @dev Check if `_sender` can unlock `@tokenAmount(self.token(): address, _amount)` from `_user`'s lock managed by `_lockManager`
+     * @param _sender Address that would try to unlock tokens
      * @param _user Owner of lock
-     * @param _lockManager Manager of the lock for the given owner
-     * @param _amount Amount of tokens to be potentially unlocked. If zero, it means the whole locked amount
-     * @return Whether given lock of given owner can be unlocked by given sender
+     * @param _lockManager Lock manager
+     * @param _amount Amount of locked tokens to unlock. If zero, the full locked amount.
+     * @return Whether sender is allowed to unlock tokens from the given lock
      */
     function canUnlock(address _sender, address _user, address _lockManager, uint256 _amount) external view returns (bool) {
         return _canUnlockUnsafe(_sender, _user, _lockManager, _amount);
@@ -407,6 +423,9 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
         emit Staked(_user, _amount, newStake, _data);
     }
 
+    /**
+     * @dev Assumes the caller has already checked _amount > 0
+     */
     function _unstake(address _from, uint256 _amount, bytes memory _data) internal {
         // checkpoint updated staking balance
         uint256 newStake = _modifyStakeBalance(_from, _amount, false);
@@ -453,7 +472,7 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
 
     function _allowManager(address _lockManager, uint256 _allowance, bytes memory _data) internal {
         Lock storage lock_ = accounts[msg.sender].locks[_lockManager];
-        // check if lock exists
+        // ensure lock doesn't exist yet
         require(lock_.allowance == 0, ERROR_LOCK_ALREADY_EXISTS);
 
         emit NewLockManager(msg.sender, _lockManager, _data);
@@ -522,30 +541,16 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
         require(token.safeTransfer(_to, _amount), ERROR_TOKEN_TRANSFER);
     }
 
-    /**
-     * @notice Get the amount of tokens staked by `_user`
-     * @param _user The owner of the tokens
-     * @return The amount of tokens staked by the given account
-     */
     function _totalStakedFor(address _user) internal view returns (uint256) {
         // we assume it's not possible to stake in the future
         return accounts[_user].stakedHistory.getLast();
     }
 
-    /**
-     * @notice Get the total amount of tokens staked by all users
-     * @return The total amount of tokens staked by all users
-     */
     function _totalStaked() internal view returns (uint256) {
         // we assume it's not possible to stake in the future
         return totalStakedHistory.getLast();
     }
 
-    /**
-     * @notice Get the staked but unlocked amount of tokens by `_user`
-     * @param _user Owner of the staked but unlocked balance
-     * @return Amount of tokens staked but not locked by given account
-     */
     function _unlockedBalanceOf(address _user) internal view returns (uint256) {
         return _totalStakedFor(_user).sub(_lockedBalanceOf(_user));
     }
@@ -555,13 +560,12 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
     }
 
     /**
-     * @notice Check if `_sender` can unlock `_user`'s `@tokenAmount(self.token(): address, _amount)` locked by `_lockManager`
-     * @dev If calling this from a state modifying function trying to unlock tokens, make sure first parameter is `msg.sender`
-     * @param _sender Account that would try to unlock tokens
+     * @dev If calling this from a state modifying function trying to unlock tokens, make sure the first parameter is `msg.sender`.
+     * @param _sender Address that would try to unlock tokens
      * @param _user Owner of lock
-     * @param _lockManager Manager of the lock for the given owner
-     * @param _amount Amount of locked tokens to unlock. If zero, the full locked amount
-     * @return Whether given lock of given owner can be unlocked by given sender
+     * @param _lockManager Lock manager
+     * @param _amount Amount of locked tokens to unlock. If zero, the full locked amount.
+     * @return Whether sender is allowed to unlock tokens from the given lock
      */
     function _canUnlockUnsafe(address _sender, address _user, address _lockManager, uint256 _amount) internal view returns (bool) {
         Lock storage lock_ = accounts[_user].locks[_lockManager];
@@ -580,8 +584,8 @@ contract Staking is IERC900, IERC900History, ILockable, IApproveAndCallFallBack,
             return false;
         }
 
-        // The sender must therefore be the owner of the tokens
-        // Allow unlocking if the amount of locked tokens has already been decreased to 0
+        // The sender must be the user
+        // Allow unlocking if the amount of locked tokens for the user has already been decreased to 0
         if (amount == 0) {
             return true;
         }

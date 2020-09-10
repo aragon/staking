@@ -112,7 +112,7 @@ library Checkpointing {
     }
 
     /**
-     * @dev Private function execute a binary search to find the most recent registered past value of a history based on
+     * @dev Private function to execute a binary search to find the most recent registered past value of a history based on
      *      a given point in time. It will return zero if there is no registered value or if given time is previous to
      *      the first registered value. Note that this function will be more suitable when don't know how recent the
      *      time used to index may be.

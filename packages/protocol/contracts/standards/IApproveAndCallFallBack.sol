@@ -1,3 +1,5 @@
+// See MiniMe token (https://github.com/Giveth/minime/blob/master/contracts/MiniMeToken.sol)
+
 pragma solidity ^0.5.17;
 
 
