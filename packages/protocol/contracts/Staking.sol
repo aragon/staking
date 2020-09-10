@@ -222,7 +222,7 @@ contract Staking is IERC900, IERC900History, ILockable, IERC223Recipient, IAppro
 
         lock_.allowance = newAllowance;
 
-        emit LockAllowanceChanged(_user, _lockManager, _allowance, false);
+        emit LockAllowanceChanged(_user, _lockManager, newAllowance);
     }
 
     /**
@@ -248,7 +248,7 @@ contract Staking is IERC900, IERC900History, ILockable, IERC223Recipient, IAppro
         // update total
         account.totalLocked = account.totalLocked.add(_amount);
 
-        emit LockAmountChanged(_user, msg.sender, _amount, true);
+        emit LockAmountChanged(_user, msg.sender, newAmount);
     }
 
     /**
@@ -282,7 +282,7 @@ contract Staking is IERC900, IERC900History, ILockable, IERC223Recipient, IAppro
         // update total
         account.totalLocked = account.totalLocked.sub(amount);
 
-        emit LockAmountChanged(_user, _lockManager, amount, false);
+        emit LockAmountChanged(_user, _lockManager, 0);
         emit LockManagerRemoved(_user, _lockManager);
 
         delete account.locks[_lockManager];
@@ -514,9 +514,10 @@ contract Staking is IERC900, IERC900History, ILockable, IERC223Recipient, IAppro
     function _increaseLockAllowance(address _lockManager, Lock storage _lock, uint256 _allowance) internal {
         require(_allowance > 0, ERROR_AMOUNT_ZERO);
 
-        _lock.allowance = _lock.allowance.add(_allowance);
+        uint256 newAllowance = _lock.allowance.add(_allowance);
+        _lock.allowance = newAllowance;
 
-        emit LockAllowanceChanged(msg.sender, _lockManager, _allowance, true);
+        emit LockAllowanceChanged(msg.sender, _lockManager, newAllowance);
     }
 
     /**
@@ -532,12 +533,13 @@ contract Staking is IERC900, IERC900History, ILockable, IERC223Recipient, IAppro
 
         // update lock amount
         // No need for SafeMath: checked just above
-        lock_.amount = lockAmount - _amount;
+        uint256 newAmount = lockAmount - _amount;
+        lock_.amount = newAmount;
 
         // update total
         account.totalLocked = account.totalLocked.sub(_amount);
 
-        emit LockAmountChanged(_user, _lockManager, _amount, false);
+        emit LockAmountChanged(_user, _lockManager, newAmount);
     }
 
     function _transfer(address _from, address _to, uint256 _amount) internal {

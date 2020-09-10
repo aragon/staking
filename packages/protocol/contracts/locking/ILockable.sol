@@ -3,8 +3,8 @@ pragma solidity ^0.5.17;
 
 interface ILockable {
     event NewLockManager(address indexed account, address indexed lockManager, bytes data);
-    event LockAmountChanged(address indexed account, address indexed lockManager, uint256 amount, bool increase);
-    event LockAllowanceChanged(address indexed account, address indexed lockManager, uint256 allowance, bool increase);
+    event LockAmountChanged(address indexed account, address indexed lockManager, uint256 amount);
+    event LockAllowanceChanged(address indexed account, address indexed lockManager, uint256 allowance);
     event LockManagerRemoved(address indexed account, address indexed lockManager);
     event LockManagerTransferred(address indexed account, address indexed oldLockManager, address indexed newLockManager);
 
