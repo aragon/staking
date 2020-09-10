@@ -8,13 +8,11 @@ import "./lib/Checkpointing.sol";
 
 import "./standards/IERC900.sol";
 import "./standards/IERC900History.sol";
-import "./standards/IERC223Recipient.sol";
-import "./standards/IApproveAndCallFallBack.sol";
 import "./locking/ILockable.sol";
 import "./locking/ILockManager.sol";
 
 
-contract Staking is IERC900, IERC900History, ILockable, IERC223Recipient, IApproveAndCallFallBack, IsContract, TimeHelpers {
+contract Staking is IERC900, IERC900History, ILockable, IsContract, TimeHelpers {
     using SafeMath for uint256;
     using Checkpointing for Checkpointing.History;
     using SafeERC20 for IERC20;
@@ -299,28 +297,6 @@ contract Staking is IERC900, IERC900History, ILockable, IERC223Recipient, IAppro
         require(_token == msg.sender && _token == address(token), ERROR_WRONG_TOKEN);
 
         _stakeFor(_from, _from, _amount, _data);
-    }
-
-    /**
-     * @dev Standard ERC223 function that will handle incoming token transfers.
-     *
-     * @param _from  Token sender address.
-     * @param _amount Amount of tokens.
-     * @param _data  Transaction metadata.
-     */
-    function tokenFallback(address _from, uint _amount, bytes calldata _data) external {
-        require(msg.sender == address(token), ERROR_WRONG_TOKEN);
-
-        // staking 0 tokens is invalid
-        require(_amount > 0, ERROR_AMOUNT_ZERO);
-
-        // checkpoint updated staking balance
-        uint256 newStake = _modifyStakeBalance(_from, _amount, true);
-
-        // checkpoint total supply
-        _modifyTotalStaked(_amount, true);
-
-        emit Staked(_from, _amount, newStake, _data);
     }
 
     /**
