@@ -1,4 +1,4 @@
-pragma solidity >=0.4 <=0.7;
+pragma solidity >=0.4 <0.5;
 
 
 interface ILockManager {

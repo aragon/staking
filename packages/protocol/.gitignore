@@ -4,5 +4,6 @@ coverage.json
 coverageEnv/
 
 # build artifacts
+abi
 build
 flattened_contracts

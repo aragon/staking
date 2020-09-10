@@ -1,11 +1,11 @@
-pragma solidity >=0.4 <=0.7;
+pragma solidity >=0.4 <0.5;
 
 
 interface IStaking {
     // IERC-900
-    function stake(uint256 _amount, bytes calldata _data) external;
-    function stakeFor(address _user, uint256 _amount, bytes calldata _data) external;
-    function unstake(uint256 _amount, bytes calldata _data) external;
+    function stake(uint256 _amount, bytes _data) external;
+    function stakeFor(address _user, uint256 _amount, bytes _data) external;
+    function unstake(uint256 _amount, bytes _data) external;
 
     function totalStakedFor(address _addr) external view returns (uint256);
     function totalStaked() external view returns (uint256);
