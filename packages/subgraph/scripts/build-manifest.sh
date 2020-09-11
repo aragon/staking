@@ -4,11 +4,11 @@
 set -o errexit
 
 # Staking Factory known addresses
-factory_rinkeby=0x07429001eeA415E967C57B8d43484233d57F8b0B
+factory_rinkeby=0x6a30c2de7359dB110b6322B41038674AE1D276Fb
 factory_mainnet=0xd2f7d8a940324f12dfe623d5529b077e353314d3
 
 # Known block numbers
-start_block_rinkeby=6921112
+start_block_rinkeby=7175305
 start_block_mainnet=10769761
 
 # Validate network
