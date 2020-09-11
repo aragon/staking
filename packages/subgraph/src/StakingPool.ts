@@ -1,7 +1,7 @@
 import { ethereum, BigInt, Address } from '@graphprotocol/graph-ts'
 
-import { Stake, User, Lock, StakingPool } from '../types/schema'
-import { Staked, Unstaked, LockAmountChanged, LockAllowanceChanged, LockManagerRemoved, LockManagerTransferred, StakeTransferred } from '../types/StakingFactory/StakingPool'
+import { Stake, User, Lock, StakingPool, Movement } from '../types/schema'
+import { Staked, Unstaked, LockAmountChanged, LockAllowanceChanged, LockManagerRemoved, StakeTransferred } from '../types/StakingFactory/StakingPool'
 
 export function handleStaked(event: Staked): void {
   const stake = loadOrCreateStake(event.address, event.params.user)
@@ -12,6 +12,8 @@ export function handleStaked(event: Staked): void {
   const pool = StakingPool.load(stake.pool)!
   pool.totalStaked = pool.totalStaked.plus(event.params.amount)
   pool.save()
+
+  createMovement(event.address, event.params.user, event.params.amount, 'Staked', event)
 }
 
 export function handleUnstaked(event: Unstaked): void {
@@ -23,6 +25,8 @@ export function handleUnstaked(event: Unstaked): void {
   const pool = StakingPool.load(stake.pool)!
   pool.totalStaked = pool.totalStaked.minus(event.params.amount)
   pool.save()
+
+  createMovement(event.address, event.params.user, event.params.amount, 'Unstaked', event)
 }
 
 export function handleLockAmountChanged(event: LockAmountChanged): void {
@@ -39,10 +43,12 @@ export function handleLockAmountChanged(event: LockAmountChanged): void {
     stake.locked = stake.locked.plus(diff)
     stake.available = stake.available.minus(diff)
     pool.totalLocked = pool.totalLocked.plus(diff)
+    createMovement(event.address, event.params.user, diff, 'Locked', event)
   } else {
     stake.locked = stake.locked.minus(diff)
     stake.available = stake.available.plus(diff)
     pool.totalLocked = pool.totalLocked.minus(diff)
+    createMovement(event.address, event.params.user, diff, 'Unlocked', event)
   }
 
   stake.save()
@@ -63,14 +69,6 @@ export function handleLockManagerRemoved(event: LockManagerRemoved): void {
   lock.save()
 }
 
-export function handleLockManagerTransferred(event: LockManagerTransferred): void {
-  const lockTo = loadOrCreateLock(event.address, event.params.user, event.params.newLockManager, event)
-  const lockFrom = loadOrCreateLock(event.address, event.params.user, event.params.oldLockManager, event)
-  lockTo.amount = lockTo.amount.plus(lockFrom.amount)
-  lockFrom.amount = lockFrom.amount.minus(lockFrom.amount)
-  lockTo.save()
-}
-
 export function handleStakeTransferred(event: StakeTransferred): void {
   const stakeFrom = loadOrCreateStake(event.address, event.params.from)
   stakeFrom.amount = stakeFrom.amount.minus(event.params.amount)
@@ -81,6 +79,20 @@ export function handleStakeTransferred(event: StakeTransferred): void {
   stakeTo.amount = stakeTo.amount.plus(event.params.amount)
   stakeTo.available = stakeTo.available.plus(event.params.amount)
   stakeTo.save()
+
+  createMovement(event.address, event.params.from, event.params.amount, 'Unstake', event)
+  createMovement(event.address, event.params.to, event.params.amount, 'Stake', event)
+}
+
+function createMovement(pool: Address, user: Address, amount: BigInt, type: string, event: ethereum.Event): void {
+  const stakeId = buildStakeId(pool, user)
+  const movementId = stakeId + "-" + event.transaction.hash.toHexString() + event.logIndex.toString()
+  const movement = new Movement(movementId)
+  movement.type = type
+  movement.stake = stakeId
+  movement.amount = amount
+  movement.createdAt = event.block.timestamp
+  movement.save()
 }
 
 function loadOrCreateStake(pool: Address, user: Address): Stake {

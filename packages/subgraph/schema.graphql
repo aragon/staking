@@ -31,6 +31,21 @@ type User @entity {
   stakes: [Stake!]
 }
 
+type Movement @entity {
+  id: ID!
+  stake: Stake!
+  amount: BigInt!
+  type: MovementType!
+  createdAt: BigInt!
+}
+
+enum MovementType {
+  Stake
+  Unstake
+  Lock
+  Unlock
+}
+
 type ERC20 @entity {
   id: ID!
   name: String!

@@ -42,8 +42,11 @@ templates:
       language: wasm/assemblyscript
       entities:
         - StakingPool
-        - ERC20
+        - Stake
         - User
+        - Lock
+        - ERC20
+        - Movement
       abis:
         - name: StakingPool
           file: ./node_modules/@aragon/staking/abi/Staking.json
@@ -60,8 +63,6 @@ templates:
           handler: handleLockAllowanceChanged
         - event: LockManagerRemoved(indexed address,indexed address)
           handler: handleLockManagerRemoved
-        - event: LockManagerTransferred(indexed address,indexed address,indexed address)
-          handler: handleLockManagerTransferred
         - event: StakeTransferred(indexed address,indexed address,uint256)
           handler: handleStakeTransferred
       file: ./src/StakingPool.ts
