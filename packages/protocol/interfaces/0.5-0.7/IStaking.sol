@@ -17,7 +17,7 @@ interface IStaking {
     function totalStakedAt(uint256 blockNumber) external view returns (uint256);
 
     // ILockable
-    function allowManager(address _lockManager, uint256 _allowance, bytes _data) external;
+    function allowManager(address _lockManager, uint256 _allowance, bytes calldata _data) external;
     function unlockAndRemoveManager(address _user, address _lockManager) external;
     function increaseLockAllowance(address _lockManager, uint256 _allowance) external;
     function decreaseLockAllowance(address _user, address _lockManager, uint256 _allowance) external;
