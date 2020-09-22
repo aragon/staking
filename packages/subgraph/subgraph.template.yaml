@@ -1,0 +1,68 @@
+specVersion: 0.0.2
+description: Aragon Staking subgraph
+repository: https://github.com/aragon/staking
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: StakingFactory
+    network: {{network}}
+    source:
+      address: '{{factory}}'
+      abi: StakingFactory
+      startBlock: {{startBlock}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.3
+      language: wasm/assemblyscript
+      entities:
+        - StakingFactory
+        - StakingPool
+        - ERC20
+      abis:
+        - name: StakingFactory
+          file: ./node_modules/@aragon/staking/abi/StakingFactory.json
+        - name: StakingPool
+          file: ./node_modules/@aragon/staking/abi/Staking.json
+        - name: ERC20
+          file: ./node_modules/@aragon/staking/abi/MiniMeToken.json
+      eventHandlers:
+        - event: NewStaking(indexed address,indexed address)
+          handler: handleNewStaking
+      file: ./src/StakingFactory.ts
+templates:
+  - kind: ethereum/contract
+    name: StakingPool
+    network: {{network}}
+    source:
+      abi: StakingPool
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.3
+      language: wasm/assemblyscript
+      entities:
+        - StakingPool
+        - Stake
+        - User
+        - Lock
+        - ERC20
+        - Movement
+      abis:
+        - name: StakingPool
+          file: ./node_modules/@aragon/staking/abi/Staking.json
+        - name: ERC20
+          file: ./node_modules/@aragon/staking/abi/MiniMeToken.json
+      eventHandlers:
+        - event: Staked(indexed address,uint256,uint256,bytes)
+          handler: handleStaked
+        - event: Unstaked(indexed address,uint256,uint256,bytes)
+          handler: handleUnstaked
+        - event: LockAmountChanged(indexed address,indexed address,uint256)
+          handler: handleLockAmountChanged
+        - event: LockAllowanceChanged(indexed address,indexed address,uint256)
+          handler: handleLockAllowanceChanged
+        - event: LockManagerRemoved(indexed address,indexed address)
+          handler: handleLockManagerRemoved
+        - event: StakeTransferred(indexed address,indexed address,uint256)
+          handler: handleStakeTransferred
+      file: ./src/StakingPool.ts

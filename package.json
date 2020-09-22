@@ -4,21 +4,23 @@
   "private": true,
   "author": "Aragon Assocation <legal@aragon.org>",
   "license": "GPL-3.0-or-later",
-  "devDependencies": {
-    "lerna": "^3.14.1"
-  },
   "scripts": {
-    "lint": "lerna run --scope=@aragon/staking lint",
-    "test": "lerna run --scope=@aragon/staking --stream test",
-    "test:gas": "lerna run --scope=@aragon/staking --concurrency=1 --stream test:gas",
-    "coverage": "lerna run --scope=@aragon/staking --stream coverage"
+    "lint": "yarn workspace protocol lint",
+    "test": "yarn workspace protocol test",
+    "test:gas": "yarn workspace protocol test:gas",
+    "coverage": "yarn workspace protocol coverage"
   },
   "workspaces": {
     "packages": [
       "packages/*"
     ],
     "nohoist": [
-      "**/@aragon/contract-helpers-test"
+      "**/@aragon/contract-helpers-test",
+      "**/@aragon/staking",
+      "**/@graphprotocol/graph-ts",
+      "**/@graphprotocol/graph-ts/**",
+      "**/@graphprotocol/graph-cli",
+      "**/@graphprotocol/graph-cli/**"
     ]
   }
 }

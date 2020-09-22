@@ -1,0 +1,26 @@
+{
+  "name": "@aragon/staking-subgraph",
+  "version": "0.1.0",
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "build:graph": "./scripts/build-graph.sh",
+    "build:graph:rinkeby": "NETWORK=rinkeby yarn build:graph",
+    "build:graph:mainnet": "NETWORK=mainnet yarn build:graph",
+    "build:manifest": "./scripts/build-manifest.sh",
+    "build:manifest:rinkeby": "NETWORK=rinkeby yarn build:manifest",
+    "build:manifest:mainnet": "NETWORK=mainnet yarn build:manifest",
+    "codegen": "./scripts/codegen.sh",
+    "codegen:rinkeby": "NETWORK=rinkeby yarn codegen",
+    "codegen:mainnet": "NETWORK=mainnet yarn codegen",
+    "deploy": "./scripts/deploy.sh",
+    "deploy:rinkeby": "NETWORK=rinkeby yarn deploy",
+    "deploy:mainnet": "NETWORK=mainnet yarn deploy"
+  },
+  "dependencies": {
+    "@aragon/staking": "0.3.0"
+  },
+  "devDependencies": {
+    "@graphprotocol/graph-cli": "0.18.0",
+    "@graphprotocol/graph-ts": "0.18.0"
+  }
+}
