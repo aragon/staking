@@ -11,6 +11,11 @@
     web3-eth-abi "1.2.5"
     web3-utils "1.2.5"
 
+"@aragon/staking@0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@aragon/staking/-/staking-0.3.0.tgz#37f54b0a74e9e5d3b987c7b6358d61e283925e7f"
+  integrity sha512-13Bld7DAz8gtkQDIgnPwNOInlPTyefI7U8NQFCaAZTpjEQT1Gdg2tlhZ/mr3z4oPb4SE6cMEaavogMCwQmCwIg==
+
 "@aragon/truffle-config-v5@^1.0.1":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@aragon/truffle-config-v5/-/truffle-config-v5-1.0.1.tgz#e69803bca836357cfef55f3ff97b3b8593425d88"
@@ -7307,9 +7312,9 @@ tar-stream@^2.0.0, tar-stream@^2.0.1:
     readable-stream "^3.1.1"
 
 tar@^4.0.2:
-  version "4.4.13"
-  resolved "https://registry.yarnpkg.com/tar/-/tar-4.4.13.tgz#43b364bc52888d555298637b10d60790254ab525"
-  integrity sha512-w2VwSrBoHa5BsSyH+KxEqeQBAllHhccyMFVHtGtdMpF4W7IRWfZjFiQceJPChOeTsSDVUpER2T8FA93pr0L+QA==
+  version "4.4.15"
+  resolved "https://registry.yarnpkg.com/tar/-/tar-4.4.15.tgz#3caced4f39ebd46ddda4d6203d48493a919697f8"
+  integrity sha512-ItbufpujXkry7bHH9NpQyTXPbJ72iTlXgkBAYsAjDXk3Ds8t/3NfO5P4xZGy7u+sYuQUbimgzswX4uQIEeNVOA==
   dependencies:
     chownr "^1.1.1"
     fs-minipass "^1.2.5"
