@@ -11,6 +11,11 @@
     web3-eth-abi "1.2.5"
     web3-utils "1.2.5"
 
+"@aragon/staking@0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@aragon/staking/-/staking-0.3.0.tgz#37f54b0a74e9e5d3b987c7b6358d61e283925e7f"
+  integrity sha512-13Bld7DAz8gtkQDIgnPwNOInlPTyefI7U8NQFCaAZTpjEQT1Gdg2tlhZ/mr3z4oPb4SE6cMEaavogMCwQmCwIg==
+
 "@aragon/truffle-config-v5@^1.0.1":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@aragon/truffle-config-v5/-/truffle-config-v5-1.0.1.tgz#e69803bca836357cfef55f3ff97b3b8593425d88"
@@ -1648,9 +1653,9 @@ cookie@0.4.0:
   integrity sha512-+Hp8fLp57wnUSt0tY0tHEXh4voZRDnoIrZPqlo3DPiI4y9lwg/jqx+1Om94/W6ZaPDOUbnjOt/99w66zk+l1Xg==
 
 cookiejar@^2.1.1:
-  version "2.1.2"
-  resolved "https://registry.yarnpkg.com/cookiejar/-/cookiejar-2.1.2.tgz#dd8a235530752f988f9a0844f3fc589e3111125c"
-  integrity sha512-Mw+adcfzPxcPeI+0WlvRrr/3lGVO0bD75SxX6811cxSh1Wbxx7xZBGK1eVtDf6si8rg2lhnUjsVLMFMfbRIuwA==
+  version "2.1.4"
+  resolved "https://registry.yarnpkg.com/cookiejar/-/cookiejar-2.1.4.tgz#ee669c1fea2cf42dc31585469d193fef0d65771b"
+  integrity sha512-LDx6oHrK+PhzLKJU9j5S7/Y3jM/mUHvD/DeI1WQmJn652iPC5Y4TBzC9l+5OMOXlyTTA+SmVUPm0HQUwpD5Jqw==
 
 copy-descriptor@^0.1.0:
   version "0.1.1"
